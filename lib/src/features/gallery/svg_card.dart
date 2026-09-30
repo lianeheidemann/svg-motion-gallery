@@ -230,6 +230,8 @@ class _Badge extends StatelessWidget {
   const _Badge({required this.icon, required this.label});
 
   final IconData icon;
+
+  /// Not drawn: it is the tooltip and the text read by screen readers.
   final String label;
 
   @override
@@ -238,20 +240,14 @@ class _Badge extends StatelessWidget {
     return Tooltip(
       message: label,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        width: 26,
+        height: 26,
         decoration: BoxDecoration(
+          shape: BoxShape.circle,
           color: scheme.surface.withValues(alpha: .8),
-          borderRadius: BorderRadius.circular(20),
           border: Border.all(color: scheme.outline),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: scheme.primary),
-            const SizedBox(width: 4),
-            Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
-          ],
-        ),
+        child: Icon(icon, size: 15, color: scheme.primary),
       ),
     );
   }

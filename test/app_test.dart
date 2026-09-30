@@ -86,6 +86,18 @@ void main() {
     ]);
   });
 
+  testWidgets('adaptive cards show only the contrast icon, without the label', (tester) async {
+    await pumpApp(tester, await _services(tester));
+
+    expect(find.byIcon(Icons.contrast_rounded), findsNWidgets(4));
+    expect(find.byTooltip('Claro/Escuro'), findsNWidgets(4), reason: 'kept as tooltip');
+    expect(
+      find.text('Claro/Escuro', skipOffstage: false),
+      findsOneWidget,
+      reason: 'the text remains only on the filter chip',
+    );
+  });
+
   testWidgets('imports files and reports invalid ones', (tester) async {
     final services = await _services(
       tester,
