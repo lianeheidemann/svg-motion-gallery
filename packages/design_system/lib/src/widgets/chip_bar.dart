@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../theme/tokens.dart';
@@ -32,6 +34,28 @@ class ScrollableChipBar<T> extends StatefulWidget {
 
 class _ScrollableChipBarState<T> extends State<ScrollableChipBar<T>> {
   final _controller = ScrollController();
+  final _keys = <int, GlobalKey>{};
+
+  @override
+  void didUpdateWidget(covariant ScrollableChipBar<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selected == widget.selected) return;
+    // Bring the newly selected pill fully into view (it may sit half-hidden
+    // at the edge of a bar that scrolls).
+    final index = widget.options.indexWhere((option) => option.value == widget.selected);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = _keys[index]?.currentContext;
+      if (context == null || !context.mounted) return;
+      unawaited(
+        Scrollable.ensureVisible(
+          context,
+          alignment: 0.5,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        ),
+      );
+    });
+  }
 
   @override
   void dispose() {
@@ -53,20 +77,23 @@ class _ScrollableChipBarState<T> extends State<ScrollableChipBar<T>> {
         itemBuilder: (context, index) {
           final option = widget.options[index];
           final selected = option.value == widget.selected;
-          return ChoiceChip(
-            visualDensity: VisualDensity.compact,
-            labelPadding: const EdgeInsets.symmetric(horizontal: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            selected: selected,
-            onSelected: (_) => widget.onSelected(option.value),
-            avatar: option.icon == null
-                ? null
-                : Icon(option.icon, size: 16, color: selected ? Colors.white : scheme.onSurface),
-            label: Text(
-              option.label,
-              style: TextStyle(
-                color: selected ? Colors.white : scheme.onSurface,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+          return KeyedSubtree(
+            key: _keys.putIfAbsent(index, GlobalKey.new),
+            child: ChoiceChip(
+              visualDensity: VisualDensity.compact,
+              labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              selected: selected,
+              onSelected: (_) => widget.onSelected(option.value),
+              avatar: option.icon == null
+                  ? null
+                  : Icon(option.icon, size: 16, color: selected ? Colors.white : scheme.onSurface),
+              label: Text(
+                option.label,
+                style: TextStyle(
+                  color: selected ? Colors.white : scheme.onSurface,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                ),
               ),
             ),
           );
