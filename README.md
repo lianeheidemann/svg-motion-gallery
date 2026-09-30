@@ -85,7 +85,7 @@ lib/
     l10n/                   # app_pt.arb (modelo) e app_en.arb
 packages/                   # svg_core/ svg_view/ design_system/
 assets/svgs/                # demos (butterfly, sun-moon, leaf, loader são adaptáveis)
-assets/icon/                # ícone do app e foreground adaptativo
+assets/icon/                # ícone do app: original (app_icon_source.png), adaptativo e logo da galeria; regerar com `dart run flutter_launcher_icons`
 tool/check.sh               # as mesmas verificações do CI
 ```
 
