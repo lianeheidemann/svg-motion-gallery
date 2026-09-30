@@ -21,13 +21,13 @@ ThemeData buildAppTheme({required Brightness brightness, Color accent = const Co
     outline: palette.outline,
     outlineVariant: palette.outline,
   );
-  final radius = BorderRadius.circular(AppSpacing.radiusSmall);
+  final radius = BorderRadius.circular(14);
   final base = ThemeData(useMaterial3: true, brightness: brightness, colorScheme: scheme);
 
   return base.copyWith(
     scaffoldBackgroundColor: palette.background,
     canvasColor: palette.background,
-    dividerColor: palette.outline,
+    dividerColor: palette.outline.withValues(alpha: .7),
     textTheme: base.textTheme.apply(bodyColor: palette.text, displayColor: palette.text),
     appBarTheme: AppBarTheme(
       backgroundColor: palette.background,
@@ -39,6 +39,7 @@ ThemeData buildAppTheme({required Brightness brightness, Color accent = const Co
       titleTextStyle: base.textTheme.titleLarge?.copyWith(
         color: palette.text,
         fontWeight: FontWeight.w700,
+        letterSpacing: -.2,
       ),
     ),
     cardTheme: CardThemeData(
@@ -48,7 +49,7 @@ ThemeData buildAppTheme({required Brightness brightness, Color accent = const Co
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSpacing.radius),
-        side: BorderSide(color: palette.outline),
+        side: BorderSide(color: palette.outline.withValues(alpha: .62)),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
@@ -62,7 +63,7 @@ ThemeData buildAppTheme({required Brightness brightness, Color accent = const Co
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(48, 48),
         foregroundColor: palette.text,
-        side: BorderSide(color: palette.outline),
+        side: BorderSide(color: palette.outline.withValues(alpha: .75)),
         shape: RoundedRectangleBorder(borderRadius: radius),
         textStyle: const TextStyle(fontWeight: FontWeight.w600),
       ),
@@ -70,34 +71,35 @@ ThemeData buildAppTheme({required Brightness brightness, Color accent = const Co
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: accent,
       foregroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radius)),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     ),
     chipTheme: ChipThemeData(
-      backgroundColor: Colors.transparent,
+      backgroundColor: palette.surfaceHigh,
       selectedColor: accent,
       side: BorderSide.none,
       shape: const StadiumBorder(),
       labelStyle: TextStyle(color: palette.text, fontWeight: FontWeight.w600),
       secondaryLabelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
       showCheckmark: false,
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: palette.surfaceHigh,
       isDense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       border: OutlineInputBorder(
         borderRadius: radius,
-        borderSide: BorderSide(color: palette.outline),
+        borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: radius,
-        borderSide: BorderSide(color: palette.outline),
+        borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: radius,
-        borderSide: BorderSide(color: accent),
+        borderSide: BorderSide(color: accent, width: 1.5),
       ),
     ),
     sliderTheme: SliderThemeData(
@@ -124,7 +126,7 @@ ThemeData buildAppTheme({required Brightness brightness, Color accent = const Co
       interactive: true,
       thickness: const WidgetStatePropertyAll(5),
       radius: const Radius.circular(8),
-      thumbColor: WidgetStatePropertyAll(palette.muted.withValues(alpha: isDark ? 0.55 : 0.5)),
+      thumbColor: WidgetStatePropertyAll(palette.muted.withValues(alpha: isDark ? 0.48 : 0.42)),
       crossAxisMargin: 2,
     ),
     popupMenuTheme: PopupMenuThemeData(
@@ -132,7 +134,7 @@ ThemeData buildAppTheme({required Brightness brightness, Color accent = const Co
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: radius,
-        side: BorderSide(color: palette.outline),
+        side: BorderSide(color: palette.outline.withValues(alpha: .7)),
       ),
     ),
     dialogTheme: DialogThemeData(
@@ -153,7 +155,7 @@ ThemeData buildAppTheme({required Brightness brightness, Color accent = const Co
       style: SegmentedButton.styleFrom(
         selectedBackgroundColor: accent,
         selectedForegroundColor: Colors.white,
-        side: BorderSide(color: palette.outline),
+        side: BorderSide(color: palette.outline.withValues(alpha: .7)),
       ),
     ),
     extensions: [
