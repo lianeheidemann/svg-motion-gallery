@@ -33,8 +33,10 @@ class SectionCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (title != null) ...[
-              SizedBox(
-                minHeight: AppSizes.compactControlHeight,
+              ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minHeight: AppSizes.compactControlHeight,
+                ),
                 child: Row(
                   children: [
                     if (icon != null) ...[
