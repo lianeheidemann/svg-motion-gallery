@@ -351,7 +351,7 @@
   "accentCyan": "Ciano",
   "accentOrange": "Laranja",
   "uiScaleTitle": "Tamanho da interface",
-  "uiScaleHint": "Aumenta ou diminui textos, botões, cards e janelas de todo o app. O padrão é 70%.",
+  "uiScaleHint": "Aumenta ou diminui textos, botões, cards e janelas de todo o app. O padrão é 80%.",
   "uiScaleReset": "Restaurar padrão",
   "themeOnHomeHint": "O modo claro/escuro e o idioma são trocados pelos botões da tela inicial.",
   "filesSection": "Arquivos e edição",

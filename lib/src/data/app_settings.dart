@@ -32,7 +32,7 @@ class AppSettings {
   /// fraction of its design size (see `UiScale`).
   static const minUiScale = 0.5;
   static const maxUiScale = 1.2;
-  static const defaultUiScale = 0.7;
+  static const defaultUiScale = 0.8;
 
   /// Toggled by the button on the home screen.
   final bool darkMode;
@@ -90,6 +90,11 @@ class SettingsStore {
 
   static const _prefix = 'settings.';
 
+  /// Bumped when a default changes on purpose for everyone. Version 2 moved the
+  /// interface size from 70% to 80%: sizes saved before it are not choices
+  /// made with the new default, so they are dropped once.
+  static const _version = 2;
+
   Future<AppSettings> load() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -108,10 +113,12 @@ class SettingsStore {
         highQualityPreviews: pick('highQualityPreviews', defaults.highQualityPreviews),
         autoBackup: pick('autoBackup', defaults.autoBackup),
         slideshowSeconds: pick('slideshowSeconds', defaults.slideshowSeconds),
-        uiScale: pick(
-          'uiScale',
-          defaults.uiScale,
-        ).clamp(AppSettings.minUiScale, AppSettings.maxUiScale).toDouble(),
+        uiScale: pick<int>('version', 1) < 2
+            ? defaults.uiScale
+            : pick(
+                'uiScale',
+                defaults.uiScale,
+              ).clamp(AppSettings.minUiScale, AppSettings.maxUiScale).toDouble(),
       );
     } on MissingPluginException {
       return const AppSettings();
@@ -131,6 +138,7 @@ class SettingsStore {
         prefs.setBool('${_prefix}autoBackup', settings.autoBackup),
         prefs.setInt('${_prefix}slideshowSeconds', settings.slideshowSeconds),
         prefs.setDouble('${_prefix}uiScale', settings.uiScale),
+        prefs.setInt('${_prefix}version', _version),
       ]);
     } on MissingPluginException {
       // Preferences are optional: the app keeps working in memory.

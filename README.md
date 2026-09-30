@@ -32,7 +32,7 @@ Aplicativo Flutter (Android e iOS, com build web para preview) para **ver, anima
   - Puxe a lista para baixo para procurar de novo.
 - Configurações:
   - reprodução automática, repetir animação, miniaturas em alta qualidade e intervalo da apresentação;
-  - cor de destaque e **tamanho da interface** (slider de 50% a 120%, padrão **70%**; "Restaurar padrão" volta para 70%);
+  - cor de destaque e **tamanho da interface** (slider de 50% a 120%, padrão **80%**; "Restaurar padrão" volta para 80%);
   - backup automático antes de salvar;
   - uso de armazenamento, limpar cópias e restaurar exemplos.
 

@@ -202,7 +202,7 @@
   "accentCyan": "Cyan",
   "accentOrange": "Orange",
   "uiScaleTitle": "Interface size",
-  "uiScaleHint": "Makes text, buttons, cards and dialogs of the whole app larger or smaller. The default is 70%.",
+  "uiScaleHint": "Makes text, buttons, cards and dialogs of the whole app larger or smaller. The default is 80%.",
   "uiScaleReset": "Restore default",
   "themeOnHomeHint": "Light/dark mode and language are switched with the buttons on the home screen.",
   "filesSection": "Files and editing",

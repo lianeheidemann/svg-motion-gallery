@@ -355,7 +355,7 @@ class _GalleryScreenState extends State<GalleryScreen> with WidgetsBindingObserv
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 230,
+        maxCrossAxisExtent: 200,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
         childAspectRatio: .8,

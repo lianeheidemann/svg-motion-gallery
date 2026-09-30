@@ -42,9 +42,9 @@ Future<void> _openSettings(WidgetTester tester) async {
 
 void main() {
   group('SettingsController.setUiScale', () {
-    test('starts at 70% and keeps the value within the allowed range, in whole percents', () {
+    test('starts at 80% and keeps the value within the allowed range, in whole percents', () {
       final settings = SettingsController(const SettingsStore());
-      expect(settings.value.uiScale, 0.7);
+      expect(settings.value.uiScale, 0.8);
 
       settings.setUiScale(3);
       expect(settings.value.uiScale, AppSettings.maxUiScale);
@@ -60,7 +60,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final fresh = SettingsController(const SettingsStore());
       await fresh.load();
-      expect(fresh.value.uiScale, 0.7, reason: 'existing installs move to the new default');
+      expect(fresh.value.uiScale, 0.8, reason: 'fresh installs start at the default');
 
       fresh.setUiScale(0.85);
       await pumpEventQueue();
@@ -68,14 +68,29 @@ void main() {
       await reloaded.load();
       expect(reloaded.value.uiScale, 0.85);
 
-      SharedPreferences.setMockInitialValues({'settings.uiScale': 9.0});
+      SharedPreferences.setMockInitialValues({'settings.version': 2, 'settings.uiScale': 9.0});
       final tooBig = SettingsController(const SettingsStore());
       await tooBig.load();
       expect(tooBig.value.uiScale, AppSettings.maxUiScale);
     });
+
+    test('moves installs that saved the old 70% default to 80%, once', () async {
+      // What build 2.1.0 left on the phone after any settings change.
+      SharedPreferences.setMockInitialValues({'settings.darkMode': false, 'settings.uiScale': 0.7});
+      final old = SettingsController(const SettingsStore());
+      await old.load();
+      expect(old.value.uiScale, 0.8);
+      expect(old.value.darkMode, isFalse, reason: 'other settings are kept');
+
+      old.setUiScale(0.9); // a real choice, saved with the new version
+      await pumpEventQueue();
+      final reloaded = SettingsController(const SettingsStore());
+      await reloaded.load();
+      expect(reloaded.value.uiScale, 0.9);
+    });
   });
 
-  group('interface at 70%', () {
+  group('interface at the default 80%', () {
     testWidgets('fits three gallery columns where 100% fits two', (tester) async {
       await pumpApp(tester, await _services(tester));
       expect(_columns(tester), 3);
@@ -96,10 +111,10 @@ void main() {
       final dialog = find.byType(AlertDialog);
       expect(dialog, findsOneWidget);
       final laidOut = tester.renderObject<RenderBox>(dialog).size.width;
-      expect(tester.getRect(dialog).width, closeTo(laidOut * 0.7, 0.5));
+      expect(tester.getRect(dialog).width, closeTo(laidOut * AppSettings.defaultUiScale, 0.5));
       final panel = find.descendant(of: dialog, matching: find.byType(Material)).first;
       final panelWidth = tester.renderObject<RenderBox>(panel).size.width;
-      expect(tester.getRect(panel).width, closeTo(panelWidth * 0.7, 0.5));
+      expect(tester.getRect(panel).width, closeTo(panelWidth * AppSettings.defaultUiScale, 0.5));
       expect(tester.getRect(panel).right, lessThan(390));
 
       final before = services.library.documents.length;
@@ -155,8 +170,13 @@ void main() {
         find.descendant(of: find.byKey(const Key('ui-scale')), matching: find.byType(TextField)),
       );
       final shown = int.parse(field.controller!.text);
-      expect(shown, inExclusiveRange(70, 120), reason: 'the number follows the thumb meanwhile');
-      expect(services.settings.value.uiScale, 0.7, reason: 'still dragging: nothing rescaled yet');
+      expect(shown, inExclusiveRange(50, 120), reason: 'the number follows the thumb meanwhile');
+      expect(shown, isNot(80), reason: 'the thumb moved away from the default');
+      expect(
+        services.settings.value.uiScale,
+        AppSettings.defaultUiScale,
+        reason: 'still dragging: nothing rescaled yet',
+      );
 
       await drag.up();
       await tester.pumpAndSettle();
@@ -179,7 +199,7 @@ void main() {
       expect(services.settings.value.uiScale, 0.5);
     });
 
-    testWidgets('"Restaurar padrão" goes back to 70% and is disabled there', (tester) async {
+    testWidgets('"Restaurar padrão" goes back to 80% and is disabled there', (tester) async {
       final services = await _services(tester, uiScale: 1);
       await pumpApp(tester, services);
       await _openSettings(tester);
@@ -189,7 +209,7 @@ void main() {
       await tester.ensureVisible(find.byKey(const Key('ui-scale-reset')));
       await tester.tap(find.byKey(const Key('ui-scale-reset')));
       await tester.pumpAndSettle();
-      expect(services.settings.value.uiScale, 0.7);
+      expect(services.settings.value.uiScale, 0.8);
       expect(reset().onPressed, isNull);
     });
   });
