@@ -21,6 +21,7 @@ class SvgCard extends StatelessWidget {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final adaptive = library.metadataOf(document).themeSupport.isAdaptive;
+
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -29,33 +30,42 @@ class SvgCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: SvgPreview(
-                      svg: library.contentOf(document),
-                      thumbnail: true,
-                      borderRadius: 0,
-                      padding: const EdgeInsets.all(10),
-                      semanticLabel: l10n.previewOf(document.name),
-                    ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: SvgPreview(
+                          svg: library.contentOf(document),
+                          thumbnail: true,
+                          borderRadius: AppSpacing.radiusSmall,
+                          padding: const EdgeInsets.all(12),
+                          semanticLabel: l10n.previewOf(document.name),
+                        ),
+                      ),
+                      if (adaptive)
+                        Positioned(
+                          left: 8,
+                          top: 8,
+                          child: _Badge(
+                            icon: Icons.contrast_rounded,
+                            label: l10n.adaptiveBadge,
+                          ),
+                        ),
+                      Positioned(
+                        right: 6,
+                        top: 6,
+                        child: FavoriteButton(document: document, compact: true),
+                      ),
+                    ],
                   ),
-                  if (adaptive)
-                    Positioned(
-                      left: 8,
-                      top: 8,
-                      child: _Badge(icon: Icons.contrast_rounded, label: l10n.adaptiveBadge),
-                    ),
-                  Positioned(
-                    right: 4,
-                    top: 4,
-                    child: FavoriteButton(document: document, compact: true),
-                  ),
-                ],
+                ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 6, 0, 6),
+              padding: const EdgeInsets.fromLTRB(14, 10, 4, 10),
               child: Row(
                 children: [
                   Expanded(
@@ -66,8 +76,12 @@ class SvgCard extends StatelessWidget {
                           document.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -.1,
+                          ),
                         ),
+                        const SizedBox(height: 3),
                         Text(
                           l10n.bytes(document.sizeBytes),
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -106,9 +120,9 @@ class FavoriteButton extends StatelessWidget {
       isSelected: favorite,
       style: compact
           ? IconButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: .7),
-              minimumSize: const Size(36, 36),
-              fixedSize: const Size(36, 36),
+              backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: .82),
+              minimumSize: const Size(34, 34),
+              fixedSize: const Size(34, 34),
               padding: EdgeInsets.zero,
             )
           : null,
@@ -116,7 +130,7 @@ class FavoriteButton extends StatelessWidget {
       icon: Icon(
         favorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
         color: favorite ? color : null,
-        size: compact ? 20 : null,
+        size: compact ? 19 : null,
       ),
     );
   }
@@ -136,16 +150,18 @@ class _Badge extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: scheme.surface.withValues(alpha: .8),
+          color: scheme.surface.withValues(alpha: .88),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: scheme.outline),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: scheme.primary),
+            Icon(icon, size: 13, color: scheme.primary),
             const SizedBox(width: 4),
-            Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700),
+            ),
           ],
         ),
       ),
