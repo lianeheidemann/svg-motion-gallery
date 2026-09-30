@@ -21,21 +21,12 @@ class GalleryScreen extends StatefulWidget {
 class _GalleryScreenState extends State<GalleryScreen> {
   final _search = TextEditingController();
   final _grid = ScrollController();
-  var _searching = false;
 
   @override
   void dispose() {
     _search.dispose();
     _grid.dispose();
     super.dispose();
-  }
-
-  void _toggleSearch() {
-    setState(() => _searching = !_searching);
-    if (!_searching) {
-      _search.clear();
-      AppScope.of(context).library.setQuery('');
-    }
   }
 
   Future<void> _import() async {
@@ -67,13 +58,13 @@ class _GalleryScreenState extends State<GalleryScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 68,
+        toolbarHeight: 72,
         titleSpacing: AppSpacing.pageGutter,
         title: Row(
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.asset('assets/icon/app_logo.png', width: 38, height: 38),
+              borderRadius: BorderRadius.circular(11),
+              child: Image.asset('assets/icon/app_logo.png', width: 40, height: 40),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
@@ -81,6 +72,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(l10n.appTitle, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 2),
                   Text(
                     l10n.gallerySubtitle,
                     overflow: TextOverflow.ellipsis,
@@ -94,26 +86,21 @@ class _GalleryScreenState extends State<GalleryScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            tooltip: _searching ? l10n.closeSearch : l10n.search,
-            onPressed: _toggleSearch,
-            icon: Icon(_searching ? Icons.close_rounded : Icons.search_rounded),
-          ),
           const ThemeToggleButton(),
           const LanguageToggleButton(),
           IconButton(
             tooltip: l10n.settingsTitle,
-            onPressed: () =>
-                Navigator.of(context)
-                    .push(MaterialPageRoute<void>(builder: (_) => const SettingsScreen())),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+            ),
             icon: const Icon(Icons.settings_outlined),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _import,
-        icon: const Icon(Icons.file_upload_outlined),
+        icon: const Icon(Icons.add_rounded),
         label: Text(l10n.importSvg),
       ),
       body: ListenableBuilder(
@@ -122,28 +109,35 @@ class _GalleryScreenState extends State<GalleryScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (_searching)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                  child: TextField(
-                    controller: _search,
-                    autofocus: true,
-                    onChanged: library.setQuery,
-                    decoration: InputDecoration(
-                      hintText: l10n.searchHint,
-                      prefixIcon: const Icon(Icons.search_rounded),
-                    ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.pageGutter,
+                  AppSpacing.sm,
+                  AppSpacing.pageGutter,
+                  AppSpacing.sm,
+                ),
+                child: TextField(
+                  controller: _search,
+                  onChanged: library.setQuery,
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    hintText: l10n.searchHint,
+                    prefixIcon: const Icon(Icons.search_rounded),
                   ),
                 ),
-              ScrollableChipBar<GalleryFilter>(
-                selected: library.filter,
-                onSelected: library.setFilter,
-                options: [
-                  ChipOption(GalleryFilter.all, l10n.filterAll),
-                  ChipOption(GalleryFilter.favorites, l10n.filterFavorites),
-                  ChipOption(GalleryFilter.recent, l10n.filterRecent),
-                  ChipOption(GalleryFilter.adaptive, l10n.filterAdaptive),
-                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: ScrollableChipBar<GalleryFilter>(
+                  selected: library.filter,
+                  onSelected: library.setFilter,
+                  options: [
+                    ChipOption(GalleryFilter.all, l10n.filterAll),
+                    ChipOption(GalleryFilter.favorites, l10n.filterFavorites),
+                    ChipOption(GalleryFilter.recent, l10n.filterRecent),
+                    ChipOption(GalleryFilter.adaptive, l10n.filterAdaptive),
+                  ],
+                ),
               ),
               Expanded(child: _content(library)),
             ],
@@ -184,15 +178,21 @@ class _GalleryScreenState extends State<GalleryScreen> {
             };
       return EmptyState(icon: icon, title: title, message: message);
     }
+
     final ids = [for (final document in visible) document.id];
     return GridView.builder(
       controller: _grid,
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.pageGutter,
+        AppSpacing.sm,
+        AppSpacing.pageGutter,
+        104,
+      ),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 230,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: .8,
+        maxCrossAxisExtent: 260,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: .86,
       ),
       itemCount: visible.length,
       itemBuilder: (context, index) => SvgCard(
