@@ -21,12 +21,29 @@ class GalleryScreen extends StatefulWidget {
 class _GalleryScreenState extends State<GalleryScreen> {
   final _search = TextEditingController();
   final _grid = ScrollController();
+  var _deviceScanStarted = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_deviceScanStarted) return;
+    _deviceScanStarted = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scanDeviceLibrary());
+  }
 
   @override
   void dispose() {
     _search.dispose();
     _grid.dispose();
     super.dispose();
+  }
+
+  Future<void> _scanDeviceLibrary() async {
+    if (!mounted) return;
+    final services = AppScope.of(context);
+    final files = await services.importer.scanDevice();
+    if (files.isEmpty || !mounted) return;
+    await services.library.importFiles(files);
   }
 
   Future<void> _import() async {
@@ -37,16 +54,21 @@ class _GalleryScreenState extends State<GalleryScreen> {
     if (files.isEmpty) return;
     final report = await services.library.importFiles(files);
     final parts = [
-      if (report.imported.isNotEmpty) l10n.importedCount(report.imported.length),
-      if (report.rejected.isNotEmpty) l10n.importRejected(report.rejected.join(', ')),
+      if (report.imported.isNotEmpty)
+        l10n.importedCount(report.imported.length),
+      if (report.rejected.isNotEmpty)
+        l10n.importRejected(report.rejected.join(', ')),
     ];
-    messenger.showSnackBar(SnackBar(content: Text(parts.join('\n'))));
+    if (parts.isNotEmpty) {
+      messenger.showSnackBar(SnackBar(content: Text(parts.join('\n'))));
+    }
   }
 
   void _open(List<String> ids, int index) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => ViewerScreen(documentIds: ids, initialIndex: index),
+        builder: (_) =>
+            ViewerScreen(documentIds: ids, initialIndex: index),
       ),
     );
   }
@@ -64,7 +86,11 @@ class _GalleryScreenState extends State<GalleryScreen> {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(11),
-              child: Image.asset('assets/icon/app_logo.png', width: 40, height: 40),
+              child: Image.asset(
+                'assets/icon/app_logo.png',
+                width: 40,
+                height: 40,
+              ),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
@@ -91,7 +117,9 @@ class _GalleryScreenState extends State<GalleryScreen> {
           IconButton(
             tooltip: l10n.settingsTitle,
             onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+              MaterialPageRoute<void>(
+                builder: (_) => const SettingsScreen(),
+              ),
             ),
             icon: const Icon(Icons.settings_outlined),
           ),
@@ -133,9 +161,15 @@ class _GalleryScreenState extends State<GalleryScreen> {
                   onSelected: library.setFilter,
                   options: [
                     ChipOption(GalleryFilter.all, l10n.filterAll),
-                    ChipOption(GalleryFilter.favorites, l10n.filterFavorites),
+                    ChipOption(
+                      GalleryFilter.favorites,
+                      l10n.filterFavorites,
+                    ),
                     ChipOption(GalleryFilter.recent, l10n.filterRecent),
-                    ChipOption(GalleryFilter.adaptive, l10n.filterAdaptive),
+                    ChipOption(
+                      GalleryFilter.adaptive,
+                      l10n.filterAdaptive,
+                    ),
                   ],
                 ),
               ),
@@ -149,11 +183,17 @@ class _GalleryScreenState extends State<GalleryScreen> {
 
   Widget _content(LibraryController library) {
     final l10n = context.l10n;
-    if (library.isLoading) return const Center(child: CircularProgressIndicator());
+    if (library.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
     final visible = library.visible;
     if (visible.isEmpty) {
       final (icon, title, message) = library.query.isNotEmpty
-          ? (Icons.search_off_rounded, l10n.emptySearchTitle, l10n.emptySearchMessage)
+          ? (
+              Icons.search_off_rounded,
+              l10n.emptySearchTitle,
+              l10n.emptySearchMessage,
+            )
           : switch (library.filter) {
               GalleryFilter.favorites => (
                 Icons.favorite_border_rounded,
