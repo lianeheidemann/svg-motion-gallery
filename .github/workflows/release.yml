@@ -1,0 +1,53 @@
+# Actions -> Release -> Run workflow: checks, builds the APK and publishes it as
+# a GitHub Release (v<version>-build<run>). Older releases are kept.
+# GitHub only lists a manually started workflow once its file is on the
+# repository's default branch.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_checks:
+        description: Run format, analyze and tests before building
+        type: boolean
+        default: true
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    if: inputs.run_checks
+    uses: ./.github/workflows/checks.yml
+
+  android:
+    needs: checks
+    # Build even when the checks were skipped on purpose.
+    if: ${{ !cancelled() && (needs.checks.result == 'success' || needs.checks.result == 'skipped') }}
+    uses: ./.github/workflows/android-build.yml
+
+  publish:
+    name: Publish GitHub Release
+    needs: android
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download APK
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.android.outputs.artifact }}
+
+      - name: Create release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ needs.android.outputs.tag }}
+          name: SVG Motion Gallery ${{ needs.android.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          generate_release_notes: true
+          files: ${{ needs.android.outputs.artifact }}.apk

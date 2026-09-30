@@ -154,6 +154,7 @@ Para ver as telas do celular no navegador (que não lê arquivos do aparelho), h
 |---|---|---|
 | `ci.yml` | push em qualquer branch, PR, manual | `checks` → build do **APK** (artefato) e do **web preview** (artefato). Em *Actions → CI → Run workflow* com **release** marcado, publica o APK como **Release** `v<versão>-build<n>` |
 | `checks.yml` | reutilizável | roda `tool/check.sh` e envia a cobertura |
+| `release.yml` | manual | **Actions → Release → Run workflow**: verificações (opcionais), build do APK e publicação como **Release** `v<versão>-build<n>`. O GitHub só lista esse botão quando o arquivo está na branch padrão (`main`) |
 | `android-build.yml` | reutilizável | `flutter build apk --release`; o número da execução vira o `versionCode` |
 
 A action composta `.github/actions/setup-flutter` centraliza a versão do Flutter e do Java. O Dependabot atualiza pacotes pub e actions semanalmente.
