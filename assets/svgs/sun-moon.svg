@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <style>
+    .sky { fill: #0B1533 }
+    .far { fill: #16275E }
+    .near { fill: #0E1B44 }
+    .sun { display: none }
+    .night { display: inline }
+    @media (prefers-color-scheme: light) {
+      .sky { fill: #BFE3FF }
+      .far { fill: #7CD992 }
+      .near { fill: #43B96A }
+      .sun { display: inline }
+      .night { display: none }
+    }
+  </style>
+  <rect class="sky" width="800" height="600"/>
+  <g class="night">
+    <g fill="#FFFFFF">
+      <circle cx="120" cy="90" r="3"><animate attributeName="opacity" values="1;.2;1" dur="2.4s" repeatCount="indefinite"/></circle>
+      <circle cx="250" cy="160" r="2"><animate attributeName="opacity" values=".3;1;.3" dur="1.8s" repeatCount="indefinite"/></circle>
+      <circle cx="640" cy="80" r="3"><animate attributeName="opacity" values="1;.3;1" dur="3s" repeatCount="indefinite"/></circle>
+      <circle cx="700" cy="220" r="2"><animate attributeName="opacity" values=".2;1;.2" dur="2.1s" repeatCount="indefinite"/></circle>
+      <circle cx="80" cy="260" r="2"><animate attributeName="opacity" values="1;.4;1" dur="2.7s" repeatCount="indefinite"/></circle>
+    </g>
+    <g>
+      <circle cx="420" cy="210" r="78" fill="#F4F1D0"/>
+      <circle class="sky" cx="455" cy="185" r="70"/>
+      <animateTransform attributeName="transform" type="translate" values="0 0;0 -12;0 0" dur="4s" repeatCount="indefinite"/>
+    </g>
+  </g>
+  <g class="sun">
+    <g stroke="#FFB020" stroke-width="10" stroke-linecap="round">
+      <path d="M400 80V110M400 330V360M260 220H290M510 220H540M301 121L322 142M478 298L499 319M301 319L322 298M478 142L499 121"/>
+      <animateTransform attributeName="transform" type="rotate" from="0 400 220" to="360 400 220" dur="12s" repeatCount="indefinite"/>
+    </g>
+    <circle cx="400" cy="220" r="80" fill="#FFC83D">
+      <animate attributeName="r" values="76;84;76" dur="3s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <path class="far" d="M0 450 Q200 360 420 440 T800 420 V600 H0Z"/>
+  <path class="near" d="M0 510 Q240 430 480 510 T800 490 V600 H0Z"/>
+</svg>

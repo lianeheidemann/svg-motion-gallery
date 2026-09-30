@@ -1,0 +1,154 @@
+import 'package:design_system/design_system.dart';
+import 'package:flutter/material.dart';
+
+import '../../app_scope.dart';
+import '../../data/svg_document.dart';
+import '../../l10n/l10n.dart';
+import '../../widgets/svg_actions_menu.dart';
+import '../../widgets/svg_preview.dart';
+
+/// Gallery tile: animated preview, favorite toggle, light/dark badge, name,
+/// size and the file actions menu.
+class SvgCard extends StatelessWidget {
+  const SvgCard({super.key, required this.document, required this.onOpen});
+
+  final SvgDocument document;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final library = AppScope.of(context).library;
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final adaptive = library.metadataOf(document).themeSupport.isAdaptive;
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onOpen,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: SvgPreview(
+                      svg: library.contentOf(document),
+                      thumbnail: true,
+                      borderRadius: 0,
+                      padding: const EdgeInsets.all(10),
+                      semanticLabel: l10n.previewOf(document.name),
+                    ),
+                  ),
+                  if (adaptive)
+                    Positioned(
+                      left: 8,
+                      top: 8,
+                      child: _Badge(icon: Icons.contrast_rounded, label: l10n.adaptiveBadge),
+                    ),
+                  Positioned(
+                    right: 4,
+                    top: 4,
+                    child: FavoriteButton(document: document, compact: true),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 6, 0, 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          document.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        Text(
+                          l10n.bytes(document.sizeBytes),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: GalleryColors.of(context).muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SvgActionsMenu(document: document),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Heart toggle shared by the gallery card and the viewer.
+class FavoriteButton extends StatelessWidget {
+  const FavoriteButton({super.key, required this.document, this.compact = false});
+
+  final SvgDocument document;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final library = AppScope.of(context).library;
+    final l10n = context.l10n;
+    final favorite = document.isFavorite;
+    final color = Theme.of(context).colorScheme.primary;
+    return IconButton(
+      tooltip: favorite ? l10n.removeFavorite : l10n.addFavorite,
+      isSelected: favorite,
+      style: compact
+          ? IconButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: .7),
+              minimumSize: const Size(36, 36),
+              fixedSize: const Size(36, 36),
+              padding: EdgeInsets.zero,
+            )
+          : null,
+      onPressed: () => library.toggleFavorite(document),
+      icon: Icon(
+        favorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+        color: favorite ? color : null,
+        size: compact ? 20 : null,
+      ),
+    );
+  }
+}
+
+class _Badge extends StatelessWidget {
+  const _Badge({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: label,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: scheme.surface.withValues(alpha: .8),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: scheme.outline),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: scheme.primary),
+            const SizedBox(width: 4),
+            Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+          ],
+        ),
+      ),
+    );
+  }
+}

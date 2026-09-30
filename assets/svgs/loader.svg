@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1BD9FF"/><stop offset="1" stop-color="#1E6BFF"/></linearGradient></defs>
+  <g transform="translate(400 300)">
+    <g>
+      <circle r="150" fill="none" stroke="currentColor" stroke-opacity=".14" stroke-width="18"/>
+      <circle r="150" fill="none" stroke="url(#g)" stroke-width="18" stroke-linecap="round" stroke-dasharray="470 470"/>
+      <circle r="105" fill="none" stroke="#1766A4" stroke-width="8" stroke-dasharray="180 480" opacity=".8"/>
+      <circle r="66" fill="none" stroke="#38E8FF" stroke-width="5" stroke-dasharray="70 350" opacity=".9"/>
+      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="2.1s" repeatCount="indefinite"/>
+    </g>
+    <circle r="8" fill="currentColor"><animate attributeName="r" values="6;11;6" dur="1s" repeatCount="indefinite"/></circle>
+  </g>
+</svg>

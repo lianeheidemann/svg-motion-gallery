@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#B63CFF"/><stop offset=".5" stop-color="#2E7BFF"/><stop offset="1" stop-color="#18D7FF"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="800" height="600" rx="40" fill="#040D19"/>
+  <g fill="none" stroke="url(#g)" stroke-width="4" filter="url(#glow)" opacity=".95">
+    <path d="M30 290 C110 150 180 440 270 275 S430 120 520 300 S680 440 770 265">
+      <animate attributeName="d" dur="3.6s" repeatCount="indefinite" values="M30 290 C110 150 180 440 270 275 S430 120 520 300 S680 440 770 265;M30 310 C120 430 190 145 280 320 S450 455 540 280 S680 145 770 320;M30 290 C110 150 180 440 270 275 S430 120 520 300 S680 440 770 265"/>
+    </path>
+    <path opacity=".55" d="M30 330 C120 180 190 430 280 310 S450 160 540 330 S680 420 770 300">
+      <animate attributeName="d" dur="4.5s" repeatCount="indefinite" values="M30 330 C120 180 190 430 280 310 S450 160 540 330 S680 420 770 300;M30 270 C120 390 210 160 300 280 S460 420 550 300 S690 180 770 260;M30 330 C120 180 190 430 280 310 S450 160 540 330 S680 420 770 300"/>
+    </path>
+  </g>
+</svg>

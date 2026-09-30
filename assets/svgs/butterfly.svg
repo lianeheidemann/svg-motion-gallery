@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <style>
+    .bg { fill: #040D19 }
+    .spark { fill: #37D9FF }
+    @media (prefers-color-scheme: light) {
+      .bg { fill: #EEF3FF }
+      .spark { fill: #7B4DFF }
+    }
+  </style>
+  <defs>
+    <linearGradient id="wing" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#19D7FF"/><stop offset=".38" stop-color="#237BFF"/><stop offset=".72" stop-color="#A33CFF"/><stop offset="1" stop-color="#FF6FB7"/></linearGradient>
+    <linearGradient id="warm" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#58E8FF"/><stop offset=".5" stop-color="#FFD08D"/><stop offset="1" stop-color="#FF5BBD"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect class="bg" width="800" height="600"/>
+  <g transform="translate(400 300)" filter="url(#glow)">
+    <g id="left" transform-origin="0 0">
+      <path d="M-12-20 C-100-210-310-235-338-135 C-355-38-190 25-26 20Z" fill="url(#wing)" opacity=".92"/>
+      <path d="M-15 18 C-180 18-295 105-255 205 C-205 296-73 160-8 52Z" fill="url(#wing)" opacity=".92"/>
+      <path d="M-35-28 C-105-110-210-120-250-82 C-189-50-105-12-29 10Z" fill="url(#warm)" opacity=".58"/>
+      <animateTransform attributeName="transform" type="scale" values="1 1;.72 1;1 1" dur=".75s" repeatCount="indefinite"/>
+    </g>
+    <g id="right" transform-origin="0 0">
+      <path d="M12-20 C100-210 310-235 338-135 C355-38 190 25 26 20Z" fill="url(#wing)" opacity=".92"/>
+      <path d="M15 18 C180 18 295 105 255 205 C205 296 73 160 8 52Z" fill="url(#wing)" opacity=".92"/>
+      <path d="M35-28 C105-110 210-120 250-82 C189-50 105-12 29 10Z" fill="url(#warm)" opacity=".58"/>
+      <animateTransform attributeName="transform" type="scale" values="1 1;.72 1;1 1" dur=".75s" repeatCount="indefinite"/>
+    </g>
+    <ellipse rx="19" ry="105" fill="#6F38FF"/>
+    <circle cy="-105" r="22" fill="#FF74BE"/>
+    <path d="M-6-118 Q-35-190-75-205M6-118 Q35-190 75-205" fill="none" stroke="#FF6EC7" stroke-width="5" stroke-linecap="round"/>
+  </g>
+  <g class="spark"><circle cx="135" cy="170" r="5"><animate attributeName="cy" values="170;150;170" dur="2s" repeatCount="indefinite"/></circle><circle cx="665" cy="410" r="5"><animate attributeName="cy" values="410;430;410" dur="2.4s" repeatCount="indefinite"/></circle></g>
+</svg>

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#3B6CFF"/><stop offset=".5" stop-color="#853FFF"/><stop offset="1" stop-color="#FF4EC7"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <rect width="800" height="600" fill="#040D19"/>
+  <g transform="translate(400 300)" filter="url(#glow)">
+    <g fill="url(#g)" opacity=".9">
+      <ellipse rx="70" ry="190" transform="rotate(0) translate(0 -105)"/>
+      <ellipse rx="70" ry="190" transform="rotate(45) translate(0 -105)"/>
+      <ellipse rx="70" ry="190" transform="rotate(90) translate(0 -105)"/>
+      <ellipse rx="70" ry="190" transform="rotate(135) translate(0 -105)"/>
+      <ellipse rx="70" ry="190" transform="rotate(180) translate(0 -105)"/>
+      <ellipse rx="70" ry="190" transform="rotate(225) translate(0 -105)"/>
+      <ellipse rx="70" ry="190" transform="rotate(270) translate(0 -105)"/>
+      <ellipse rx="70" ry="190" transform="rotate(315) translate(0 -105)"/>
+      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="12s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".72;1;.72" dur="2.6s" repeatCount="indefinite"/>
+    </g>
+    <circle r="46" fill="#FF82DA"><animate attributeName="r" values="42;52;42" dur="2s" repeatCount="indefinite"/></circle>
+  </g>
+</svg>

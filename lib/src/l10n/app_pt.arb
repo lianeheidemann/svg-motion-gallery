@@ -1,0 +1,375 @@
+{
+  "@@locale": "pt",
+  "appTitle": "SVG Gallery",
+  "gallerySubtitle": "Visualize e edite suas animações SVG",
+  "search": "Buscar",
+  "closeSearch": "Fechar busca",
+  "searchHint": "Buscar por nome do arquivo",
+  "switchToLight": "Mudar para o modo claro",
+  "switchToDark": "Mudar para o modo escuro",
+  "switchLanguage": "Traduzir para o inglês",
+  "settingsTitle": "Configurações",
+  "settingsSubtitle": "Personalize sua experiência",
+  "importSvg": "Importar SVG",
+  "importedCount": "{count, plural, =1{1 arquivo importado} other{{count} arquivos importados}}",
+  "@importedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importRejected": "Arquivos SVG inválidos ignorados: {names}",
+  "@importRejected": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "filterAll": "Todos",
+  "filterFavorites": "Favoritos",
+  "filterRecent": "Recentes",
+  "filterAdaptive": "Claro/Escuro",
+  "adaptiveBadge": "Claro/Escuro",
+  "previewOf": "Pré-visualização de {name}",
+  "@previewOf": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addFavorite": "Adicionar aos favoritos",
+  "removeFavorite": "Remover dos favoritos",
+  "moreActions": "Mais ações",
+  "emptyLibraryTitle": "Nenhum SVG ainda",
+  "emptyLibraryMessage": "Importe um arquivo .svg ou restaure os exemplos nas configurações.",
+  "emptyFavoritesTitle": "Nenhum favorito",
+  "emptyFavoritesMessage": "Toque no coração de um SVG para encontrá-lo aqui.",
+  "emptyRecentTitle": "Nada aberto recentemente",
+  "emptyRecentMessage": "Os SVGs que você abrir aparecerão aqui.",
+  "emptyAdaptiveTitle": "Nenhum SVG adaptável",
+  "emptyAdaptiveMessage": "SVGs com versão clara e escura (prefers-color-scheme, light-dark() ou currentColor) aparecem aqui.",
+  "emptySearchTitle": "Nada encontrado",
+  "emptySearchMessage": "Tente outro nome de arquivo.",
+  "actionRename": "Renomear",
+  "actionDuplicate": "Duplicar",
+  "actionShare": "Compartilhar",
+  "actionDelete": "Excluir",
+  "renameTitle": "Renomear arquivo",
+  "fileName": "Nome do arquivo",
+  "duplicated": "Cópia criada: {name}",
+  "@duplicated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleted": "{name} excluído",
+  "@deleted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteTitle": "Excluir arquivo?",
+  "deleteMessage": "\"{name}\" será removido da galeria. Esta ação não pode ser desfeita.",
+  "@deleteMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shareFailed": "Não foi possível compartilhar o arquivo.",
+  "cancel": "Cancelar",
+  "close": "Fechar",
+  "fileMissing": "Este arquivo não está mais na galeria.",
+  "play": "Reproduzir",
+  "pause": "Pausar",
+  "restart": "Reiniciar",
+  "fullscreen": "Tela cheia",
+  "slideshowStart": "Iniciar apresentação automática",
+  "slideshowStop": "Parar apresentação automática",
+  "positionPercent": "Posição {value}%",
+  "@positionPercent": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "staticSvg": "SVG estático",
+  "previous": "Anterior",
+  "next": "Próximo",
+  "pageOf": "{current} de {total}",
+  "@pageOf": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "variantTitle": "Versão clara e escura",
+  "variantHint": "Este SVG muda conforme o tema. Escolha qual versão exibir.",
+  "variantAuto": "Tema do app",
+  "variantLight": "Clara",
+  "variantDark": "Escura",
+  "variantBoth": "Lado a lado",
+  "infoTitle": "Informações",
+  "infoName": "Nome",
+  "infoSize": "Tamanho",
+  "infoDimensions": "Dimensões",
+  "infoElements": "Elementos",
+  "infoAnimations": "Animações",
+  "infoTheme": "Tema",
+  "infoModified": "Modificado",
+  "elementCount": "{count, plural, =0{Nenhum elemento} =1{1 elemento} other{{count} elementos}}",
+  "@elementCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sizeVector": "Vetorial",
+  "animationsNone": "Sem animações",
+  "animationsYes": "Sim ({kinds})",
+  "@animationsYes": {
+    "placeholders": {
+      "kinds": {
+        "type": "String"
+      }
+    }
+  },
+  "themeFixed": "Fixo (não muda com o tema)",
+  "themeAdaptive": "Adaptável: {mechanisms}",
+  "@themeAdaptive": {
+    "placeholders": {
+      "mechanisms": {
+        "type": "String"
+      }
+    }
+  },
+  "mechanismMediaQuery": "prefers-color-scheme",
+  "mechanismLightDark": "light-dark()",
+  "mechanismCurrentColor": "currentColor",
+  "mechanismSelector": "seletor de tema",
+  "editSvg": "Editar SVG",
+  "editorTitle": "Editar SVG",
+  "undo": "Desfazer",
+  "redo": "Refazer",
+  "save": "Salvar",
+  "saved": "Alterações salvas",
+  "saveFailed": "Não foi possível salvar.",
+  "unsavedTitle": "Alterações não salvas",
+  "unsavedMessage": "Deseja salvar antes de sair?",
+  "discardMessage": "As alterações não salvas serão perdidas.",
+  "discard": "Descartar",
+  "tabTransform": "Transformar",
+  "tabColors": "Cores",
+  "tabAnimation": "Animação",
+  "tabLayers": "Camadas",
+  "tabInsert": "Inserir",
+  "tabCode": "Código",
+  "svgValid": "SVG válido",
+  "svgInvalid": "SVG inválido",
+  "statusSummary": "{dimensions} · {elements}",
+  "@statusSummary": {
+    "placeholders": {
+      "dimensions": {
+        "type": "String"
+      },
+      "elements": {
+        "type": "String"
+      }
+    }
+  },
+  "issueEmpty": "O documento está vazio.",
+  "issueRootNotSvg": "O elemento raiz deve ser <svg>.",
+  "issueMalformed": "XML malformado.",
+  "issueMalformedAt": "XML malformado na linha {line}, coluna {column}.",
+  "@issueMalformedAt": {
+    "placeholders": {
+      "line": {
+        "type": "int"
+      },
+      "column": {
+        "type": "int"
+      }
+    }
+  },
+  "selectionNone": "Nenhuma camada selecionada · editando o desenho inteiro",
+  "selectionLayer": "Selecionado: {name}",
+  "@selectionLayer": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "clearSelection": "Limpar seleção",
+  "selectLayerHint": "Selecione uma camada na aba Camadas para editar só ela.",
+  "transformDocument": "Transformar desenho inteiro",
+  "transformLayer": "Transformar {name}",
+  "@transformLayer": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "transformHint": "Sem seleção, os ajustes valem para todo o desenho.",
+  "positionX": "Posição X",
+  "positionY": "Posição Y",
+  "scale": "Escala",
+  "rotation": "Rotação",
+  "opacity": "Opacidade",
+  "resetTransform": "Redefinir",
+  "documentSize": "Tamanho do documento",
+  "width": "Largura",
+  "height": "Altura",
+  "lockAspect": "Manter proporção",
+  "unlockAspect": "Liberar proporção",
+  "colorsDocument": "Documento",
+  "colorsLayer": "Camada",
+  "paletteTitle": "Paleta do documento",
+  "paletteHint": "Toque em uma cor e ajuste-a para trocá-la em todo o SVG.",
+  "paletteEmpty": "Nenhuma cor sólida encontrada.",
+  "layerPaint": "Pintura de {name}",
+  "@layerPaint": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "fill": "Preenchimento",
+  "stroke": "Traço",
+  "currentPaint": "Atual: {value}",
+  "@currentPaint": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "paintInherited": "herdado",
+  "paintNone": "nenhum",
+  "paintGradient": "gradiente",
+  "strokeWidth": "Espessura",
+  "removeFill": "Remover preenchimento",
+  "removeStroke": "Remover traço",
+  "hue": "Matiz",
+  "saturation": "Saturação",
+  "lightness": "Luminosidade",
+  "hex": "Hexadecimal",
+  "animationsTitle": "Animações do arquivo",
+  "cycleSeconds": "ciclo de {seconds} s",
+  "@cycleSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "speed": "Velocidade",
+  "speedHint": "A nova velocidade é aplicada ao soltar a barra.",
+  "removeAnimations": "Remover todas as animações",
+  "presetsTitle": "Adicionar movimento",
+  "presetTarget": "Aplicar em: {name}",
+  "@presetTarget": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "presetSpin": "Girar",
+  "presetPulse": "Pulsar",
+  "presetFloat": "Flutuar",
+  "presetSway": "Balançar",
+  "presetFade": "Esmaecer",
+  "duration": "Duração",
+  "applyPreset": "Aplicar movimento",
+  "removePreset": "Remover movimento",
+  "layersTitle": "{count, plural, =0{Camadas} =1{1 camada} other{{count} camadas}}",
+  "@layersTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "layersEmpty": "Este SVG não tem elementos desenháveis.",
+  "layerAnimated": "Animado",
+  "layerEditorGroup": "Ajuste do editor",
+  "hideLayer": "Ocultar camada",
+  "showLayer": "Mostrar camada",
+  "bringForward": "Trazer para frente",
+  "sendBackward": "Enviar para trás",
+  "textContent": "Texto",
+  "tagGroup": "Grupo",
+  "tagPolygon": "Polígono",
+  "tagPath": "Caminho",
+  "tagImage": "Imagem",
+  "tagUse": "Referência",
+  "insertTitle": "Inserir forma ou texto",
+  "shapeRectangle": "Retângulo",
+  "shapeCircle": "Círculo",
+  "shapeEllipse": "Elipse",
+  "shapeLine": "Linha",
+  "shapeStar": "Estrela",
+  "shapeText": "Texto",
+  "shapeSize": "Tamanho",
+  "color": "Cor",
+  "defaultText": "Olá",
+  "insertAction": "Inserir",
+  "formatCode": "Formatar",
+  "wrapLines": "Quebrar linhas",
+  "fontSize": "Fonte",
+  "playbackSection": "Reprodução",
+  "autoplayTitle": "Reprodução automática",
+  "autoplaySubtitle": "Inicia as animações sozinhas na galeria e ao abrir um SVG",
+  "loopTitle": "Repetir animação",
+  "loopSubtitle": "Reinicia automaticamente ao final",
+  "hqTitle": "Pré-visualização em alta qualidade",
+  "hqSubtitle": "Miniaturas com as animações reais (usa mais memória)",
+  "slideshowInterval": "Intervalo da apresentação",
+  "appearanceSection": "Aparência",
+  "accentTitle": "Cor de destaque",
+  "accentSubtitle": "Personalize a cor principal do app",
+  "accentBlue": "Azul",
+  "accentPurple": "Roxo",
+  "accentPink": "Rosa",
+  "accentCyan": "Ciano",
+  "accentOrange": "Laranja",
+  "themeOnHomeHint": "O modo claro/escuro e o idioma são trocados pelos botões da tela inicial.",
+  "filesSection": "Arquivos e edição",
+  "backupTitle": "Salvar cópia automaticamente",
+  "backupSubtitle": "Mantém um backup da versão anterior ao salvar uma edição",
+  "storageSection": "Armazenamento",
+  "storageUsage": "Uso de armazenamento",
+  "storageBreakdown": "Arquivos: {library} · Cópias de segurança: {backups}",
+  "@storageBreakdown": {
+    "placeholders": {
+      "library": {
+        "type": "String"
+      },
+      "backups": {
+        "type": "String"
+      }
+    }
+  },
+  "restoreDemos": "Restaurar exemplos",
+  "demosRestored": "Exemplos adicionados à galeria",
+  "clearBackups": "Limpar cópias",
+  "clearBackupsTitle": "Limpar cópias de segurança?",
+  "clearBackupsMessage": "As versões anteriores salvas automaticamente serão apagadas."
+}
