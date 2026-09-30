@@ -1,0 +1,15 @@
+name: svg_core
+description: Pure Dart toolkit to inspect, validate, theme and edit SVG documents.
+publish_to: "none"
+version: 1.0.0
+
+environment:
+  sdk: ^3.13.0
+
+resolution: workspace
+
+dependencies:
+  xml: ^7.0.1
+
+dev_dependencies:
+  test: ^1.30.0
