@@ -1,0 +1,18 @@
+name: design_system
+description: Design tokens, light/dark themes and reusable widgets for SVG Motion Gallery.
+publish_to: "none"
+version: 1.0.0
+
+environment:
+  sdk: ^3.13.0
+  flutter: ">=3.47.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
