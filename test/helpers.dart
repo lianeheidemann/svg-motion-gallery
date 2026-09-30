@@ -18,13 +18,21 @@ class FakeImporter implements SvgImporter {
 
   @override
   Future<List<ImportedSvg>> pick() async => files;
+
+  @override
+  Future<List<ImportedSvg>> scanDevice() async => const [];
 }
 
 class FakeSharer implements SvgSharer {
   final shared = <String>[];
 
   @override
-  Future<void> share(String name, String content, {Rect? origin}) async => shared.add(name);
+  Future<void> share(
+    String name,
+    String content, {
+    Rect? origin,
+  }) async =>
+      shared.add(name);
 }
 
 /// Services backed by memory storage, with the bundled demos loaded.
@@ -34,7 +42,9 @@ Future<AppServices> createTestServices({
   AppSettings settings = const AppSettings(),
 }) async {
   SharedPreferences.setMockInitialValues({});
-  final library = LibraryController(SvgRepository(storage ?? MemorySvgStorage()));
+  final library = LibraryController(
+    SvgRepository(storage ?? MemorySvgStorage()),
+  );
   await library.load();
   return AppServices(
     settings: SettingsController(const SettingsStore(), settings),
@@ -45,12 +55,18 @@ Future<AppServices> createTestServices({
 }
 
 /// Pumps the whole app on a phone-sized screen.
-Future<void> pumpApp(WidgetTester tester, AppServices services) async {
+Future<void> pumpApp(
+  WidgetTester tester,
+  AppServices services,
+) async {
   tester.view.physicalSize = const Size(1170, 2532);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
-    SvgViewScope(forceStill: true, child: SvgMotionGalleryApp(services: services)),
+    SvgViewScope(
+      forceStill: true,
+      child: SvgMotionGalleryApp(services: services),
+    ),
   );
   await tester.pumpAndSettle();
 }
