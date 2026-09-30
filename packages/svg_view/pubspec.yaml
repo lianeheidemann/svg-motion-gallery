@@ -1,0 +1,23 @@
+name: svg_view
+description: Renders SVG documents with CSS/SMIL animation, theme variants and playback control.
+publish_to: "none"
+version: 1.0.0
+
+environment:
+  sdk: ^3.13.0
+  flutter: ">=3.47.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_svg: ^2.3.0
+  svg_core:
+    path: ../svg_core
+  web: ^1.1.1
+  webview_flutter: ^4.14.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
