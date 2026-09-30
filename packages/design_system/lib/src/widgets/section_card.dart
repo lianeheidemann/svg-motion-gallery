@@ -33,23 +33,27 @@ class SectionCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (title != null) ...[
-              Row(
-                children: [
-                  if (icon != null) ...[
-                    Icon(icon, color: theme.colorScheme.primary, size: 22),
-                    const SizedBox(width: AppSpacing.md),
-                  ],
-                  Expanded(
-                    child: Semantics(
-                      header: true,
-                      child: Text(
-                        title!,
-                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              SizedBox(
+                minHeight: AppSizes.compactControlHeight,
+                child: Row(
+                  children: [
+                    if (icon != null) ...[
+                      Icon(
+                        icon,
+                        color: theme.colorScheme.primary,
+                        size: AppSizes.cardIcon,
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                    ],
+                    Expanded(
+                      child: Semantics(
+                        header: true,
+                        child: Text(title!, style: theme.textTheme.titleMedium),
                       ),
                     ),
-                  ),
-                  ?trailing,
-                ],
+                    ?trailing,
+                  ],
+                ),
               ),
               SizedBox(height: spacing),
             ],
