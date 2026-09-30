@@ -129,8 +129,7 @@ Os testes estão divididos assim:
 
 | Workflow | Quando | O que faz |
 |---|---|---|
-| `ci.yml` | push em qualquer branch, PR, manual | `checks` → build do **APK** (artefato) e do **web preview** (artefato) |
-| `release.yml` | manual (*Actions → Release → Run workflow*) | `checks` → APK → publica uma **Release** `v<versão>-build<n>` |
+| `ci.yml` | push em qualquer branch, PR, manual | `checks` → build do **APK** (artefato) e do **web preview** (artefato). Em *Actions → CI → Run workflow* com **release** marcado, publica o APK como **Release** `v<versão>-build<n>` |
 | `checks.yml` | reutilizável | roda `tool/check.sh` e envia a cobertura |
 | `android-build.yml` | reutilizável | `flutter build apk --release`; o número da execução vira o `versionCode` |
 
