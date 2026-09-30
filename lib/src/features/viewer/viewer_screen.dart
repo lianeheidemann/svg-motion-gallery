@@ -61,10 +61,15 @@ class _ViewerScreenState extends State<ViewerScreen> {
     if (!mounted) return;
     final documents = _documents();
     if (documents.isEmpty) return;
-    final document = documents[_index.clamp(0, documents.length - 1)];
+    final index = _index.clamp(0, documents.length - 1);
+    final document = documents[index];
     final library = AppScope.of(context).library;
     _playback?.cycle = library.metadataOf(document).cycleDuration;
     library.markOpened(document);
+    // Phone files are read on demand: this page and its neighbours now.
+    for (var i = index - 1; i <= index + 1; i++) {
+      if (i >= 0 && i < documents.length) unawaited(library.ensureContent(documents[i]));
+    }
   }
 
   void _goTo(int index, int count) {
@@ -107,8 +112,11 @@ class _ViewerScreenState extends State<ViewerScreen> {
     );
   }
 
-  void _edit(SvgDocument document) {
-    Navigator.of(context)
+  Future<void> _edit(SvgDocument document) async {
+    final library = AppScope.of(context).library;
+    await library.ensureContent(document);
+    if (!mounted || !library.hasContent(document)) return;
+    await Navigator.of(context)
         .push(MaterialPageRoute<void>(builder: (_) => EditorScreen(documentId: document.id)));
   }
 
@@ -131,6 +139,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
         final document = documents[index];
         final metadata = library.metadataOf(document);
         final svg = library.contentOf(document);
+        _playback?.cycle = metadata.cycleDuration;
         final adaptive = metadata.themeSupport.isAdaptive;
         final live = SvgView.supportsLiveRendering;
         final stageHeight = math.min(MediaQuery.sizeOf(context).height * .42, 440.0);
@@ -157,7 +166,9 @@ class _ViewerScreenState extends State<ViewerScreen> {
               ),
               SvgActionsMenu(
                 document: document,
-                actions: const [SvgAction.rename, SvgAction.duplicate, SvgAction.delete],
+                actions: document.isOnDevice
+                    ? const [SvgAction.rename, SvgAction.delete]
+                    : const [SvgAction.rename, SvgAction.duplicate, SvgAction.delete],
                 onDuplicated: (copy) => setState(() => _ids.insert(index + 1, copy.id)),
                 onDeleted: () {
                   if (_documents().isEmpty) Navigator.of(context).pop();
@@ -185,6 +196,13 @@ class _ViewerScreenState extends State<ViewerScreen> {
                       itemBuilder: (context, page) {
                         final pageDocument = documents[page];
                         final pageSvg = library.contentOf(pageDocument);
+                        if (!library.hasContent(pageDocument)) {
+                          return Center(
+                            child: library.isUnreadable(pageDocument)
+                                ? const Icon(Icons.broken_image_outlined, size: 56)
+                                : const CircularProgressIndicator(),
+                          );
+                        }
                         if (page == index && _variant == VariantMode.sideBySide) {
                           return SideBySideVariants(svg: pageSvg);
                         }

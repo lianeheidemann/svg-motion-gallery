@@ -18,6 +18,7 @@ class SvgPreview extends StatelessWidget {
     required this.svg,
     this.scheme,
     this.thumbnail = false,
+    this.forceStill = false,
     this.controller,
     this.showGrid = false,
     this.interactive = false,
@@ -31,6 +32,11 @@ class SvgPreview extends StatelessWidget {
 
   /// Thumbnails honour "high quality previews" and render still otherwise.
   final bool thumbnail;
+
+  /// Renders the lightweight still image regardless of settings. The gallery
+  /// uses it while scrolling so hundreds of files never spin up hundreds of
+  /// web views.
+  final bool forceStill;
   final SvgPlaybackController? controller;
   final bool showGrid;
   final bool interactive;
@@ -45,7 +51,7 @@ class SvgPreview extends StatelessWidget {
       listenable: settings,
       builder: (context, _) {
         final value = settings.value;
-        final still = thumbnail && (!value.highQualityPreviews || !value.autoplay);
+        final still = forceStill || (thumbnail && (!value.highQualityPreviews || !value.autoplay));
         return Stage(
           showGrid: showGrid,
           borderRadius: borderRadius,

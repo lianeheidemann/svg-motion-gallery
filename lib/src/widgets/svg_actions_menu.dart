@@ -7,6 +7,10 @@ import '../l10n/l10n.dart';
 /// File actions offered from the gallery card and the viewer.
 enum SvgAction { rename, duplicate, share, delete }
 
+/// Actions for files that live on the phone: duplicating would only create a
+/// second copy inside the app, so it is left out.
+const deviceActions = [SvgAction.rename, SvgAction.share, SvgAction.delete];
+
 /// "⋮" menu with file actions. The same widget (and the same handlers)
 /// serves every screen; each screen only picks which [actions] to show so a
 /// screen never offers the same action twice.
@@ -14,13 +18,15 @@ class SvgActionsMenu extends StatelessWidget {
   const SvgActionsMenu({
     super.key,
     required this.document,
-    this.actions = SvgAction.values,
+    this.actions,
     this.onDeleted,
     this.onDuplicated,
   });
 
   final SvgDocument document;
-  final List<SvgAction> actions;
+
+  /// Defaults to every action, or [deviceActions] for files on the phone.
+  final List<SvgAction>? actions;
   final VoidCallback? onDeleted;
   final ValueChanged<SvgDocument>? onDuplicated;
 
@@ -33,7 +39,7 @@ class SvgActionsMenu extends StatelessWidget {
       onSelected: (action) =>
           runSvgAction(context, action, document, onDeleted: onDeleted, onDuplicated: onDuplicated),
       itemBuilder: (context) => [
-        for (final action in actions)
+        for (final action in actions ?? (document.isOnDevice ? deviceActions : SvgAction.values))
           PopupMenuItem(
             value: action,
             child: ListTile(
@@ -79,7 +85,10 @@ Future<void> runSvgAction(
         initial: document.name,
         confirm: l10n.actionRename,
       );
-      if (name != null && name.trim().isNotEmpty) await library.rename(document, name);
+      if (name != null && name.trim().isNotEmpty) {
+        final renamed = await library.rename(document, name);
+        if (renamed == null) messenger.showSnackBar(SnackBar(content: Text(l10n.renameFailed)));
+      }
     case SvgAction.duplicate:
       final copy = await library.duplicate(document);
       messenger.showSnackBar(SnackBar(content: Text(l10n.duplicated(copy.name))));
@@ -93,17 +102,24 @@ Future<void> runSvgAction(
         messenger.showSnackBar(SnackBar(content: Text(l10n.shareFailed)));
       }
     case SvgAction.delete:
+      final onDevice = document.isOnDevice;
       final confirmed = await showConfirmDialog(
         context,
-        title: l10n.deleteTitle,
-        message: l10n.deleteMessage(document.name),
+        title: onDevice ? l10n.deleteDeviceTitle : l10n.deleteTitle,
+        message: onDevice
+            ? l10n.deleteDeviceMessage(document.name)
+            : l10n.deleteMessage(document.name),
         confirm: l10n.actionDelete,
         destructive: true,
       );
       if (confirmed) {
-        await library.delete(document);
-        messenger.showSnackBar(SnackBar(content: Text(l10n.deleted(document.name))));
-        onDeleted?.call();
+        final deleted = await library.delete(document);
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(deleted ? l10n.deleted(document.name) : l10n.deleteFailed(document.name)),
+          ),
+        );
+        if (deleted) onDeleted?.call();
       }
   }
 }

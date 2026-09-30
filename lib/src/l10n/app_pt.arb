@@ -371,5 +371,90 @@
   "demosRestored": "Exemplos adicionados à galeria",
   "clearBackups": "Limpar cópias",
   "clearBackupsTitle": "Limpar cópias de segurança?",
-  "clearBackupsMessage": "As versões anteriores salvas automaticamente serão apagadas."
+  "clearBackupsMessage": "As versões anteriores salvas automaticamente serão apagadas.",
+  "filterDevice": "No celular",
+  "onPhoneBadge": "Arquivo do celular",
+  "devicePromptTitle": "Mostrar seus SVGs",
+  "devicePromptMessage": "Para exibir na galeria todos os arquivos .svg salvos no celular, permita o acesso aos arquivos na próxima tela.",
+  "deviceAllow": "Permitir",
+  "deviceNotNow": "Agora não",
+  "deviceBannerTitle": "Mostrar os SVGs do celular",
+  "deviceBannerMessage": "Permita o acesso aos arquivos para listar todos os .svg automaticamente.",
+  "deviceScanning": "Procurando SVGs no celular…",
+  "emptyDeviceTitle": "Nenhum SVG no celular",
+  "emptyDeviceMessage": "Puxe a lista para baixo para procurar de novo.",
+  "emptyDeviceDeniedMessage": "Permita o acesso aos arquivos para ver os SVGs do celular.",
+  "deleteDeviceTitle": "Excluir do celular?",
+  "deleteDeviceMessage": "\"{name}\" será apagado definitivamente do armazenamento do celular. Esta ação não pode ser desfeita.",
+  "@deleteDeviceMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteFailed": "Não foi possível excluir {name}.",
+  "@deleteFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "renameFailed": "Não foi possível renomear. Já existe um arquivo com esse nome?",
+  "selectedCount": "{count, plural, =1{1 selecionado} other{{count} selecionados}}",
+  "@selectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "selectAll": "Selecionar todos",
+  "deleteSelected": "Excluir selecionados",
+  "deleteManyTitle": "{count, plural, =1{Excluir 1 arquivo?} other{Excluir {count} arquivos?}}",
+  "@deleteManyTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteManyDevice": "{count, plural, =1{1 arquivo será apagado definitivamente do celular.} other{{count} arquivos serão apagados definitivamente do celular.}}",
+  "@deleteManyDevice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteManyLibrary": "{count, plural, =1{1 arquivo será removido da galeria.} other{{count} arquivos serão removidos da galeria.}}",
+  "@deleteManyLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cannotUndo": "Esta ação não pode ser desfeita.",
+  "deletedCount": "{count, plural, =1{1 arquivo excluído} other{{count} arquivos excluídos}}",
+  "@deletedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deletePartial": "Excluídos: {deleted}. Falharam: {failed}.",
+  "@deletePartial": {
+    "placeholders": {
+      "deleted": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
+  "infoLocation": "Local"
 }

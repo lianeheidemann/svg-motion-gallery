@@ -205,6 +205,7 @@ class FileInfoCard extends StatelessWidget {
             (l10n.infoAnimations, l10n.animationSummary(metadata)),
             (l10n.infoTheme, l10n.themeSummary(metadata.themeSupport)),
             (l10n.infoModified, l10n.dateTime(document.modifiedAt)),
+            if (document.folder != null) (l10n.infoLocation, document.folder!),
           ],
         ),
       ],

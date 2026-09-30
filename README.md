@@ -26,6 +26,10 @@ Aplicativo Flutter (Android e iOS, com build web para preview) para **ver, anima
   - todo ajuste numérico tem **slider + campo numérico** sincronizados: posição da animação, transformações, cores HSL, velocidade, tamanho da fonte, intervalo da apresentação etc.;
   - toda área rolável mostra uma **barra de rolagem arrastável**, vertical e horizontal (`AppScrollBehavior`).
 - Importação de `.svg` (seleção múltipla, arquivos inválidos são recusados com aviso), favoritos, recentes, busca, renomear, duplicar, compartilhar e excluir.
+- **SVGs do celular (Android)**: o app pede acesso aos arquivos e lista **todos os `.svg` do armazenamento** (Downloads, Pictures, WhatsApp, cartão SD…) no filtro **No celular** e em **Todos**. Veja [Permissão de arquivos](#permissão-de-arquivos-android).
+  - Dá para **renomear, compartilhar, editar e apagar** esses arquivos direto pela galeria. Salvar uma edição sobrescreve o original (com cópia de segurança, se ligada nas configurações).
+  - **Segure um card para selecionar vários** e apagar todos de uma vez. A confirmação diz quantos serão apagados definitivamente do celular e quantos só saem da galeria.
+  - Puxe a lista para baixo para procurar de novo.
 - Configurações:
   - reprodução automática, repetir animação, miniaturas em alta qualidade e intervalo da apresentação;
   - cor de destaque;
@@ -85,6 +89,21 @@ assets/icon/                # ícone do app e foreground adaptativo
 tool/check.sh               # as mesmas verificações do CI
 ```
 
+## Permissão de arquivos (Android)
+
+Para mostrar os SVGs do celular o app precisa de acesso aos arquivos:
+
+| Android | Como a permissão é pedida |
+|---|---|
+| 11 ou mais novo | Na primeira abertura aparece **"Mostrar seus SVGs"**. Ao tocar em **Permitir**, o app abre a tela do sistema **"Acesso a todos os arquivos"**, onde você liga a chave do SVG Gallery. Ao voltar, a galeria confere sozinha e carrega tudo. Se você recusar, um aviso com **Permitir** fica na galeria. |
+| 10 ou mais antigo | Popup normal de permissão de armazenamento. |
+
+- **Ficam de fora:** pastas ocultas (começam com `.`) e `Android/data`, onde o Android bloqueia o acesso às pastas privadas de outros apps.
+- **Não funciona no iOS nem na web** (sandbox): lá o recurso fica oculto.
+- Apagar é **definitivo**: o app sempre pede confirmação antes.
+- A permissão "todos os arquivos" é aceita normalmente no APK instalado pelo GitHub, mas a Play Store a restringe (só importaria se você publicar lá).
+- Como funciona: `MainActivity.kt` só cuida da permissão, das raízes de armazenamento e de avisar o Android sobre mudanças. A varredura, a leitura, a escrita e a exclusão acontecem em Dart (`lib/src/services/device_*.dart`), atrás da interface `DeviceStorage`. Os SVGs do celular **nunca entram no índice da galeria**: o arquivo é a fonte da verdade, e o conteúdo só é lido quando o card aparece.
+
 ## Como rodar
 
 Pré-requisito: Flutter **3.47.5** (o CI usa exatamente essa versão).
@@ -123,7 +142,10 @@ Os testes estão divididos assim:
 - App:
   - paridade das traduções;
   - repositório e controladores;
-  - testes de widget dos fluxos principais: tema, idioma, filtros, importação, variantes, editor e salvar.
+  - testes de widget dos fluxos principais: tema, idioma, filtros, importação, variantes, editor e salvar;
+  - SVGs do celular: operações de arquivo em pastas temporárias, controlador com armazenamento em memória e telas (permissão, banner, seleção e exclusão).
+
+Para ver as telas do celular no navegador (que não lê arquivos do aparelho), há um ponto de entrada de verificação com um "celular" em memória: `flutter build web -t tool/preview_device_main.dart`. Ele não faz parte do app.
 
 ## Integração contínua
 
@@ -139,6 +161,8 @@ A action composta `.github/actions/setup-flutter` centraliza a versão do Flutte
 
 - O modo leve (`flutter_svg`, usado quando "alta qualidade" está desligada e nos testes) não executa animações nem filtros; o modo normal usa o motor do navegador.
 - Edição de nós de caminhos (`path`) não está incluída.
+- Importar pelo menu "Compartilhar/Abrir com" do Android (existia na v1) ainda não foi portado.
+- Em celulares com milhares de SVGs, as miniaturas ficam estáticas enquanto a lista rola e voltam a animar ~0,3 s depois de parar, para não criar centenas de WebViews.
 - O APK de release é assinado com a chave de debug, como na v1. Para publicar numa loja, configure uma keystore.
 - O CI não compila iOS (runner macOS); o projeto iOS é gerado e compila localmente com Xcode.
 

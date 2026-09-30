@@ -1,7 +1,7 @@
 name: svg_motion_gallery
 description: Gallery for viewing and editing animated SVG files.
 publish_to: "none"
-version: 2.0.0+1
+version: 2.1.0+1
 
 environment:
   sdk: ^3.13.0

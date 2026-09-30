@@ -101,6 +101,9 @@ class SvgRepository {
 
   Future<void> delete(SvgDocument document) => _storage.deleteContent(document.id);
 
+  /// Keeps a copy of [content] (a version about to be overwritten).
+  Future<void> writeBackup(String id, String content) => _storage.writeBackup(id, content);
+
   Future<({int library, int backups})> usage() => _storage.usage();
 
   Future<void> clearBackups() => _storage.clearBackups();
