@@ -2,9 +2,13 @@
 
 Aplicativo Flutter (Android e iOS, com build web para preview) para **ver, animar e editar arquivos SVG**. A v2 recomeça a [v1](https://github.com/lianeheidemann/svg-motion-gallery) como um projeto **modularizado**, com código reutilizável e integração contínua desde o primeiro commit.
 
-| Galeria (escuro) | Galeria (claro) | Versão clara × escura | Editor | Código |
-|---|---|---|---|---|
-| ![](docs/screenshots/gallery-dark.png) | ![](docs/screenshots/gallery-light.png) | ![](docs/screenshots/viewer-side-by-side.png) | ![](docs/screenshots/editor-transform.png) | ![](docs/screenshots/editor-code.png) |
+| Galeria (escuro) | Galeria (claro) | Versão clara × escura | Configurações |
+|---|---|---|---|
+| ![](docs/screenshots/gallery-dark.png) | ![](docs/screenshots/gallery-light.png) | ![](docs/screenshots/viewer-side-by-side.png) | ![](docs/screenshots/settings.png) |
+
+| Editor | Cores (paleta + hexadecimal) | Código |
+|---|---|---|
+| ![](docs/screenshots/editor-transform.png) | ![](docs/screenshots/editor-colors.png) | ![](docs/screenshots/editor-code.png) |
 
 ## Funcionalidades
 
