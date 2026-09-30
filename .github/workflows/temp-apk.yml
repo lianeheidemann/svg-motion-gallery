@@ -1,0 +1,59 @@
+name: Temporary APK
+
+on:
+  push:
+    branches: ["ui-refinement"]
+    paths-ignore: ["**.md"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    name: Build temporary test APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup-flutter
+        with:
+          java: "true"
+
+      - name: Format workspace
+        run: dart format .
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+
+      - name: Run tests
+        run: |
+          flutter test
+          (cd packages/svg_core && dart test)
+          (cd packages/design_system && flutter test)
+          (cd packages/svg_view && flutter test)
+
+      - name: Read app version
+        id: version
+        run: |
+          version=$(grep '^version:' pubspec.yaml | sed -E 's/version: *([^+]+).*/\1/')
+          tag="v$version-ui-test-${{ github.run_number }}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "artifact=svg-motion-gallery-$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Build APK
+        run: >
+          flutter build apk --release
+          --build-name=${{ steps.version.outputs.version }}
+          --build-number=${{ github.run_number }}
+
+      - name: Rename APK
+        run: cp build/app/outputs/flutter-apk/app-release.apk "${{ steps.version.outputs.artifact }}.apk"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.version.outputs.artifact }}
+          path: ${{ steps.version.outputs.artifact }}.apk
+          if-no-files-found: error
