@@ -17,6 +17,6 @@ void main() {
     final names = services.library.documents.map((d) => d.name).toList();
 
     expect(names.toSet(), files.toSet());
-    expect(names.take(4), ['butterfly.svg', 'sun-moon.svg', 'leaf.svg', 'loader.svg']);
+    expect(names.take(2), ['butterfly.svg', 'sun-moon.svg']);
   });
 }

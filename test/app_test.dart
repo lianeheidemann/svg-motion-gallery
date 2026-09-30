@@ -78,19 +78,14 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(adaptiveChip);
     await tester.pumpAndSettle();
-    expect(services.library.visible.map((d) => d.name), [
-      'butterfly.svg',
-      'sun-moon.svg',
-      'leaf.svg',
-      'loader.svg',
-    ]);
+    expect(services.library.visible.map((d) => d.name), ['butterfly.svg', 'sun-moon.svg']);
   });
 
   testWidgets('adaptive cards show only the contrast icon, without the label', (tester) async {
     await pumpApp(tester, await _services(tester));
 
-    expect(find.byIcon(Icons.contrast_rounded), findsNWidgets(4));
-    expect(find.byTooltip('Claro/Escuro'), findsNWidgets(4), reason: 'kept as tooltip');
+    expect(find.byIcon(Icons.contrast_rounded), findsNWidgets(2));
+    expect(find.byTooltip('Claro/Escuro'), findsNWidgets(2), reason: 'kept as tooltip');
     expect(
       find.text('Claro/Escuro', skipOffstage: false),
       findsOneWidget,
@@ -124,10 +119,6 @@ void main() {
     expect(find.text('Clara'), findsWidgets);
     expect(find.text('Escura'), findsWidgets);
 
-    await tester.tap(find.byTooltip('Próximo'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Próximo'));
-    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Próximo'));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Próximo'));

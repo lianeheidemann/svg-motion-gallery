@@ -25,27 +25,22 @@ void main() {
 
   test('filters adaptive, favorite and recent documents and searches by name', () async {
     library.setFilter(GalleryFilter.adaptive);
-    expect(library.visible.map((d) => d.name), [
-      'butterfly.svg',
-      'sun-moon.svg',
-      'leaf.svg',
-      'loader.svg',
-    ]);
+    expect(library.visible.map((d) => d.name), ['butterfly.svg', 'sun-moon.svg']);
 
     library.setFilter(GalleryFilter.favorites);
     expect(library.visible, isEmpty);
-    await library.toggleFavorite(library.documents[4]);
+    await library.toggleFavorite(library.documents[2]);
     expect(library.visible.single.name, 'wave.svg');
 
     library.setFilter(GalleryFilter.recent);
+    await library.markOpened(library.documents[1]);
     await library.markOpened(library.documents[2]);
-    await library.markOpened(library.documents[6]);
-    expect(library.visible.map((d) => d.name), ['cube.svg', 'leaf.svg']);
+    expect(library.visible.map((d) => d.name), ['wave.svg', 'sun-moon.svg']);
 
     library
       ..setFilter(GalleryFilter.all)
-      ..setQuery('PLAN');
-    expect(library.visible.single.name, 'planet.svg');
+      ..setQuery('WAV');
+    expect(library.visible.single.name, 'wave.svg');
   });
 
   test('imports valid files with unique names and reports invalid ones', () async {
@@ -74,7 +69,7 @@ void main() {
   });
 
   test('saves edits, keeps a backup and persists across restarts', () async {
-    final leaf = library.documents.firstWhere((d) => d.name == 'leaf.svg');
+    final leaf = library.documents.firstWhere((d) => d.name == 'sun-moon.svg');
     final saved = await library.save(leaf, _valid, backup: true);
     expect(saved.sizeBytes, _valid.length);
     expect(storage.backups, hasLength(1));

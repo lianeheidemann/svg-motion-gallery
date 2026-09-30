@@ -6,19 +6,9 @@ import 'svg_document.dart';
 import 'svg_storage.dart';
 
 /// Demo files bundled in `assets/svgs/` that lead the gallery, in this order
-/// (the first four adapt to the light/dark theme). Any other `.svg` placed in
+/// (the first two adapt to the light/dark theme). Any other `.svg` placed in
 /// that folder is bundled too and follows them alphabetically.
-const demoAssets = [
-  'butterfly.svg',
-  'sun-moon.svg',
-  'leaf.svg',
-  'loader.svg',
-  'wave.svg',
-  'planet.svg',
-  'cube.svg',
-  'fish.svg',
-  'flower.svg',
-];
+const demoAssets = ['butterfly.svg', 'sun-moon.svg', 'wave.svg'];
 
 /// A document together with its markup.
 typedef LoadedSvg = ({SvgDocument document, String content});

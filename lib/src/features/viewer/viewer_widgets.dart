@@ -1,5 +1,6 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:svg_core/svg_core.dart';
 import 'package:svg_view/svg_view.dart';
 
@@ -33,8 +34,44 @@ class PlaybackBar extends StatefulWidget {
   State<PlaybackBar> createState() => _PlaybackBarState();
 }
 
-class _PlaybackBarState extends State<PlaybackBar> {
+class _PlaybackBarState extends State<PlaybackBar> with SingleTickerProviderStateMixin {
   var _resumeAfterSeek = false;
+
+  /// Repaints every frame while playing so the position slider glides.
+  late final Ticker _ticker = createTicker((_) => setState(() {}));
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_syncTicker);
+    _syncTicker();
+  }
+
+  @override
+  void didUpdateWidget(covariant PlaybackBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_syncTicker);
+      widget.controller.addListener(_syncTicker);
+    }
+    _syncTicker();
+  }
+
+  void _syncTicker() {
+    final run = widget.animated && widget.controller.isPlaying;
+    if (run && !_ticker.isActive) {
+      _ticker.start();
+    } else if (!run && _ticker.isActive) {
+      _ticker.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_syncTicker);
+    _ticker.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +93,7 @@ class _PlaybackBarState extends State<PlaybackBar> {
                 ),
                 Expanded(
                   child: Slider(
-                    value: controller.progress,
+                    value: controller.smoothProgress,
                     semanticFormatterCallback: (value) =>
                         l10n.positionPercent((value * 100).round()),
                     onChangeStart: (_) {

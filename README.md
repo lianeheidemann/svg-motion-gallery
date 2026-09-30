@@ -51,7 +51,7 @@ flutter run -d chrome    # preview web
 
 ## SVGs de exemplo
 
-Os exemplos ficam em **`assets/svgs/`**. Qualquer `.svg` colocado ou removido dessa pasta entra ou sai do APK seguinte; `butterfly`, `sun-moon`, `leaf` e `loader` aparecem primeiro e os demais em ordem alfabética.
+Os exemplos ficam em **`assets/svgs/`**. Qualquer `.svg` colocado ou removido dessa pasta entra ou sai do APK seguinte; `butterfly` e `sun-moon` (os dois adaptáveis ao tema) aparecem primeiro e os demais em ordem alfabética. Hoje são três: `butterfly`, `sun-moon` e `wave`.
 
 Os exemplos são copiados para a galeria **na primeira abertura** ou em *Configurações → Restaurar exemplos*. Quem já tem o app instalado mantém os arquivos que já tinha.
 

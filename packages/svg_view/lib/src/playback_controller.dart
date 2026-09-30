@@ -19,6 +19,10 @@ class SvgPlaybackController extends ChangeNotifier {
   bool _playing;
   double _seconds = 0;
 
+  /// Time since the last report or command; the renderer reports only every
+  /// 200 ms, so the UI extrapolates from it to move smoothly in between.
+  final _sinceReport = Stopwatch()..start();
+
   bool get isAttached => _target != null;
   bool get isPlaying => _playing;
 
@@ -30,6 +34,16 @@ class SvgPlaybackController extends ChangeNotifier {
     final length = cycle == null ? 0 : cycle!.inMicroseconds / Duration.microsecondsPerSecond;
     if (length <= 0) return 0;
     return (_seconds % length) / length;
+  }
+
+  /// Like [progress] but advanced by the time elapsed since the last report
+  /// while playing, so a slider driven by it glides instead of stepping.
+  /// Wraps around at the end of the cycle.
+  double get smoothProgress {
+    final length = cycle == null ? 0 : cycle!.inMicroseconds / Duration.microsecondsPerSecond;
+    if (length <= 0) return 0;
+    final extra = _playing && isAttached ? _sinceReport.elapsedMicroseconds / 1e6 : 0;
+    return ((_seconds + extra) % length) / length;
   }
 
   void play() {
@@ -51,6 +65,7 @@ class SvgPlaybackController extends ChangeNotifier {
     final length = cycle == null ? 0 : cycle!.inMicroseconds / Duration.microsecondsPerSecond;
     final seconds = fraction.clamp(0, 1) * length;
     _seconds = seconds.toDouble();
+    _sinceReport.reset();
     _target?.invoke('seek', [seconds]);
     notifyListeners();
   }
@@ -58,6 +73,7 @@ class SvgPlaybackController extends ChangeNotifier {
   void restart() {
     _playing = true;
     _seconds = 0;
+    _sinceReport.reset();
     _target?.invoke('restart');
     notifyListeners();
   }
@@ -79,6 +95,7 @@ class SvgPlaybackController extends ChangeNotifier {
   void report({required double seconds, required bool paused}) {
     final changed = (seconds - _seconds).abs() > 0.001 || paused == _playing;
     _seconds = seconds;
+    _sinceReport.reset();
     _playing = !paused;
     if (changed) notifyListeners();
   }
