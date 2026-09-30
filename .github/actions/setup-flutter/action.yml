@@ -6,7 +6,7 @@ inputs:
     description: Flutter version used by every job. Bump it here only.
     default: "3.47.5"
   java:
-    description: Also install Java 17 (needed to build the Android APK).
+    description: Also install Java 21 (needed to build the Android APK).
     default: "false"
 
 runs:
@@ -17,7 +17,7 @@ runs:
       uses: actions/setup-java@v5
       with:
         distribution: temurin
-        java-version: "17"
+        java-version: "21"
 
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
