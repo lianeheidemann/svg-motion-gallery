@@ -165,9 +165,11 @@ class _ViewerScreenState extends State<ViewerScreen> {
               ),
             ],
           ),
-          body: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-            children: [
+          body: SafeArea(
+            top: false,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+              children: [
               SizedBox(
                 height: stageHeight,
                 child: Stack(
@@ -249,6 +251,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
                 label: Text(l10n.editSvg),
               ),
             ],
+            ),
           ),
         );
       },
