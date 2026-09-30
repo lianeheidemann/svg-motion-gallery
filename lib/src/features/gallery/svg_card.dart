@@ -49,10 +49,7 @@ class SvgCard extends StatelessWidget {
                         Positioned(
                           left: 8,
                           top: 8,
-                          child: _Badge(
-                            icon: Icons.contrast_rounded,
-                            label: l10n.adaptiveBadge,
-                          ),
+                          child: _AdaptiveIconBadge(label: l10n.adaptiveBadge),
                         ),
                       Positioned(
                         right: 6,
@@ -136,10 +133,9 @@ class FavoriteButton extends StatelessWidget {
   }
 }
 
-class _Badge extends StatelessWidget {
-  const _Badge({required this.icon, required this.label});
+class _AdaptiveIconBadge extends StatelessWidget {
+  const _AdaptiveIconBadge({required this.label});
 
-  final IconData icon;
   final String label;
 
   @override
@@ -147,22 +143,21 @@ class _Badge extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Tooltip(
       message: label,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: scheme.surface.withValues(alpha: .88),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 13, color: scheme.primary),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700),
-            ),
-          ],
+      child: Semantics(
+        label: label,
+        child: Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: scheme.surface.withValues(alpha: .88),
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: Icon(
+            Icons.contrast_rounded,
+            size: 16,
+            color: scheme.primary,
+          ),
         ),
       ),
     );
