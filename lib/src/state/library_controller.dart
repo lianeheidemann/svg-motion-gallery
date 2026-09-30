@@ -38,14 +38,18 @@ class LibraryController extends ChangeNotifier {
   /// Documents matching the current filter and search query.
   List<SvgDocument> get visible {
     final needle = _query.trim().toLowerCase();
-    var list = _documents.where((doc) => needle.isEmpty || doc.name.toLowerCase().contains(needle));
+    var list = _documents.where(
+      (doc) => needle.isEmpty || doc.name.toLowerCase().contains(needle),
+    );
     switch (_filter) {
       case GalleryFilter.all:
         break;
       case GalleryFilter.favorites:
         list = list.where((doc) => doc.isFavorite);
       case GalleryFilter.adaptive:
-        list = list.where((doc) => metadataOf(doc).themeSupport.isAdaptive);
+        list = list.where(
+          (doc) => metadataOf(doc).themeSupport.isAdaptive,
+        );
       case GalleryFilter.recent:
         final recent = list.where((doc) => doc.lastOpenedAt != null).toList()
           ..sort((a, b) => b.lastOpenedAt!.compareTo(a.lastOpenedAt!));
@@ -54,7 +58,8 @@ class LibraryController extends ChangeNotifier {
     return list.toList();
   }
 
-  SvgDocument? byId(String id) => _documents.where((doc) => doc.id == id).firstOrNull;
+  SvgDocument? byId(String id) =>
+      _documents.where((doc) => doc.id == id).firstOrNull;
 
   String contentOf(SvgDocument document) => _contents[document.id] ?? '';
 
@@ -69,7 +74,11 @@ class LibraryController extends ChangeNotifier {
       _documents = [for (final entry in loaded) entry.document];
       _contents
         ..clear()
-        ..addEntries(loaded.map((entry) => MapEntry(entry.document.id, entry.content)));
+        ..addEntries(
+          loaded.map(
+            (entry) => MapEntry(entry.document.id, entry.content),
+          ),
+        );
       _metadata.clear();
     } catch (error, stack) {
       reportStorageError(error, stack);
@@ -92,6 +101,10 @@ class LibraryController extends ChangeNotifier {
   }
 
   /// Adds valid SVG files; invalid ones are reported back by name.
+  ///
+  /// A device rescan can rediscover the same physical file on every launch,
+  /// so an exact same-name + same-content match is skipped instead of creating
+  /// duplicates.
   Future<ImportReport> importFiles(List<ImportedSvg> files) async {
     final imported = <SvgDocument>[];
     final rejected = <String>[];
@@ -100,7 +113,19 @@ class LibraryController extends ChangeNotifier {
         rejected.add(file.name);
         continue;
       }
-      final document = await _repository.create(_uniqueName(file.name), file.content);
+
+      final normalized = SvgDocument.normalizeName(file.name);
+      final alreadyPresent = _documents.any(
+        (document) =>
+            document.name.toLowerCase() == normalized.toLowerCase() &&
+            contentOf(document) == file.content,
+      );
+      if (alreadyPresent) continue;
+
+      final document = await _repository.create(
+        _uniqueName(normalized),
+        file.content,
+      );
       _contents[document.id] = file.content;
       _documents.insert(0, document);
       imported.add(document);
@@ -110,20 +135,32 @@ class LibraryController extends ChangeNotifier {
   }
 
   Future<void> toggleFavorite(SvgDocument document) =>
-      _replace(document, (doc) => doc.copyWith(isFavorite: !doc.isFavorite));
+      _replace(
+        document,
+        (doc) => doc.copyWith(isFavorite: !doc.isFavorite),
+      );
 
   Future<void> markOpened(SvgDocument document) =>
-      _replace(document, (doc) => doc.copyWith(lastOpenedAt: _repository.now()));
+      _replace(
+        document,
+        (doc) => doc.copyWith(lastOpenedAt: _repository.now()),
+      );
 
   Future<SvgDocument?> rename(SvgDocument document, String name) async {
     final normalized = SvgDocument.normalizeName(name);
     if (normalized == document.name) return document;
-    return _replace(document, (doc) => doc.copyWith(name: _uniqueName(normalized)));
+    return _replace(
+      document,
+      (doc) => doc.copyWith(name: _uniqueName(normalized)),
+    );
   }
 
   Future<SvgDocument> duplicate(SvgDocument document) async {
     final content = contentOf(document);
-    final copy = await _repository.create(_uniqueName(document.name), content);
+    final copy = await _repository.create(
+      _uniqueName(document.name),
+      content,
+    );
     _contents[copy.id] = content;
     final index = _documents.indexWhere((doc) => doc.id == document.id);
     _documents.insert(index + 1, copy);
@@ -139,9 +176,11 @@ class LibraryController extends ChangeNotifier {
     await _persist();
   }
 
-  /// Saves edited markup (keeping a backup of the previous version when
-  /// [backup] is true) and returns the updated document.
-  Future<SvgDocument> save(SvgDocument document, String content, {bool backup = false}) async {
+  Future<SvgDocument> save(
+    SvgDocument document,
+    String content, {
+    bool backup = false,
+  }) async {
     final current = byId(document.id) ?? document;
     final updated = await _repository.save(
       current,
@@ -160,7 +199,10 @@ class LibraryController extends ChangeNotifier {
     for (final entry in added) {
       _contents[entry.document.id] = entry.content;
     }
-    _documents = [for (final entry in added) entry.document, ..._documents];
+    _documents = [
+      for (final entry in added) entry.document,
+      ..._documents,
+    ];
     notifyListeners();
   }
 
@@ -192,7 +234,9 @@ class LibraryController extends ChangeNotifier {
   /// [name] or `name-2.svg`, `name-3.svg`... when already taken.
   String _uniqueName(String name) {
     final normalized = SvgDocument.normalizeName(name);
-    final taken = _documents.map((doc) => doc.name.toLowerCase()).toSet();
+    final taken = _documents
+        .map((doc) => doc.name.toLowerCase())
+        .toSet();
     if (!taken.contains(normalized.toLowerCase())) return normalized;
     final base = normalized.substring(0, normalized.length - 4);
     var counter = 2;
