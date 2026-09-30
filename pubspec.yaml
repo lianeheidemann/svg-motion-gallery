@@ -1,0 +1,58 @@
+name: svg_motion_gallery
+description: Gallery for viewing and editing animated SVG files.
+publish_to: "none"
+version: 2.0.0+1
+
+environment:
+  sdk: ^3.13.0
+  flutter: ">=3.47.0"
+
+workspace:
+  - packages/svg_core
+  - packages/svg_view
+  - packages/design_system
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  design_system:
+    path: packages/design_system
+  file_picker: ^13.1.0
+  intl: any
+  path_provider: ^2.1.6
+  share_plus: ^13.3.0
+  shared_preferences: ^2.5.5
+  svg_core:
+    path: packages/svg_core
+  svg_view:
+    path: packages/svg_view
+
+dev_dependencies:
+  flutter_launcher_icons: ^0.14.4
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  generate: true
+  assets:
+    - assets/svgs/
+    - assets/icon/app_logo.png
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  image_path: assets/icon/app_icon.png
+  image_path_ios: assets/icon/app_icon_ios.png
+  min_sdk_android: 21
+  adaptive_icon_background: "#040846"
+  adaptive_icon_foreground: assets/icon/app_icon_foreground.png
+  web:
+    generate: true
+    image_path: assets/icon/app_icon.png
+    background_color: "#070D1A"
+    theme_color: "#1E7BFF"

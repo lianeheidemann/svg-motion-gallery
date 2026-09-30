@@ -1,0 +1,33 @@
+# Shared by the app and every package in packages/ (they include this file).
+include: package:flutter_lints/flutter.yaml
+
+formatter:
+  page_width: 100
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  exclude:
+    - "**/build/**"
+    - "**/*.g.dart"
+    - lib/src/l10n/gen/**
+    - android/**
+    - ios/**
+    - web/**
+    - build/**
+
+linter:
+  rules:
+    - always_declare_return_types
+    - avoid_dynamic_calls
+    - cancel_subscriptions
+    - directives_ordering
+    - prefer_const_constructors
+    - prefer_final_locals
+    - prefer_single_quotes
+    - sort_child_properties_last
+    - unawaited_futures
+    - unnecessary_lambdas
+    - use_super_parameters
