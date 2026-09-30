@@ -17,7 +17,7 @@ import 'panels/insert_panel.dart';
 import 'panels/layers_panel.dart';
 import 'panels/transform_panel.dart';
 
-enum _EditorTab { transform, colors, animation, layers, insert, code }
+enum _EditorTab { transform, colors, layers, insert, animation, code }
 
 /// The single editor: live stage on top, one tab per kind of edit, a
 /// validation/status line at the bottom and one Save button.
@@ -135,19 +135,29 @@ class _EditorScreenState extends State<EditorScreen> {
               children: [
                 _stage(context, editor),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: PillTabs(
-                    labelSelectedOnly: true,
-                    selectedIndex: _tab.index,
-                    onChanged: (index) => setState(() => _tab = _EditorTab.values[index]),
-                    tabs: [
-                      PillTab(l10n.tabTransform, icon: Icons.open_with_rounded),
-                      PillTab(l10n.tabColors, icon: Icons.palette_outlined),
-                      PillTab(l10n.tabAnimation, icon: Icons.animation_rounded),
-                      PillTab(l10n.tabLayers, icon: Icons.layers_outlined),
-                      PillTab(l10n.tabInsert, icon: Icons.add_box_outlined),
-                      PillTab(l10n.tabCode, icon: Icons.code_rounded),
-                    ],
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                      borderRadius: BorderRadius.circular(AppSpacing.radius),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(6),
+                      child: PillTabs(
+                        labelSelectedOnly: true,
+                        selectedIndex: _tab.index,
+                        onChanged: (index) =>
+                            setState(() => _tab = _EditorTab.values[index]),
+                        tabs: [
+                          PillTab(l10n.tabTransform, icon: Icons.open_with_rounded),
+                          PillTab(l10n.tabColors, icon: Icons.palette_outlined),
+                          PillTab(l10n.tabLayers, icon: Icons.layers_outlined),
+                          PillTab(l10n.tabInsert, icon: Icons.add_box_outlined),
+                          PillTab(l10n.tabAnimation, icon: Icons.animation_rounded),
+                          PillTab(l10n.tabCode, icon: Icons.code_rounded),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
                 Expanded(child: _panel(editor)),
@@ -163,10 +173,12 @@ class _EditorScreenState extends State<EditorScreen> {
   PreferredSizeWidget _appBar(BuildContext context, EditorController editor) {
     final l10n = context.l10n;
     return AppBar(
+      toolbarHeight: 68,
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(l10n.editorTitle),
+          const SizedBox(height: 2),
           Text(
             _document!.name,
             overflow: TextOverflow.ellipsis,
@@ -187,7 +199,7 @@ class _EditorScreenState extends State<EditorScreen> {
           icon: const Icon(Icons.redo_rounded),
         ),
         Padding(
-          padding: const EdgeInsets.only(right: 12, left: 4),
+          padding: const EdgeInsets.only(right: 12, left: 6),
           child: FilledButton(
             key: const Key('save'),
             onPressed: editor.canSave && !_saving ? _save : null,
@@ -203,10 +215,11 @@ class _EditorScreenState extends State<EditorScreen> {
     final height = MediaQuery.sizeOf(context).height;
     final stageHeight = _tab == _EditorTab.code
         ? math.min(height * .22, 200.0)
-        : math.min(height * .32, 320.0);
+        : math.min(height * .35, 340.0);
     final layer = editor.selectedLayer;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
       child: Column(
         children: [
           AnimatedContainer(
@@ -216,32 +229,38 @@ class _EditorScreenState extends State<EditorScreen> {
               svg: editor.displaySvg,
               controller: _playback,
               showGrid: true,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(18),
               semanticLabel: l10n.previewOf(_document!.name),
             ),
           ),
-          SizedBox(
-            height: 40,
-            child: Row(
-              children: [
-                Icon(
-                  layer == null ? Icons.select_all_rounded : LayersPanel.iconFor(layer),
-                  size: 18,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    layer == null ? l10n.selectionNone : l10n.selectionLayer(l10n.layer(layer)),
-                    overflow: TextOverflow.ellipsis,
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: SizedBox(
+              height: 38,
+              child: Row(
+                children: [
+                  Icon(
+                    layer == null ? Icons.select_all_rounded : LayersPanel.iconFor(layer),
+                    size: 17,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
-                ),
-                if (layer != null)
-                  TextButton(
-                    onPressed: () => editor.select(null),
-                    child: Text(l10n.clearSelection),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      layer == null
+                          ? l10n.selectionNone
+                          : l10n.selectionLayer(l10n.layer(layer)),
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   ),
-              ],
+                  if (layer != null)
+                    TextButton(
+                      onPressed: () => editor.select(null),
+                      child: Text(l10n.clearSelection),
+                    ),
+                ],
+              ),
             ),
           ),
         ],
@@ -252,9 +271,9 @@ class _EditorScreenState extends State<EditorScreen> {
   Widget _panel(EditorController editor) => switch (_tab) {
     _EditorTab.transform => TransformPanel(editor: editor),
     _EditorTab.colors => ColorsPanel(editor: editor),
-    _EditorTab.animation => AnimationPanel(editor: editor),
     _EditorTab.layers => LayersPanel(editor: editor),
     _EditorTab.insert => InsertPanel(editor: editor),
+    _EditorTab.animation => AnimationPanel(editor: editor),
     _EditorTab.code => CodePanel(editor: editor),
   };
 
