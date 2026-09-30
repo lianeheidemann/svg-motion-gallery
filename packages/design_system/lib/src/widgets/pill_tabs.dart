@@ -10,8 +10,7 @@ class PillTab {
   final IconData? icon;
 }
 
-/// Segmented, horizontally scrollable tab strip in a rounded container
-/// (the "Propriedades | Animação | Cores | Camadas" row of the mockup).
+/// Segmented, horizontally scrollable tab strip in a rounded container.
 ///
 /// With [labelSelectedOnly], unselected tabs show just their icon (label in
 /// a tooltip), so many tabs fit on a phone without hidden options.
@@ -44,27 +43,29 @@ class _PillTabsState extends State<PillTabs> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     return Container(
       decoration: BoxDecoration(
         color: scheme.surface,
         borderRadius: BorderRadius.circular(AppSpacing.radius),
-        border: Border.all(color: scheme.outline),
+        border: Border.all(color: scheme.outline.withValues(alpha: .65)),
       ),
-      padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+      padding: const EdgeInsets.all(4),
       child: SizedBox(
-        height: 52,
+        height: AppSizes.tabHeight,
         child: ListView.separated(
           controller: _controller,
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.only(bottom: 8),
           itemCount: widget.tabs.length,
           separatorBuilder: (_, _) => const SizedBox(width: 2),
           itemBuilder: (context, index) {
             final tab = widget.tabs[index];
             final selected = index == widget.selectedIndex;
-            final color = selected ? Colors.white : scheme.onSurfaceVariant;
-            final showLabel = selected || !widget.labelSelectedOnly || tab.icon == null;
+            final color =
+                selected ? Colors.white : scheme.onSurfaceVariant;
+            final showLabel =
+                selected || !widget.labelSelectedOnly || tab.icon == null;
             return Semantics(
               selected: selected,
               button: true,
@@ -73,22 +74,30 @@ class _PillTabsState extends State<PillTabs> {
                 message: showLabel ? '' : tab.label,
                 child: Material(
                   color: selected ? scheme.primary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
+                  borderRadius:
+                      BorderRadius.circular(AppSpacing.radiusSmall),
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
+                    borderRadius:
+                        BorderRadius.circular(AppSpacing.radiusSmall),
                     onTap: () => widget.onChanged(index),
                     child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: showLabel ? 10 : 8),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: showLabel ? 12 : 10,
+                      ),
                       child: Row(
                         children: [
-                          if (tab.icon != null) Icon(tab.icon, size: 20, color: color),
-                          if (tab.icon != null && showLabel) const SizedBox(width: 6),
+                          if (tab.icon != null)
+                            Icon(tab.icon, size: AppSizes.cardIcon, color: color),
+                          if (tab.icon != null && showLabel)
+                            const SizedBox(width: 6),
                           if (showLabel)
                             Text(
                               tab.label,
-                              style: TextStyle(
+                              style: theme.textTheme.labelLarge?.copyWith(
                                 color: color,
-                                fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                                fontWeight: selected
+                                    ? FontWeight.w700
+                                    : FontWeight.w600,
                               ),
                             ),
                         ],
