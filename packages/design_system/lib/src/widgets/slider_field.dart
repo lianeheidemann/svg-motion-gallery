@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/gallery_colors.dart';
+import '../theme/tokens.dart';
 
 /// A labeled adjustment with a slider bar and a numeric field kept in sync.
 ///
@@ -41,14 +42,16 @@ class SliderField extends StatefulWidget {
 }
 
 class _SliderFieldState extends State<SliderField> {
-  late final TextEditingController _text = TextEditingController(text: _format(widget.value));
+  late final TextEditingController _text =
+      TextEditingController(text: _format(widget.value));
   final _focus = FocusNode();
 
   bool get _enabled => widget.onChanged != null || widget.onChangeEnd != null;
 
   String _format(double value) => value.toStringAsFixed(widget.fractionDigits);
 
-  double _clamp(double value) => value.clamp(widget.min, widget.max).toDouble();
+  double _clamp(double value) =>
+      value.clamp(widget.min, widget.max).toDouble();
 
   @override
   void initState() {
@@ -74,7 +77,9 @@ class _SliderFieldState extends State<SliderField> {
   }
 
   void _submit(String raw) {
-    final parsed = double.tryParse(raw.replaceAll(',', '.').replaceAll(widget.unit, '').trim());
+    final parsed = double.tryParse(
+      raw.replaceAll(',', '.').replaceAll(widget.unit, '').trim(),
+    );
     if (parsed == null) {
       _text.text = _format(widget.value);
       return;
@@ -90,55 +95,69 @@ class _SliderFieldState extends State<SliderField> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final value = _clamp(widget.value);
-    return Row(
-      children: [
-        SizedBox(
-          width: widget.labelWidth,
-          child: Text(
-            widget.label,
-            style: theme.textTheme.bodyMedium,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        SizedBox(
-          width: 76,
-          child: TextField(
-            controller: _text,
-            focusNode: _focus,
-            enabled: _enabled,
-            textAlign: TextAlign.center,
-            keyboardType: TextInputType.numberWithOptions(
-              signed: widget.min < 0,
-              decimal: widget.fractionDigits > 0,
+    return SizedBox(
+      height: AppSizes.inputHeight,
+      child: Row(
+        children: [
+          SizedBox(
+            width: widget.labelWidth,
+            child: Text(
+              widget.label,
+              style: theme.textTheme.bodyMedium,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[-0-9.,]'))],
-            decoration: InputDecoration(
-              suffixText: widget.unit,
-              suffixStyle: TextStyle(color: GalleryColors.of(context).muted),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          ),
+          SizedBox(
+            width: AppSizes.sliderFieldWidth,
+            height: AppSizes.inputHeight,
+            child: TextField(
+              controller: _text,
+              focusNode: _focus,
+              enabled: _enabled,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium,
+              keyboardType: TextInputType.numberWithOptions(
+                signed: widget.min < 0,
+                decimal: widget.fractionDigits > 0,
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[-0-9.,]')),
+              ],
+              decoration: InputDecoration(
+                suffixText: widget.unit,
+                suffixStyle: theme.textTheme.bodySmall?.copyWith(
+                  color: GalleryColors.of(context).muted,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 8,
+                ),
+              ),
+              onSubmitted: _submit,
             ),
-            onSubmitted: _submit,
           ),
-        ),
-        Expanded(
-          child: Slider(
-            value: value,
-            min: widget.min,
-            max: widget.max,
-            divisions: widget.divisions,
-            label: '${_format(value)}${widget.unit}',
-            semanticFormatterCallback: (v) => '${widget.label} ${_format(v)}${widget.unit}',
-            onChanged: _enabled
-                ? (v) {
-                    _text.text = _format(v);
-                    widget.onChanged?.call(v);
-                  }
-                : null,
-            onChangeEnd: widget.onChangeEnd,
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Slider(
+              value: value,
+              min: widget.min,
+              max: widget.max,
+              divisions: widget.divisions,
+              label: '${_format(value)}${widget.unit}',
+              semanticFormatterCallback: (v) =>
+                  '${widget.label} ${_format(v)}${widget.unit}',
+              onChanged: _enabled
+                  ? (v) {
+                      _text.text = _format(v);
+                      widget.onChanged?.call(v);
+                    }
+                  : null,
+              onChangeEnd: widget.onChangeEnd,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
