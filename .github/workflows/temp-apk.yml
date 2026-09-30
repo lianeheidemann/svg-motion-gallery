@@ -34,6 +34,9 @@ jobs:
           (cd packages/design_system && flutter test)
           (cd packages/svg_view && flutter test)
 
+      - name: Generate launcher icons
+        run: dart run flutter_launcher_icons
+
       - name: Read app version
         id: version
         run: |
