@@ -5,8 +5,9 @@ import 'package:flutter/services.dart';
 import 'svg_document.dart';
 import 'svg_storage.dart';
 
-/// Demo files bundled in `assets/svgs/`, in gallery order. The first four
-/// adapt to the light/dark theme.
+/// Demo files bundled in `assets/svgs/` that lead the gallery, in this order
+/// (the first four adapt to the light/dark theme). Any other `.svg` placed in
+/// that folder is bundled too and follows them alphabetically.
 const demoAssets = [
   'butterfly.svg',
   'sun-moon.svg',
@@ -50,13 +51,14 @@ class SvgRepository {
   Future<List<LoadedSvg>> restoreDemos(List<SvgDocument> existing) async {
     final now = _clock();
     final added = <LoadedSvg>[];
-    for (var i = 0; i < demoAssets.length; i++) {
-      final content = await _bundle.loadString('assets/svgs/${demoAssets[i]}');
+    final names = await _demoNames();
+    for (var i = 0; i < names.length; i++) {
+      final content = await _bundle.loadString('assets/svgs/${names[i]}');
       // Earlier demos get newer timestamps so they lead the gallery.
       final created = now.subtract(Duration(seconds: i));
       final document = SvgDocument(
         id: _newId(),
-        name: demoAssets[i],
+        name: names[i],
         sizeBytes: utf8Length(content),
         createdAt: created,
         modifiedAt: created,
@@ -66,6 +68,29 @@ class SvgRepository {
     }
     await writeIndex([...added.map((entry) => entry.document), ...existing]);
     return added;
+  }
+
+  /// The `.svg` files bundled in `assets/svgs/`: the known demos first, then
+  /// whatever else the folder holds. Falls back to [demoAssets] if the asset
+  /// manifest cannot be read.
+  Future<List<String>> _demoNames() async {
+    try {
+      const folder = 'assets/svgs/';
+      final manifest = await AssetManifest.loadFromAssetBundle(_bundle);
+      final found = [
+        for (final asset in manifest.listAssets())
+          if (asset.startsWith(folder) && asset.endsWith('.svg')) asset.substring(folder.length),
+      ]..sort();
+      if (found.isNotEmpty) {
+        return [
+          ...demoAssets.where(found.contains),
+          ...found.where((name) => !demoAssets.contains(name)),
+        ];
+      }
+    } on Object {
+      // Fall through to the built-in list.
+    }
+    return demoAssets;
   }
 
   Future<void> writeIndex(List<SvgDocument> documents) =>

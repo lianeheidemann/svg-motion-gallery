@@ -90,6 +90,7 @@ class _ColorsPanelState extends State<ColorsPanel> {
         else ...[
           Text(l10n.paletteHint, style: TextStyle(color: GalleryColors.of(context).muted)),
           ColorSwatchPicker(
+            size: 28,
             colors: [for (final hex in palette) colorFromHex(hex)!],
             selected: from == null ? null : colorFromHex(from),
             onSelected: (color) => setState(() => _from = colorToHex(color)),
@@ -138,13 +139,15 @@ class _ColorsPanelState extends State<ColorsPanel> {
         ColorPaletteGrid(
           key: const Key('preset-palette'),
           colors: presetColors,
+          size: 24,
+          spacing: 6,
           selected: current,
           onSelected: (color) => commit(colorToHex(color)),
           trailing: [
             ColorDot(
               key: const Key('custom-color'),
               color: current,
-              size: 32,
+              size: 24,
               selected: _custom,
               semanticLabel: l10n.customColor,
               gradient: const SweepGradient(
