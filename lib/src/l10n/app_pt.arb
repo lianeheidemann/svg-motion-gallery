@@ -240,7 +240,9 @@
   "colorsDocument": "Documento",
   "colorsLayer": "Camada",
   "paletteTitle": "Paleta do documento",
-  "paletteHint": "Toque em uma cor e ajuste-a para trocá-la em todo o SVG.",
+  "paletteHint": "Toque em uma cor do SVG e escolha a nova cor na paleta ou ajuste pelos controles.",
+  "presetPalette": "Paleta de cores",
+  "customColor": "Cor personalizada",
   "paletteEmpty": "Nenhuma cor sólida encontrada.",
   "layerPaint": "Pintura de {name}",
   "@layerPaint": {

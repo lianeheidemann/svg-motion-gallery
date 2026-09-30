@@ -35,7 +35,6 @@ class _ColorSwatchPickerState extends State<ColorSwatchPicker> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return SizedBox(
       height: widget.size + 18,
       child: ListView.separated(
@@ -46,33 +45,70 @@ class _ColorSwatchPickerState extends State<ColorSwatchPicker> {
         separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           final color = widget.colors[index];
-          final selected = widget.selected?.toARGB32() == color.toARGB32();
-          final onColor = ThemeData.estimateBrightnessForColor(color) == Brightness.dark
-              ? Colors.white
-              : Colors.black;
-          return Semantics(
-            button: true,
-            selected: selected,
-            label: widget.semanticLabel?.call(color) ?? colorToHex(color),
-            child: InkResponse(
-              onTap: () => widget.onSelected(color),
-              radius: widget.size / 2 + 6,
-              child: Container(
-                width: widget.size,
-                height: widget.size,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: selected ? scheme.onSurface : scheme.outline,
-                    width: selected ? 3 : 1,
-                  ),
-                ),
-                child: selected ? Icon(Icons.check_rounded, size: 18, color: onColor) : null,
-              ),
-            ),
+          return ColorDot(
+            color: color,
+            size: widget.size,
+            selected: widget.selected?.toARGB32() == color.toARGB32(),
+            semanticLabel: widget.semanticLabel?.call(color),
+            onTap: () => widget.onSelected(color),
           );
         },
+      ),
+    );
+  }
+}
+
+/// One round color swatch with a ring (and a check mark) when [selected].
+/// Shared by [ColorSwatchPicker] and `ColorPaletteGrid`.
+class ColorDot extends StatelessWidget {
+  const ColorDot({
+    super.key,
+    required this.color,
+    required this.onTap,
+    this.selected = false,
+    this.size = 36,
+    this.semanticLabel,
+    this.gradient,
+  });
+
+  final Color color;
+
+  /// Paints this instead of the flat [color] (e.g. the rainbow "custom" swatch).
+  final Gradient? gradient;
+  final VoidCallback onTap;
+  final bool selected;
+  final double size;
+
+  /// Accessibility label (defaults to the hex code).
+  final String? semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final onColor = ThemeData.estimateBrightnessForColor(color) == Brightness.dark
+        ? Colors.white
+        : Colors.black;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: semanticLabel ?? colorToHex(color),
+      child: InkResponse(
+        onTap: onTap,
+        radius: size / 2 + 6,
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: gradient == null ? color : null,
+            gradient: gradient,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: selected ? scheme.onSurface : scheme.outline,
+              width: selected ? 3 : 1,
+            ),
+          ),
+          child: selected ? Icon(Icons.check_rounded, size: size / 2, color: onColor) : null,
+        ),
       ),
     );
   }

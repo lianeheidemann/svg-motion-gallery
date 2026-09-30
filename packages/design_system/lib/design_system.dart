@@ -8,6 +8,8 @@ export 'src/theme/gallery_colors.dart';
 export 'src/theme/tokens.dart';
 export 'src/ui_scale.dart';
 export 'src/widgets/chip_bar.dart';
+export 'src/widgets/color_area_picker.dart';
+export 'src/widgets/color_palette_grid.dart';
 export 'src/widgets/color_swatch_picker.dart';
 export 'src/widgets/empty_state.dart';
 export 'src/widgets/hsl_color_editor.dart';

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:svg_core/svg_core.dart';
 
 import '../../../l10n/l10n.dart';
+import '../color_presets.dart';
 import '../editor_controller.dart';
 
 enum _ColorScope { document, layer }
@@ -10,7 +11,8 @@ enum _ColorScope { document, layer }
 enum _PaintTarget { fill, stroke }
 
 /// Recolors the whole document (palette) or paints the selected layer.
-/// Colors are picked with hue/saturation/lightness sliders.
+/// Colors are picked from a palette of ready-made colors and fine-tuned with
+/// hue/saturation/lightness sliders.
 class ColorsPanel extends StatefulWidget {
   const ColorsPanel({super.key, required this.editor});
 
@@ -25,6 +27,7 @@ class _ColorsPanelState extends State<ColorsPanel> {
   _PaintTarget _target = _PaintTarget.fill;
   String? _from;
   double? _liveStrokeWidth;
+  var _custom = false;
 
   EditorController get _editor => widget.editor;
 
@@ -91,7 +94,16 @@ class _ColorsPanelState extends State<ColorsPanel> {
             selected: from == null ? null : colorFromHex(from),
             onSelected: (color) => setState(() => _from = colorToHex(color)),
           ),
-          if (from != null)
+          if (from != null) ...[
+            _presetPalette(
+              l10n,
+              colorFromHex(from)!,
+              preview: (to) => _editor.preview(SvgColors.replace(_editor.svg, from, to)),
+              commit: (to) {
+                _editor.commit(SvgColors.replace(_editor.svg, from, to));
+                setState(() => _from = to);
+              },
+            ),
             HslColorEditor(
               key: ValueKey('replace-$from'),
               color: colorFromHex(from)!,
@@ -104,6 +116,60 @@ class _ColorsPanelState extends State<ColorsPanel> {
                 setState(() => _from = to);
               },
             ),
+          ],
+        ],
+      ],
+    );
+  }
+
+  /// Ready-made colors plus a rainbow swatch that opens a free color picker.
+  /// Both apply through [commit]; dragging in the picker calls [preview].
+  Widget _presetPalette(
+    AppLocalizations l10n,
+    Color current, {
+    required ValueChanged<String> preview,
+    required ValueChanged<String> commit,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(l10n.presetPalette, style: const TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: AppSpacing.sm),
+        ColorPaletteGrid(
+          key: const Key('preset-palette'),
+          colors: presetColors,
+          selected: current,
+          onSelected: (color) => commit(colorToHex(color)),
+          trailing: [
+            ColorDot(
+              key: const Key('custom-color'),
+              color: current,
+              size: 32,
+              selected: _custom,
+              semanticLabel: l10n.customColor,
+              gradient: const SweepGradient(
+                colors: [
+                  Color(0xFFFF0000),
+                  Color(0xFFFFFF00),
+                  Color(0xFF00FF00),
+                  Color(0xFF00FFFF),
+                  Color(0xFF0000FF),
+                  Color(0xFFFF00FF),
+                  Color(0xFFFF0000),
+                ],
+              ),
+              onTap: () => setState(() => _custom = !_custom),
+            ),
+          ],
+        ),
+        if (_custom) ...[
+          const SizedBox(height: AppSpacing.md),
+          ColorAreaPicker(
+            key: const Key('color-area'),
+            color: current,
+            onChanged: (color) => preview(colorToHex(color)),
+            onChangeEnd: (color) => commit(colorToHex(color)),
+          ),
         ],
       ],
     );
@@ -137,6 +203,12 @@ class _ColorsPanelState extends State<ColorsPanel> {
           onSelectionChanged: (value) => setState(() => _target = value.single),
         ),
         Text(l10n.currentPaint(current)),
+        _presetPalette(
+          l10n,
+          colorFromHex(hex ?? '') ?? Theme.of(context).colorScheme.primary,
+          preview: (to) => _editor.preview(apply(_editor.svg, to)),
+          commit: (to) => _editor.commit(apply(_editor.svg, to)),
+        ),
         HslColorEditor(
           key: ValueKey('paint-$path-$_target-$hex'),
           color: colorFromHex(hex ?? '') ?? Theme.of(context).colorScheme.primary,

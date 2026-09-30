@@ -112,6 +112,34 @@ void main() {
     expect(narrowLabel.bottom, lessThanOrEqualTo(narrowSlider.top + 1), reason: 'label above it');
   });
 
+  testWidgets('ColorPaletteGrid wraps every color and reports the tapped one', (tester) async {
+    const colors = [Color(0xFFFF0000), Color(0xFF00FF00), Color(0xFF0000FF)];
+    Color? picked;
+    await tester.pumpWidget(
+      _app(
+        SizedBox(
+          width: 100, // narrower than three swatches in one row
+          child: ColorPaletteGrid(
+            colors: colors,
+            selected: colors[1],
+            size: 32,
+            onSelected: (color) => picked = color,
+          ),
+        ),
+      ),
+    );
+    expect(find.byType(ColorDot), findsNWidgets(3));
+    expect(find.byIcon(Icons.check_rounded), findsOneWidget, reason: 'only the selected one');
+    final tops = {
+      for (final dot in find.byType(ColorDot).evaluate())
+        tester.getTopLeft(find.byWidget(dot.widget)).dy,
+    };
+    expect(tops.length, 2, reason: 'wrapped onto a second row');
+
+    await tester.tap(find.byType(ColorDot).last);
+    expect(picked, colors.last);
+  });
+
   testWidgets('ScrollableChipBar reports the tapped option', (tester) async {
     String? selected;
     await tester.pumpWidget(
