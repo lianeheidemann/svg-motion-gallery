@@ -25,7 +25,14 @@ class AppSettings {
     this.highQualityPreviews = true,
     this.autoBackup = true,
     this.slideshowSeconds = 5,
+    this.uiScale = defaultUiScale,
   });
+
+  /// Interface size limits and default: the whole UI is drawn at this
+  /// fraction of its design size (see `UiScale`).
+  static const minUiScale = 0.5;
+  static const maxUiScale = 1.2;
+  static const defaultUiScale = 0.7;
 
   /// Toggled by the button on the home screen.
   final bool darkMode;
@@ -49,6 +56,10 @@ class AppSettings {
   /// Interval of the viewer's automatic slideshow.
   final int slideshowSeconds;
 
+  /// Size of text, buttons, cards and dialogs, between [minUiScale] and
+  /// [maxUiScale]. Adjusted by a slider in the settings.
+  final double uiScale;
+
   AppSettings copyWith({
     bool? darkMode,
     AppLanguage? language,
@@ -58,6 +69,7 @@ class AppSettings {
     bool? highQualityPreviews,
     bool? autoBackup,
     int? slideshowSeconds,
+    double? uiScale,
   }) => AppSettings(
     darkMode: darkMode ?? this.darkMode,
     language: language ?? this.language,
@@ -67,6 +79,7 @@ class AppSettings {
     highQualityPreviews: highQualityPreviews ?? this.highQualityPreviews,
     autoBackup: autoBackup ?? this.autoBackup,
     slideshowSeconds: slideshowSeconds ?? this.slideshowSeconds,
+    uiScale: uiScale ?? this.uiScale,
   );
 }
 
@@ -95,6 +108,10 @@ class SettingsStore {
         highQualityPreviews: pick('highQualityPreviews', defaults.highQualityPreviews),
         autoBackup: pick('autoBackup', defaults.autoBackup),
         slideshowSeconds: pick('slideshowSeconds', defaults.slideshowSeconds),
+        uiScale: pick(
+          'uiScale',
+          defaults.uiScale,
+        ).clamp(AppSettings.minUiScale, AppSettings.maxUiScale).toDouble(),
       );
     } on MissingPluginException {
       return const AppSettings();
@@ -113,6 +130,7 @@ class SettingsStore {
         prefs.setBool('${_prefix}highQualityPreviews', settings.highQualityPreviews),
         prefs.setBool('${_prefix}autoBackup', settings.autoBackup),
         prefs.setInt('${_prefix}slideshowSeconds', settings.slideshowSeconds),
+        prefs.setDouble('${_prefix}uiScale', settings.uiScale),
       ]);
     } on MissingPluginException {
       // Preferences are optional: the app keeps working in memory.

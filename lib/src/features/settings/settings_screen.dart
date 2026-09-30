@@ -2,6 +2,7 @@ import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 
 import '../../app_scope.dart';
+import '../../data/app_settings.dart';
 import '../../l10n/l10n.dart';
 import '../../widgets/svg_actions_menu.dart';
 
@@ -17,6 +18,11 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   late Future<({int library, int backups})> _usage;
   int? _slideshowSeconds;
+
+  /// Percent shown while the size slider is being dragged. The interface is
+  /// only resized on release: rescaling mid-drag would move the slider away
+  /// from the finger.
+  int? _uiScalePercent;
 
   @override
   void didChangeDependencies() {
@@ -114,6 +120,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   Text(l10n.themeOnHomeHint, style: muted),
+                  const Divider(height: 1),
+                  Text(l10n.uiScaleHint, style: muted),
+                  SliderField(
+                    key: const Key('ui-scale'),
+                    label: l10n.uiScaleTitle,
+                    labelWidth: 120,
+                    value: (_uiScalePercent ?? (value.uiScale * 100).round()).toDouble(),
+                    min: AppSettings.minUiScale * 100,
+                    max: AppSettings.maxUiScale * 100,
+                    divisions: 14,
+                    unit: '%',
+                    onChanged: (v) => setState(() => _uiScalePercent = v.round()),
+                    onChangeEnd: (v) {
+                      _uiScalePercent = null;
+                      settings.setUiScale(v / 100);
+                    },
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      key: const Key('ui-scale-reset'),
+                      onPressed: value.uiScale == AppSettings.defaultUiScale
+                          ? null
+                          : () => settings.setUiScale(AppSettings.defaultUiScale),
+                      icon: const Icon(Icons.restart_alt_rounded),
+                      label: Text(l10n.uiScaleReset),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: AppSpacing.md),

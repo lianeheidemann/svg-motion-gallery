@@ -36,6 +36,8 @@ class SvgMotionGalleryApp extends StatelessWidget {
               GlobalCupertinoLocalizations.delegate,
             ],
             scrollBehavior: const AppScrollBehavior(),
+            // Above the navigator so dialogs, menus and snack bars scale too.
+            builder: (context, child) => UiScale(scale: settings.uiScale, child: child!),
             home: const GalleryScreen(),
           );
         },

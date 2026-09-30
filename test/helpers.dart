@@ -33,7 +33,8 @@ Future<AppServices> createTestServices({
   MemorySvgStorage? storage,
   DeviceStorage? device,
   List<ImportedSvg> importFiles = const [],
-  AppSettings settings = const AppSettings(),
+  // Tests run at the design size; the interface scale has its own tests.
+  AppSettings settings = const AppSettings(uiScale: 1),
 }) async {
   SharedPreferences.setMockInitialValues({});
   final library = LibraryController(SvgRepository(storage ?? MemorySvgStorage()), device: device);

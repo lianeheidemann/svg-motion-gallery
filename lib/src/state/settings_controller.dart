@@ -44,4 +44,11 @@ class SettingsController extends ChangeNotifier {
       _update(_value.copyWith(highQualityPreviews: enabled));
   void setAutoBackup(bool enabled) => _update(_value.copyWith(autoBackup: enabled));
   void setSlideshowSeconds(int seconds) => _update(_value.copyWith(slideshowSeconds: seconds));
+
+  /// Interface size (1 = design size). Kept within the allowed range and to
+  /// whole percents so the slider and the stored value always agree.
+  void setUiScale(double scale) {
+    final clamped = scale.clamp(AppSettings.minUiScale, AppSettings.maxUiScale);
+    _update(_value.copyWith(uiScale: (clamped * 100).round() / 100));
+  }
 }

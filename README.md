@@ -32,7 +32,7 @@ Aplicativo Flutter (Android e iOS, com build web para preview) para **ver, anima
   - Puxe a lista para baixo para procurar de novo.
 - Configurações:
   - reprodução automática, repetir animação, miniaturas em alta qualidade e intervalo da apresentação;
-  - cor de destaque;
+  - cor de destaque e **tamanho da interface** (slider de 50% a 120%, padrão **70%**; "Restaurar padrão" volta para 70%);
   - backup automático antes de salvar;
   - uso de armazenamento, limpar cópias e restaurar exemplos.
 
@@ -66,7 +66,7 @@ design_system      svg_view  ──────▶  svg_core
 |---|---|
 | `packages/svg_core` | Dart puro, sem Flutter. Validação, formatação, metadados, detecção e resolução das variantes claro/escuro, sanitização (remove scripts e handlers), loop, todas as edições (funções `String → String`, imutáveis), realce de sintaxe e histórico de desfazer/refazer. |
 | `packages/svg_view` | `SvgView`: renderiza o SVG preparado (sanitizar → resolver tema → loop → viewBox) com WebView (Android/iOS), iframe (web) ou `flutter_svg` (modo leve e testes, com CSS convertido em atributos). A ponte JS e o `SvgPlaybackController` permitem tocar, pausar, buscar e reiniciar. |
-| `packages/design_system` | Tokens da referência, temas claro/escuro com cor de destaque, `AppScrollBehavior` e widgets reutilizáveis: `SliderField`, `SectionCard`, `PillTabs`, `ScrollableChipBar`, `HslColorEditor`, `ColorSwatchPicker`, `StatusBanner`, `KeyValueTable`, `EmptyState`, `Stage`. |
+| `packages/design_system` | Tokens da referência, temas claro/escuro com cor de destaque, `AppScrollBehavior`, `UiScale` (reduz/aumenta o app inteiro) e widgets reutilizáveis: `SliderField`, `SectionCard`, `PillTabs`, `ScrollableChipBar`, `HslColorEditor`, `ColorSwatchPicker`, `StatusBanner`, `KeyValueTable`, `EmptyState`, `Stage`. |
 | `lib/` (app) | Features (`gallery`, `viewer`, `editor`, `settings`), estado (`ChangeNotifier`), dados (repositório + armazenamento em arquivos/localStorage/memória), serviços (importar, compartilhar), i18n (ARB) e injeção de dependências simples (`AppScope`). |
 
 As variantes claro/escuro são resolvidas em Dart (`SvgThemeResolver`) e não dependem do WebView seguir o tema. Assim o resultado é idêntico no Android, no iOS, na web e no `flutter_svg`, e dá para mostrar as duas versões lado a lado.
@@ -137,12 +137,13 @@ O script roda, na ordem:
 
 Os testes estão divididos assim:
 - `svg_core`: edições, tema, validação etc.
-- `design_system`: widgets e tema.
+- `design_system`: widgets, tema e `UiScale` (tela virtual, toques, `MediaQuery`).
 - `svg_view`: pipeline, HTML hospedeiro e controlador.
 - App:
   - paridade das traduções;
   - repositório e controladores;
   - testes de widget dos fluxos principais: tema, idioma, filtros, importação, variantes, editor e salvar;
+  - tamanho da interface: limites e persistência, colunas da galeria, diálogos, rolagem e o slider (só redimensiona ao soltar);
   - SVGs do celular: operações de arquivo em pastas temporárias, controlador com armazenamento em memória e telas (permissão, banner, seleção e exclusão).
 
 Para ver as telas do celular no navegador (que não lê arquivos do aparelho), há um ponto de entrada de verificação com um "celular" em memória: `flutter build web -t tool/preview_device_main.dart`. Ele não faz parte do app.
