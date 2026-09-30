@@ -86,59 +86,80 @@ class _SliderFieldState extends State<SliderField> {
     widget.onChangeEnd?.call(value);
   }
 
+  /// Width the slider itself needs to stay usable next to the label and field.
+  static const _fieldWidth = 76.0;
+  static const _minSliderWidth = 110.0;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final value = _clamp(widget.value);
-    return Row(
-      children: [
-        SizedBox(
-          width: widget.labelWidth,
-          child: Text(
-            widget.label,
-            style: theme.textTheme.bodyMedium,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+    final label = Text(
+      widget.label,
+      style: theme.textTheme.bodyMedium,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+    );
+    final field = SizedBox(
+      width: _fieldWidth,
+      child: TextField(
+        controller: _text,
+        focusNode: _focus,
+        enabled: _enabled,
+        textAlign: TextAlign.center,
+        keyboardType: TextInputType.numberWithOptions(
+          signed: widget.min < 0,
+          decimal: widget.fractionDigits > 0,
         ),
-        SizedBox(
-          width: 76,
-          child: TextField(
-            controller: _text,
-            focusNode: _focus,
-            enabled: _enabled,
-            textAlign: TextAlign.center,
-            keyboardType: TextInputType.numberWithOptions(
-              signed: widget.min < 0,
-              decimal: widget.fractionDigits > 0,
-            ),
-            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[-0-9.,]'))],
-            decoration: InputDecoration(
-              suffixText: widget.unit,
-              suffixStyle: TextStyle(color: GalleryColors.of(context).muted),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            ),
-            onSubmitted: _submit,
-          ),
+        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[-0-9.,]'))],
+        decoration: InputDecoration(
+          suffixText: widget.unit,
+          suffixStyle: TextStyle(color: GalleryColors.of(context).muted),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         ),
-        Expanded(
-          child: Slider(
-            value: value,
-            min: widget.min,
-            max: widget.max,
-            divisions: widget.divisions,
-            label: '${_format(value)}${widget.unit}',
-            semanticFormatterCallback: (v) => '${widget.label} ${_format(v)}${widget.unit}',
-            onChanged: _enabled
-                ? (v) {
-                    _text.text = _format(v);
-                    widget.onChanged?.call(v);
-                  }
-                : null,
-            onChangeEnd: widget.onChangeEnd,
-          ),
-        ),
-      ],
+        onSubmitted: _submit,
+      ),
+    );
+    final slider = Expanded(
+      child: Slider(
+        value: value,
+        min: widget.min,
+        max: widget.max,
+        divisions: widget.divisions,
+        label: '${_format(value)}${widget.unit}',
+        semanticFormatterCallback: (v) => '${widget.label} ${_format(v)}${widget.unit}',
+        onChanged: _enabled
+            ? (v) {
+                _text.text = _format(v);
+                widget.onChanged?.call(v);
+              }
+            : null,
+        onChangeEnd: widget.onChangeEnd,
+      ),
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // On narrow widths (small phones, a large interface size) the label
+        // moves above the row so the slider keeps its length.
+        final stacked = constraints.maxWidth - widget.labelWidth - _fieldWidth < _minSliderWidth;
+        if (stacked) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              label,
+              Row(children: [field, slider]),
+            ],
+          );
+        }
+        return Row(
+          children: [
+            SizedBox(width: widget.labelWidth, child: label),
+            field,
+            slider,
+          ],
+        );
+      },
     );
   }
 }

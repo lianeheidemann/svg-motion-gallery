@@ -8,6 +8,8 @@ Widget _app(Widget child, {Brightness brightness = Brightness.dark}) => Material
   home: Scaffold(body: child),
 );
 
+void _ignore(double _) {}
+
 void main() {
   group('buildAppTheme', () {
     test('uses the accent and exposes GalleryColors in both brightnesses', () {
@@ -69,6 +71,45 @@ void main() {
     expect(value, 0);
     expect(committed, 0);
     expect(find.widgetWithText(TextField, '0'), findsOneWidget);
+  });
+
+  testWidgets('SliderField keeps a usable slider on narrow widths by stacking the label', (
+    tester,
+  ) async {
+    Future<(Rect, Rect)> pumpAt(double width) async {
+      await tester.pumpWidget(
+        _app(
+          Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: width,
+              child: const SliderField(
+                label: 'Slideshow interval',
+                labelWidth: 120,
+                value: 5,
+                min: 2,
+                max: 30,
+                unit: 's',
+                onChanged: _ignore,
+              ),
+            ),
+          ),
+        ),
+      );
+      return (tester.getRect(find.text('Slideshow interval')), tester.getRect(find.byType(Slider)));
+    }
+
+    final (wideLabel, wideSlider) = await pumpAt(330);
+    expect(wideSlider.width, greaterThanOrEqualTo(110));
+    expect(
+      wideLabel.center.dy,
+      closeTo(wideSlider.center.dy, 20),
+      reason: 'label beside the slider',
+    );
+
+    final (narrowLabel, narrowSlider) = await pumpAt(260);
+    expect(narrowSlider.width, greaterThanOrEqualTo(110));
+    expect(narrowLabel.bottom, lessThanOrEqualTo(narrowSlider.top + 1), reason: 'label above it');
   });
 
   testWidgets('ScrollableChipBar reports the tapped option', (tester) async {
