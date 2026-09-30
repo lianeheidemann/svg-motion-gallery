@@ -1,0 +1,32 @@
+# Reusable quality gate: formatting, localizations, static analysis and the
+# tests of every module (the same script contributors run locally).
+name: Checks
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Format, analyze & test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-flutter
+
+      - name: Run tool/check.sh
+        run: ./tool/check.sh
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: |
+            coverage/lcov.info
+            packages/*/coverage/lcov.info
+          if-no-files-found: ignore

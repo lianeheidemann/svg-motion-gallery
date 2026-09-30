@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+    paths-ignore: ["**.md"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    uses: ./.github/workflows/checks.yml
+
+  android:
+    needs: checks
+    uses: ./.github/workflows/android-build.yml
+
+  web:
+    name: Build web preview
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-flutter
+
+      - name: Build
+        run: flutter build web --release --no-web-resources-cdn
+
+      - name: Upload web build
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-preview
+          path: build/web

@@ -1,0 +1,56 @@
+# Reusable Android build. The run number becomes the versionCode, so every
+# APK installs over the previous one.
+name: Android build
+
+on:
+  workflow_call:
+    outputs:
+      tag:
+        description: Release tag, e.g. v2.0.0-build42
+        value: ${{ jobs.apk.outputs.tag }}
+      artifact:
+        description: Name of the uploaded APK artifact
+        value: ${{ jobs.apk.outputs.artifact }}
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    name: Build release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      artifact: ${{ steps.version.outputs.artifact }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-flutter
+        with:
+          java: "true"
+
+      - name: Read app version
+        id: version
+        run: |
+          version=$(grep '^version:' pubspec.yaml | sed -E 's/version: *([^+]+).*/\1/')
+          tag="v$version-build${{ github.run_number }}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "artifact=svg-motion-gallery-$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Build APK
+        run: >
+          flutter build apk --release
+          --build-name=${{ steps.version.outputs.version }}
+          --build-number=${{ github.run_number }}
+
+      - name: Rename APK
+        run: cp build/app/outputs/flutter-apk/app-release.apk "${{ steps.version.outputs.artifact }}.apk"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.version.outputs.artifact }}
+          path: ${{ steps.version.outputs.artifact }}.apk
+          if-no-files-found: error
