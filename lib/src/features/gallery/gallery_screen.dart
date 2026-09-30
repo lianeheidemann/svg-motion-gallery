@@ -186,8 +186,8 @@ class _GalleryScreenState extends State<GalleryScreen> with WidgetsBindingObserv
 
   // ------------------------------------------------------------ scrolling
 
-  /// While the grid moves, previews are drawn still; they start animating
-  /// again shortly after it stops.
+  /// While the grid moves, cards that appear are drawn still and start
+  /// animating shortly after it stops; cards already live are left alone.
   bool _onScroll(ScrollNotification notification) {
     if (notification is ScrollStartNotification || notification is ScrollUpdateNotification) {
       _scrollIdle?.cancel();

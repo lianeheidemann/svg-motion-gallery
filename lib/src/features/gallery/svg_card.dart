@@ -39,8 +39,15 @@ class SvgCard extends StatefulWidget {
 }
 
 class _SvgCardState extends State<SvgCard> {
+  /// Latches once the card has been shown live. Switching a live preview to a
+  /// still one (and back) on every scroll rebuilt its web view and made the
+  /// whole grid blink, so only cards built mid-scroll start still and turn
+  /// live when the grid rests.
+  var _live = false;
+
   @override
   Widget build(BuildContext context) {
+    if (!widget.stillPreview) _live = true;
     final document = widget.document;
     final library = AppScope.of(context).library;
     final l10n = context.l10n;
@@ -84,7 +91,7 @@ class _SvgCardState extends State<SvgCard> {
                           ? SvgPreview(
                               svg: library.contentOf(document),
                               thumbnail: true,
-                              forceStill: widget.stillPreview,
+                              forceStill: !_live,
                               borderRadius: 0,
                               padding: const EdgeInsets.all(10),
                               semanticLabel: l10n.previewOf(document.name),
