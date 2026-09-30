@@ -31,12 +31,9 @@ class FilePickerSvgImporter implements SvgImporter {
     final files = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['svg'],
-      allowMultiple: true,
     );
-    if (files == null) return const [];
-
     final result = <ImportedSvg>[];
-    for (final file in files.files) {
+    for (final file in files) {
       if (!file.name.toLowerCase().endsWith('.svg')) continue;
       final bytes = await file.readAsBytes();
       result.add(
