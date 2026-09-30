@@ -2,7 +2,7 @@ name: Temporary APK
 
 on:
   push:
-    branches: ["ui-refinement"]
+    branches: ["c-interface-version"]
     paths-ignore: ["**.md"]
   workflow_dispatch:
 
