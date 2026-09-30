@@ -156,6 +156,11 @@ void main() {
     await tester.pumpAndSettle();
 
     await _tapTab(tester, 'Código');
+    expect(
+      tester.widget<TextField>(find.byKey(const Key('code-field'))).style?.fontSize,
+      11,
+      reason: 'the code editor starts at font size 11',
+    );
     await tester.enterText(find.byKey(const Key('code-field')), '<svg><g></svg>');
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.text('SVG inválido'), findsOneWidget);

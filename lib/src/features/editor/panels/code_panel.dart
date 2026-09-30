@@ -64,7 +64,7 @@ class _CodePanelState extends State<CodePanel> {
   late int _revision = widget.editor.revision;
   Timer? _debounce;
   var _wrap = false;
-  var _fontSize = 13.0;
+  var _fontSize = 11.0;
 
   @override
   void didUpdateWidget(covariant CodePanel oldWidget) {
