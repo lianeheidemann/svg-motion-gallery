@@ -37,7 +37,8 @@ class AppPalette {
     stageGrid: Color(0xFFE3E9F4),
   );
 
-  static AppPalette of(Brightness brightness) => brightness == Brightness.dark ? dark : light;
+  static AppPalette of(Brightness brightness) =>
+      brightness == Brightness.dark ? dark : light;
 
   final Color background;
   final Color surface;
@@ -51,7 +52,7 @@ class AppPalette {
   final Color stageGrid;
 }
 
-/// Accent colors offered in Settings (from the mockup).
+/// Accent colors offered in Settings.
 enum AccentColor {
   blue(Color(0xFF1E7BFF)),
   purple(Color(0xFFA04BFF)),
@@ -75,4 +76,32 @@ abstract final class AppSpacing {
   static const radius = 16.0;
   static const radiusSmall = 12.0;
   static const pageGutter = 16.0;
+}
+
+/// Shared component dimensions. Keep interactive controls aligned across
+/// gallery, viewer, editor, settings and dialogs.
+abstract final class AppSizes {
+  static const controlHeight = 48.0;
+  static const compactControlHeight = 40.0;
+  static const inputHeight = 48.0;
+  static const iconButton = 44.0;
+  static const tabHeight = 44.0;
+  static const sliderFieldWidth = 76.0;
+  static const sliderTrackHeight = 4.0;
+  static const sliderThumbRadius = 9.0;
+  static const dialogMaxWidth = 440.0;
+  static const cardIcon = 20.0;
+}
+
+/// Typography scale used by the app UI. SVG source code keeps its own
+/// adjustable monospace size in the code editor.
+abstract final class AppTypeScale {
+  static const caption = 12.0;
+  static const bodySmall = 13.0;
+  static const body = 14.0;
+  static const label = 14.0;
+  static const titleSmall = 15.0;
+  static const title = 16.0;
+  static const heading = 20.0;
+  static const appBar = 20.0;
 }
