@@ -81,32 +81,38 @@ class _GalleryScreenState extends State<GalleryScreen> {
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 72,
-        titleSpacing: AppSpacing.pageGutter,
-        title: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(11),
+        leadingWidth: 58,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.pageGutter),
+          child: Center(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
               child: Image.asset(
                 'assets/icon/app_logo.png',
-                width: 40,
-                height: 40,
+                width: 36,
+                height: 36,
+                fit: BoxFit.cover,
               ),
             ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(l10n.appTitle, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 2),
-                  Text(
-                    l10n.gallerySubtitle,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: GalleryColors.of(context).muted,
-                    ),
-                  ),
-                ],
+          ),
+        ),
+        titleSpacing: AppSpacing.md,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              l10n.appTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              l10n.gallerySubtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: GalleryColors.of(context).muted,
               ),
             ),
           ],
