@@ -306,5 +306,6 @@
   "alignCenterV": "Center vertically",
   "alignBottom": "Align bottom",
   "alignCenter": "Center in the middle",
-  "alignFailed": "Could not measure the layer."
+  "alignFailed": "Could not measure the layer.",
+  "filledShape": "Filled"
 }

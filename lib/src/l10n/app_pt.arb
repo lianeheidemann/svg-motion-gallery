@@ -517,5 +517,6 @@
   "alignCenterV": "Centralizar na vertical",
   "alignBottom": "Alinhar à base",
   "alignCenter": "Centralizar no meio",
-  "alignFailed": "Não foi possível medir a camada."
+  "alignFailed": "Não foi possível medir a camada.",
+  "filledShape": "Preenchida"
 }

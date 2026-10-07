@@ -203,6 +203,23 @@ void main() {
     expect(save().onPressed, isNotNull);
     expect(find.textContaining('Selecionado: Retângulo'), findsOneWidget);
 
+    // New shapes are hollow; the box fills them.
+    CheckboxListTile filled() =>
+        tester.widget<CheckboxListTile>(find.byKey(const Key('selected-filled')));
+    await tester.ensureVisible(find.byKey(const Key('selected-filled')));
+    await tester.pumpAndSettle();
+    expect(filled().value, isFalse);
+    await tester.tap(find.byKey(const Key('selected-filled')));
+    await tester.pumpAndSettle();
+    expect(filled().value, isTrue);
+    await tester.tap(find.byKey(const Key('selected-filled')));
+    await tester.pumpAndSettle();
+    expect(filled().value, isFalse);
+    // Back to the state right after inserting (two undoable steps).
+    await tester.tap(find.byTooltip('Desfazer'));
+    await tester.tap(find.byTooltip('Desfazer'));
+    await tester.pumpAndSettle();
+
     await tester.ensureVisible(find.byKey(const Key('delete-shape')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('delete-shape')));
