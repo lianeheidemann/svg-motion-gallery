@@ -223,6 +223,21 @@ void main() {
     expect(services.library.contentOf(services.library.byId(wave.id)!), _valid);
   });
 
+  testWidgets('pause-all stops the gallery for now without touching the settings', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+
+    expect(find.byTooltip('Pausar animações'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('pause-all')));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Retomar animações'), findsOneWidget);
+    expect(services.settings.value.autoplay, isTrue, reason: 'the setting stays as it was');
+
+    await tester.tap(find.byKey(const Key('pause-all')));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Pausar animações'), findsOneWidget);
+  });
+
   testWidgets('settings change playback and appearance', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);

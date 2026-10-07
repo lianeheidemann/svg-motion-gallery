@@ -31,6 +31,10 @@ class _GalleryScreenState extends State<GalleryScreen> with WidgetsBindingObserv
   Timer? _scrollIdle;
   var _searching = false;
   var _scrolling = false;
+
+  /// "Pause all" button: stops every preview for now. Not a setting, so it is
+  /// forgotten when the screen goes away.
+  var _paused = false;
   var _promptStarted = false;
   var _bannerDismissed = false;
 
@@ -302,6 +306,14 @@ class _GalleryScreenState extends State<GalleryScreen> with WidgetsBindingObserv
       ),
       actions: [
         IconButton(
+          key: const Key('pause-all'),
+          tooltip: _paused ? l10n.resumeAll : l10n.pauseAll,
+          onPressed: () => setState(() => _paused = !_paused),
+          icon: Icon(
+            _paused ? Icons.play_circle_outline_rounded : Icons.pause_circle_outline_rounded,
+          ),
+        ),
+        IconButton(
           tooltip: _searching ? l10n.closeSearch : l10n.search,
           onPressed: _toggleSearch,
           icon: Icon(_searching ? Icons.close_rounded : Icons.search_rounded),
@@ -369,6 +381,7 @@ class _GalleryScreenState extends State<GalleryScreen> with WidgetsBindingObserv
           selecting: _selecting,
           selected: _selected.contains(document.id),
           stillPreview: _scrolling,
+          paused: _paused,
           onTap: () => _selecting ? _toggle(document.id) : _open(ids, index),
           onLongPress: () => _toggle(document.id),
         );

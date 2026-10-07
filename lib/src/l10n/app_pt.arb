@@ -2,6 +2,8 @@
   "@@locale": "pt",
   "appTitle": "SVG Gallery",
   "gallerySubtitle": "Visualize e edite suas animações SVG",
+  "pauseAll": "Pausar animações",
+  "resumeAll": "Retomar animações",
   "search": "Buscar",
   "closeSearch": "Fechar busca",
   "searchHint": "Buscar por nome do arquivo",

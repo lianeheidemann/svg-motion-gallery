@@ -21,6 +21,7 @@ class SvgCard extends StatefulWidget {
     this.selecting = false,
     this.selected = false,
     this.stillPreview = false,
+    this.paused = false,
   });
 
   final SvgDocument document;
@@ -33,6 +34,9 @@ class SvgCard extends StatefulWidget {
 
   /// Draw the lightweight still preview (the grid is scrolling).
   final bool stillPreview;
+
+  /// The gallery's "pause all" is on: show still images instead of animations.
+  final bool paused;
 
   @override
   State<SvgCard> createState() => _SvgCardState();
@@ -91,7 +95,7 @@ class _SvgCardState extends State<SvgCard> {
                           ? SvgPreview(
                               svg: library.contentOf(document),
                               thumbnail: true,
-                              forceStill: !_live,
+                              forceStill: !_live || widget.paused,
                               borderRadius: 0,
                               padding: const EdgeInsets.all(10),
                               semanticLabel: l10n.previewOf(document.name),
