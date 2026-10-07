@@ -16,6 +16,7 @@ import 'panels/colors_panel.dart';
 import 'panels/insert_panel.dart';
 import 'panels/layers_panel.dart';
 import 'panels/transform_panel.dart';
+import 'stage_drag_layer.dart';
 
 enum _EditorTab { transform, colors, animation, layers, insert, code }
 
@@ -212,12 +213,22 @@ class _EditorScreenState extends State<EditorScreen> {
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             height: stageHeight,
-            child: SvgPreview(
-              svg: editor.displaySvg,
-              controller: _playback,
-              showGrid: true,
-              padding: const EdgeInsets.all(16),
-              semanticLabel: l10n.previewOf(_document!.name),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: SvgPreview(
+                    svg: editor.displaySvg,
+                    controller: _playback,
+                    showGrid: true,
+                    padding: const EdgeInsets.all(16),
+                    semanticLabel: l10n.previewOf(_document!.name),
+                  ),
+                ),
+                if (_tab == _EditorTab.insert)
+                  Positioned.fill(
+                    child: StageDragLayer(editor: editor, padding: const EdgeInsets.all(16)),
+                  ),
+              ],
             ),
           ),
           SizedBox(
