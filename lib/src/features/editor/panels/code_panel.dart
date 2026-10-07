@@ -125,28 +125,43 @@ class _CodePanelState extends State<CodePanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            crossAxisAlignment: WrapCrossAlignment.center,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: _format,
+                      icon: const Icon(Icons.format_align_left_rounded, size: 18),
+                      label: Text(l10n.formatCode),
+                    ),
+                    FilterChip(
+                      avatar: Icon(
+                        Icons.wrap_text_rounded,
+                        size: 18,
+                        color: _wrap ? Colors.white : null,
+                      ),
+                      label: Text(
+                        l10n.wrapLines,
+                        style: TextStyle(color: _wrap ? Colors.white : null),
+                      ),
+                      selected: _wrap,
+                      side: BorderSide(color: Theme.of(context).colorScheme.outline),
+                      onSelected: (value) => setState(() => _wrap = value),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
               FilledButton.icon(
                 key: const Key('apply-code'),
                 onPressed: _hasPending ? _apply : null,
                 icon: const Icon(Icons.check_rounded, size: 18),
                 label: Text(l10n.applyCode),
-              ),
-              OutlinedButton.icon(
-                onPressed: _format,
-                icon: const Icon(Icons.format_align_left_rounded, size: 18),
-                label: Text(l10n.formatCode),
-              ),
-              FilterChip(
-                avatar: Icon(Icons.wrap_text_rounded, size: 18, color: _wrap ? Colors.white : null),
-                label: Text(l10n.wrapLines, style: TextStyle(color: _wrap ? Colors.white : null)),
-                selected: _wrap,
-                side: BorderSide(color: Theme.of(context).colorScheme.outline),
-                onSelected: (value) => setState(() => _wrap = value),
               ),
             ],
           ),
