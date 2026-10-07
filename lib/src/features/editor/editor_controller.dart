@@ -10,8 +10,12 @@ typedef EditorSnapshot = ({String svg, ElementPath? selection});
 class EditorController extends ChangeNotifier {
   EditorController(String initialSvg)
     : _history = EditHistory<EditorSnapshot>((svg: initialSvg, selection: null)),
+      _initial = initialSvg,
       _saved = initialSvg,
       _code = initialSvg;
+
+  /// The document as it was when the editor opened.
+  final String _initial;
 
   final EditHistory<EditorSnapshot> _history;
   String _saved;
@@ -100,6 +104,15 @@ class EditorController extends ChangeNotifier {
   /// Records the result of an svg_core edit, including its new selection.
   void apply(SvgEditResult result) =>
       commit(result.svg, selection: result.selection, updateSelection: true);
+
+  /// Whether the document differs from how it was when the editor opened.
+  bool get canReset => svg != _initial;
+
+  /// Throws away every change made since the editor opened. It is itself an
+  /// undoable step, so Undo brings the changes back.
+  void resetAll() {
+    if (canReset) commit(_initial, selection: null, updateSelection: true);
+  }
 
   void undo() => _restore(_history.undo());
 

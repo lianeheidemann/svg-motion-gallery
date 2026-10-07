@@ -8,6 +8,7 @@ import 'package:svg_view/svg_view.dart';
 import '../../app_scope.dart';
 import '../../data/svg_document.dart';
 import '../../l10n/l10n.dart';
+import '../../widgets/app_bar_toggles.dart';
 import '../../widgets/svg_actions_menu.dart';
 import '../../widgets/svg_preview.dart';
 import 'editor_controller.dart';
@@ -88,6 +89,18 @@ class _EditorScreenState extends State<EditorScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  Future<void> _confirmReset(EditorController editor) async {
+    final l10n = context.l10n;
+    final reset = await showConfirmDialog(
+      context,
+      title: l10n.resetTitle,
+      message: l10n.resetMessage,
+      confirm: l10n.resetConfirm,
+      destructive: true,
+    );
+    if (reset) editor.resetAll();
   }
 
   Future<void> _confirmLeave() async {
@@ -215,6 +228,8 @@ class _EditorScreenState extends State<EditorScreen> {
         ],
       ),
       actions: [
+        // Always reachable while editing, whatever the tab.
+        const ThemeToggleButton(),
         IconButton(
           tooltip: l10n.undo,
           onPressed: editor.canUndo ? editor.undo : null,
@@ -306,6 +321,12 @@ class _EditorScreenState extends State<EditorScreen> {
                     onPressed: () => editor.select(null),
                     child: Text(l10n.clearSelection),
                   ),
+                IconButton(
+                  key: const Key('reset-all'),
+                  tooltip: l10n.resetAll,
+                  onPressed: editor.canReset ? () => _confirmReset(editor) : null,
+                  icon: const Icon(Icons.restart_alt_rounded),
+                ),
               ],
             ),
           ),

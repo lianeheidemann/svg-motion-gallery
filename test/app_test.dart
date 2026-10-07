@@ -283,6 +283,60 @@ void main() {
     expect(circles.evaluate().length, before, reason: 'a second double tap opens it again');
   });
 
+  testWidgets('editor: theme toggle is always there and reset-all brings the file back', (
+    tester,
+  ) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+
+    FilledButton save() => tester.widget<FilledButton>(find.byKey(const Key('save')));
+    IconButton reset() => tester.widget<IconButton>(find.byKey(const Key('reset-all')));
+
+    // The theme button stays in the app bar on every tab.
+    final before = _brightness(tester);
+    for (final tab in ['Camadas', 'Transformar', 'Código']) {
+      await _tapTab(tester, tab);
+      expect(find.byKey(const Key('theme-toggle')), findsOneWidget, reason: tab);
+    }
+    await tester.tap(find.byKey(const Key('theme-toggle')));
+    await tester.pumpAndSettle();
+    expect(_brightness(tester), isNot(before));
+
+    expect(reset().onPressed, isNull, reason: 'nothing to reset yet');
+
+    await _tapTab(tester, 'Inserir');
+    await tester.ensureVisible(find.byKey(const Key('insert-shape')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('insert-shape')));
+    await tester.pumpAndSettle();
+    expect(save().onPressed, isNotNull);
+    expect(reset().onPressed, isNotNull);
+
+    await tester.tap(find.byKey(const Key('reset-all')));
+    await tester.pumpAndSettle();
+    expect(find.text('Resetar alterações?'), findsOneWidget);
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    expect(save().onPressed, isNotNull, reason: 'cancelling keeps the changes');
+
+    await tester.tap(find.byKey(const Key('reset-all')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Resetar'));
+    await tester.pumpAndSettle();
+    expect(save().onPressed, isNull, reason: 'back to the opened file');
+    expect(reset().onPressed, isNull);
+
+    await tester.tap(find.byTooltip('Desfazer'));
+    await tester.pumpAndSettle();
+    expect(save().onPressed, isNotNull, reason: 'the reset itself can be undone');
+  });
+
   testWidgets('pause-all stops the gallery for now without touching the settings', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);
