@@ -1,7 +1,6 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:svg_core/svg_core.dart';
 import 'package:svg_motion_gallery/src/features/editor/editor_controller.dart';
 import 'package:svg_motion_gallery/src/features/editor/panels/window_panel.dart';
 import 'package:svg_motion_gallery/src/l10n/l10n.dart';
