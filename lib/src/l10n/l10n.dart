@@ -19,6 +19,7 @@ extension AppLocalizationsFormat on AppLocalizations {
       SvgIssueCode.rootNotSvg => issueRootNotSvg,
       SvgIssueCode.malformedXml =>
         issue.line == null ? issueMalformed : issueMalformedAt(issue.line!, issue.column ?? 0),
+      SvgIssueCode.malformedCss => issue.line == null ? issueCss : issueCssAt(issue.line!),
     };
     return issue.detail == null ? base : '$base — ${issue.detail}';
   }

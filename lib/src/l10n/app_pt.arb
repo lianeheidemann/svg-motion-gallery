@@ -195,6 +195,17 @@
   },
   "issueEmpty": "O documento está vazio.",
   "issueRootNotSvg": "O elemento raiz deve ser <svg>.",
+  "issueCss": "Há um trecho de CSS inválido. O navegador vai ignorá-lo.",
+  "issueCssAt": "Trecho de CSS inválido perto da linha {line}. O navegador vai ignorá-lo.",
+  "@issueCssAt": {
+    "placeholders": {
+      "line": {
+        "type": "int"
+      }
+    }
+  },
+  "svgWarning": "SVG válido, com um aviso",
+  "codeApplied": "Código aplicado",
   "issueMalformed": "XML malformado.",
   "issueMalformedAt": "XML malformado na linha {line}, coluna {column}.",
   "@issueMalformedAt": {

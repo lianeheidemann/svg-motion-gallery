@@ -213,7 +213,26 @@ void main() {
     await tester.tap(find.byKey(const Key('apply-code')));
     await tester.pumpAndSettle();
     expect(find.text('SVG inválido'), findsNothing);
+    expect(find.text('Código aplicado'), findsOneWidget, reason: 'a clean apply is confirmed');
     expect(find.text('SVG válido'), findsNothing, reason: 'shown only after saving');
+
+    // Nonsense inside <style> is still XML: a warning, and saving stays possible.
+    await tester.enterText(
+      find.byKey(const Key('code-field')),
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+      '<style>.a { fill red; }</style><rect width="10" height="10"/></svg>',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('apply-code')));
+    await tester.pumpAndSettle();
+    expect(find.text('SVG válido, com um aviso'), findsOneWidget);
+    expect(save().onPressed, isNotNull);
+
+    await tester.enterText(find.byKey(const Key('code-field')), _valid);
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('apply-code')));
+    await tester.pumpAndSettle();
+    expect(find.text('SVG válido, com um aviso'), findsNothing);
 
     await tester.tap(find.byKey(const Key('save')));
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));

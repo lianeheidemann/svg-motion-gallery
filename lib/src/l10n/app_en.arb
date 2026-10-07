@@ -105,6 +105,17 @@
   "statusSummary": "{dimensions} · {elements}",
   "issueEmpty": "The document is empty.",
   "issueRootNotSvg": "The root element must be <svg>.",
+  "issueCss": "Part of the CSS is invalid. The browser will ignore it.",
+  "issueCssAt": "Invalid CSS near line {line}. The browser will ignore it.",
+  "@issueCssAt": {
+    "placeholders": {
+      "line": {
+        "type": "int"
+      }
+    }
+  },
+  "svgWarning": "Valid SVG, with a warning",
+  "codeApplied": "Code applied",
   "issueMalformed": "Malformed XML.",
   "issueMalformedAt": "Malformed XML at line {line}, column {column}.",
   "selectionNone": "No layer selected · editing the whole drawing",

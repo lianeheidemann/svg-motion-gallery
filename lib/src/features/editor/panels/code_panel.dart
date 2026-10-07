@@ -87,7 +87,16 @@ class _CodePanelState extends State<CodePanel> {
 
   bool get _hasPending => _code.text != widget.editor.code;
 
-  void _apply() => widget.editor.updateCode(_code.text);
+  void _apply() {
+    widget.editor.updateCode(_code.text);
+    final validation = widget.editor.validation;
+    // Errors and warnings have their own banner; confirm only a clean apply.
+    if (validation.isValid && validation.warning == null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(context.l10n.codeApplied)));
+    }
+  }
 
   void _format() {
     _apply();

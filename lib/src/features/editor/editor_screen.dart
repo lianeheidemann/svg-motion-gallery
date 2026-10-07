@@ -72,7 +72,9 @@ class _EditorScreenState extends State<EditorScreen> {
       );
       editor.markSaved();
       _justSaved = true;
-      messenger.showSnackBar(SnackBar(content: Text(l10n.saved)));
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(l10n.saved)));
       return true;
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text(l10n.saveFailed)));
@@ -277,8 +279,20 @@ class _EditorScreenState extends State<EditorScreen> {
     final l10n = context.l10n;
     final issue = editor.validation.issue;
     final metadata = editor.metadata;
+    final warning = editor.validation.warning;
     final showValid = _justSaved && !editor.hasUnsavedChanges;
-    if (issue == null && !showValid) return const SizedBox.shrink();
+    if (issue == null && warning == null && !showValid) return const SizedBox.shrink();
+    if (issue == null && warning != null) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+        child: StatusBanner(
+          ok: false,
+          warning: true,
+          title: l10n.svgWarning,
+          message: l10n.issueMessage(warning),
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       child: StatusBanner(
