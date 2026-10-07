@@ -170,6 +170,8 @@
       }
     }
   },
+  "deleteSelectedElement": "Delete selected element",
+  "resizeHandle": "Resize",
   "layerAnimated": "Animated",
   "layerEditorGroup": "Editor adjustment",
   "hideLayer": "Hide layer",

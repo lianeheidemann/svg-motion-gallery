@@ -63,6 +63,11 @@ class _InsertPanelState extends State<InsertPanel> {
     final l10n = context.l10n;
     final palette = [for (final hex in widget.editor.palette) colorFromHex(hex)!];
     final color = _color ?? Theme.of(context).colorScheme.primary;
+    final selection = widget.editor.selection;
+    final selectedShape =
+        selection != null && SvgHitTest.movables(widget.editor.svg).any((m) => m.path == selection)
+        ? selection
+        : null;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
@@ -171,22 +176,33 @@ class _InsertPanelState extends State<InsertPanel> {
                 controller: _text,
                 decoration: InputDecoration(labelText: l10n.textContent),
               ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: FilledButton.icon(
-                key: const Key('insert-shape'),
-                onPressed: () => widget.editor.apply(
-                  SvgInsertEdit.insert(
-                    widget.editor.svg,
-                    _kind,
-                    color: colorToHex(color),
-                    size: _size / 100,
-                    text: _text!.text,
-                  ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton.outlined(
+                  key: const Key('delete-shape'),
+                  tooltip: l10n.deleteSelectedElement,
+                  onPressed: selectedShape == null
+                      ? null
+                      : () =>
+                            widget.editor.apply(SvgLayers.remove(widget.editor.svg, selectedShape)),
+                  icon: const Icon(Icons.delete_outline_rounded),
                 ),
-                icon: const Icon(Icons.add_rounded),
-                label: Text(l10n.insertAction),
-              ),
+                FilledButton.icon(
+                  key: const Key('insert-shape'),
+                  onPressed: () => widget.editor.apply(
+                    SvgInsertEdit.insert(
+                      widget.editor.svg,
+                      _kind,
+                      color: colorToHex(color),
+                      size: _size / 100,
+                      text: _text!.text,
+                    ),
+                  ),
+                  icon: const Icon(Icons.add_rounded),
+                  label: Text(l10n.insertAction),
+                ),
+              ],
             ),
           ],
         ),

@@ -319,6 +319,8 @@
       }
     }
   },
+  "deleteSelectedElement": "Excluir elemento selecionado",
+  "resizeHandle": "Redimensionar",
   "layerAnimated": "Animado",
   "layerEditorGroup": "Ajuste do editor",
   "hideLayer": "Ocultar camada",

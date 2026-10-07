@@ -152,6 +152,23 @@ void main() {
     expect(save().onPressed, isNotNull);
     expect(find.textContaining('Selecionado: Retângulo'), findsOneWidget);
 
+    await tester.ensureVisible(find.byKey(const Key('delete-shape')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('delete-shape')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Selecionado: Retângulo'), findsNothing);
+    await tester.tap(find.byTooltip('Desfazer'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Selecionado: Retângulo'), findsOneWidget);
+
+    await tester.drag(find.byKey(const Key('resize-handle')), const Offset(30, 30));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Camadas');
+    expect(find.text('Ajuste do editor'), findsWidgets, reason: 'resizing adds a transform group');
+    await tester.tap(find.byTooltip('Desfazer'));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Inserir');
+
     await tester.tap(find.byTooltip('Desfazer'));
     await tester.pumpAndSettle();
     expect(save().onPressed, isNull);
