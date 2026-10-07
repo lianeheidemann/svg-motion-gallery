@@ -214,6 +214,7 @@
   "defaultText": "Hello",
   "insertAction": "Insert",
   "applyCode": "Apply",
+  "autoFormat": "Auto format",
   "formatCode": "Format",
   "wrapLines": "Wrap lines",
   "fontSize": "Font",

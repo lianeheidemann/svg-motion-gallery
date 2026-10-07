@@ -363,6 +363,7 @@
   "defaultText": "Olá",
   "insertAction": "Adicionar",
   "applyCode": "Aplicar",
+  "autoFormat": "Formatação automática",
   "formatCode": "Formatar",
   "wrapLines": "Quebrar linhas",
   "fontSize": "Fonte",

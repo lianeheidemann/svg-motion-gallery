@@ -337,6 +337,49 @@ void main() {
     expect(save().onPressed, isNotNull, reason: 'the reset itself can be undone');
   });
 
+  testWidgets('code: auto format indents a one-line file and keeps formatting what is applied', (
+    tester,
+  ) async {
+    const minified =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><g><rect width="5" height="5"/></g></svg>';
+    final services = await _services(tester, files: [(name: 'min.svg', content: minified)]);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('Importar SVG'));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 6)); // let the import notice go away
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('min.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+
+    String code() => tester.widget<TextField>(find.byKey(const Key('code-field'))).controller!.text;
+    FilledButton save() => tester.widget<FilledButton>(find.byKey(const Key('save')));
+
+    await _tapTab(tester, 'Código');
+    expect(code(), isNot(contains('\n')), reason: 'the file is a single line');
+    expect(save().onPressed, isNull);
+
+    await tester.tap(find.byKey(const Key('auto-format')));
+    await tester.pumpAndSettle();
+    expect(services.settings.value.autoFormatCode, isTrue);
+    expect(code(), contains('\n'), reason: 'now one tag per line');
+    expect(save().onPressed, isNotNull, reason: 'formatting is a change to save');
+
+    // What is typed is formatted when applied.
+    await tester.enterText(find.byKey(const Key('code-field')), minified);
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('apply-code')));
+    await tester.pumpAndSettle();
+    expect(code(), contains('\n'));
+
+    await tester.tap(find.byKey(const Key('auto-format')));
+    await tester.pumpAndSettle();
+    expect(services.settings.value.autoFormatCode, isFalse);
+  });
+
   testWidgets('pause-all stops the gallery for now without touching the settings', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);

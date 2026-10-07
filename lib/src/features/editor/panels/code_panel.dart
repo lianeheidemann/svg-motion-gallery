@@ -2,6 +2,7 @@ import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:svg_core/svg_core.dart';
 
+import '../../../app_scope.dart';
 import '../../../l10n/l10n.dart';
 import '../editor_controller.dart';
 
@@ -62,6 +63,18 @@ class _CodePanelState extends State<CodePanel> {
   late int _revision = widget.editor.revision;
   var _wrap = false;
   var _fontSize = 11.0;
+  var _checkedAuto = false;
+
+  bool get _auto => AppScope.of(context).settings.value.autoFormatCode;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_checkedAuto) {
+      _checkedAuto = true;
+      _autoFormat();
+    }
+  }
 
   @override
   void didUpdateWidget(covariant CodePanel oldWidget) {
@@ -69,7 +82,24 @@ class _CodePanelState extends State<CodePanel> {
     if (widget.editor.revision != _revision) {
       _revision = widget.editor.revision;
       _code.text = widget.editor.code;
+      _autoFormat();
     }
+  }
+
+  /// With automatic formatting on, brings the document to one tag per line.
+  /// Never touches text the user is still typing, and is a no-op once the
+  /// document is already formatted. Deferred: the editor notifies listeners.
+  void _autoFormat() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_auto || _hasPending) return;
+      final formatted = formatSvg(widget.editor.code);
+      if (formatted != null && formatted != widget.editor.code) widget.editor.formatCode();
+    });
+  }
+
+  void _toggleAuto(bool value) {
+    AppScope.of(context).settings.setAutoFormatCode(value);
+    if (value) _autoFormat();
   }
 
   @override
@@ -88,6 +118,11 @@ class _CodePanelState extends State<CodePanel> {
   bool get _hasPending => _code.text != widget.editor.code;
 
   void _apply() {
+    if (_auto) {
+      // The typed text is formatted as it is applied.
+      final formatted = formatSvg(_code.text);
+      if (formatted != null) _code.text = formatted;
+    }
     widget.editor.updateCode(_code.text);
     final validation = widget.editor.validation;
     // Errors and warnings have their own banner; confirm only a clean apply.
@@ -147,6 +182,21 @@ class _CodePanelState extends State<CodePanel> {
                       onPressed: _format,
                       icon: const Icon(Icons.format_align_left_rounded, size: 18),
                       label: Text(l10n.formatCode),
+                    ),
+                    FilterChip(
+                      key: const Key('auto-format'),
+                      avatar: Icon(
+                        Icons.auto_fix_high_rounded,
+                        size: 18,
+                        color: _auto ? Colors.white : null,
+                      ),
+                      label: Text(
+                        l10n.autoFormat,
+                        style: TextStyle(color: _auto ? Colors.white : null),
+                      ),
+                      selected: _auto,
+                      side: BorderSide(color: Theme.of(context).colorScheme.outline),
+                      onSelected: _toggleAuto,
                     ),
                     FilterChip(
                       avatar: Icon(
