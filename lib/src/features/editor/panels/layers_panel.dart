@@ -276,6 +276,7 @@ class _SelectedLayerActions extends StatelessWidget {
     );
   }
 
+  /// Icon only (the meaning is in the tooltip).
   Widget _action(IconData icon, String label, VoidCallback onPressed) =>
-      OutlinedButton.icon(onPressed: onPressed, icon: Icon(icon, size: 18), label: Text(label));
+      IconButton.outlined(tooltip: label, onPressed: onPressed, icon: Icon(icon, size: 20));
 }

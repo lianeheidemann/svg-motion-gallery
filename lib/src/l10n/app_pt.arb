@@ -517,5 +517,15 @@
   "tabWindow": "Janela",
   "tabText": "Texto",
   "insertTextTitle": "Inserir texto",
-  "autoFormatSubtitle": "Organiza o código do editor sozinho (uma tag por linha). O botão Formatar faz isso na hora, quando está desligada."
+  "autoFormatSubtitle": "Organiza o código do editor sozinho (uma tag por linha). O botão Formatar faz isso na hora, quando está desligada.",
+  "tabAlign": "Alinhar",
+  "alignTitle": "Alinhar à área do desenho",
+  "alignLeft": "Alinhar à esquerda",
+  "alignCenterH": "Centralizar na horizontal",
+  "alignRight": "Alinhar à direita",
+  "alignTop": "Alinhar ao topo",
+  "alignCenterV": "Centralizar na vertical",
+  "alignBottom": "Alinhar à base",
+  "alignCenter": "Centralizar no meio",
+  "alignFailed": "Não foi possível medir a camada."
 }

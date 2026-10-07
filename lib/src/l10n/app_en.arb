@@ -299,5 +299,15 @@
   "tabWindow": "Window",
   "tabText": "Text",
   "insertTextTitle": "Insert text",
-  "autoFormatSubtitle": "Keeps the editor code tidy by itself (one tag per line). The Format button does it on demand when this is off."
+  "autoFormatSubtitle": "Keeps the editor code tidy by itself (one tag per line). The Format button does it on demand when this is off.",
+  "tabAlign": "Align",
+  "alignTitle": "Align to the drawing area",
+  "alignLeft": "Align left",
+  "alignCenterH": "Center horizontally",
+  "alignRight": "Align right",
+  "alignTop": "Align top",
+  "alignCenterV": "Center vertically",
+  "alignBottom": "Align bottom",
+  "alignCenter": "Center in the middle",
+  "alignFailed": "Could not measure the layer."
 }

@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:ui' show Rect;
+import 'dart:ui' show Offset, Rect;
 
 import 'package:flutter/foundation.dart';
 
@@ -71,6 +71,27 @@ class SvgPlaybackController extends ChangeNotifier {
         return null;
       },
     );
+  }
+
+  /// How far the selected element has to move, in the units of its parent, to
+  /// line up with the canvas: [horizontal] and [vertical] are `start`,
+  /// `center`, `end` or empty to leave that axis alone. Null when nothing is
+  /// selected or the renderer cannot tell.
+  Future<Offset?> alignmentOffset({String horizontal = '', String vertical = ''}) {
+    final target = _target;
+    if (target == null || _selection == null) return Future.value();
+    _measuring?.complete();
+    final done = _measuring = Completer<Rect?>();
+    target.invoke('alignSelection', [horizontal, vertical]);
+    return done.future
+        .timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            if (identical(_measuring, done)) _measuring = null;
+            return null;
+          },
+        )
+        .then((box) => box == null ? null : Offset(box.left, box.top));
   }
 
   /// Called by renderers with the answer to [measureContent].

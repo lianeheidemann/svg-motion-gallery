@@ -125,6 +125,24 @@ void main() {
       expect(await empty, isNull, reason: 'nothing is drawn');
     });
 
+    test('asks the renderer how far the selection must move to align', () async {
+      final controller = SvgPlaybackController();
+      expect(await controller.alignmentOffset(horizontal: 'start'), isNull, reason: 'no renderer');
+      final target = _FakeTarget();
+      controller.attach(target);
+      expect(
+        await controller.alignmentOffset(horizontal: 'start'),
+        isNull,
+        reason: 'nothing selected',
+      );
+      controller.selectElement([0]);
+      final pending = controller.alignmentOffset(horizontal: 'center', vertical: 'end');
+      expect(target.calls.last.$1, 'alignSelection');
+      expect(target.calls.last.$2, ['center', 'end']);
+      controller.reportMeasure([-3.5, 12, 0, 0]);
+      expect(await pending, const Offset(-3.5, 12));
+    });
+
     test('ignores the renderer report that arrives right after a seek', () {
       final controller = SvgPlaybackController(cycle: const Duration(seconds: 2));
       controller.seekFraction(0.5);
