@@ -118,7 +118,7 @@
   "codeApplied": "Code applied",
   "issueMalformed": "Malformed XML.",
   "issueMalformedAt": "Malformed XML at line {line}, column {column}.",
-  "selectionNone": "No layer selected · editing the whole drawing",
+  "selectionNone": "Selected: All",
   "selectionLayer": "Selected: {name}",
   "clearSelection": "Clear selection",
   "selectLayerHint": "Select a layer in the Layers tab to edit only that layer.",

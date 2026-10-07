@@ -218,7 +218,7 @@
       }
     }
   },
-  "selectionNone": "Nenhuma camada selecionada · editando o desenho inteiro",
+  "selectionNone": "Selecionado: Todas",
   "selectionLayer": "Selecionado: {name}",
   "@selectionLayer": {
     "placeholders": {

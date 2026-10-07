@@ -250,6 +250,39 @@ void main() {
     expect(services.library.contentOf(services.library.byId(wave.id)!), _valid);
   });
 
+  testWidgets('layers: double tap folds a folder; "Todas" while nothing is selected', (
+    tester,
+  ) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+
+    await tester.tap(find.text('sun-moon.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Selecionado: Todas'), findsOneWidget);
+
+    final circles = find.text('Círculo');
+    final before = circles.evaluate().length;
+    expect(before, greaterThan(0));
+    final folder = find.text('Grupo').first;
+    await tester.ensureVisible(folder);
+    await tester.pumpAndSettle();
+    await tester.tap(folder);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(folder);
+    await tester.pumpAndSettle();
+    expect(circles.evaluate().length, lessThan(before), reason: 'the folder hides its layers');
+
+    await tester.tap(find.text('Grupo').first);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.text('Grupo').first);
+    await tester.pumpAndSettle();
+    expect(circles.evaluate().length, before, reason: 'a second double tap opens it again');
+  });
+
   testWidgets('pause-all stops the gallery for now without touching the settings', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);
