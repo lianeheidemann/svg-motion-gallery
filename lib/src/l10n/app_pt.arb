@@ -333,6 +333,7 @@
   "color": "Cor",
   "defaultText": "Olá",
   "insertAction": "Adicionar",
+  "applyCode": "Aplicar",
   "formatCode": "Formatar",
   "wrapLines": "Quebrar linhas",
   "fontSize": "Fonte",

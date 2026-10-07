@@ -184,6 +184,7 @@
   "color": "Color",
   "defaultText": "Hello",
   "insertAction": "Insert",
+  "applyCode": "Apply",
   "formatCode": "Format",
   "wrapLines": "Wrap lines",
   "fontSize": "Font",

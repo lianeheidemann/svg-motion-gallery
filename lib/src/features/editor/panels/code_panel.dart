@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:svg_core/svg_core.dart';
@@ -46,8 +44,8 @@ class SvgCodeController extends TextEditingController {
 }
 
 /// Source editor with highlighting, line numbers, optional wrapping, a font
-/// size slider and formatting. Valid edits reach the preview after a short
-/// pause in typing.
+/// size slider and formatting. Typing is only validated and applied to the
+/// preview when the user taps Apply (or Format).
 class CodePanel extends StatefulWidget {
   const CodePanel({super.key, required this.editor});
 
@@ -62,7 +60,6 @@ class _CodePanelState extends State<CodePanel> {
   final _vertical = ScrollController();
   final _horizontal = ScrollController();
   late int _revision = widget.editor.revision;
-  Timer? _debounce;
   var _wrap = false;
   var _fontSize = 11.0;
 
@@ -71,14 +68,12 @@ class _CodePanelState extends State<CodePanel> {
     super.didUpdateWidget(oldWidget);
     if (widget.editor.revision != _revision) {
       _revision = widget.editor.revision;
-      _debounce?.cancel();
       _code.text = widget.editor.code;
     }
   }
 
   @override
   void dispose() {
-    _debounce?.cancel();
     // Keep typing that has not reached the editor yet (e.g. when switching
     // tabs). Deferred because listeners must not rebuild during disposal.
     final pending = _code.text;
@@ -90,10 +85,13 @@ class _CodePanelState extends State<CodePanel> {
     super.dispose();
   }
 
-  void _onChanged(String text) {
-    setState(() {});
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 450), () => widget.editor.updateCode(text));
+  bool get _hasPending => _code.text != widget.editor.code;
+
+  void _apply() => widget.editor.updateCode(_code.text);
+
+  void _format() {
+    _apply();
+    if (widget.editor.validation.isValid) widget.editor.formatCode();
   }
 
   @override
@@ -113,7 +111,7 @@ class _CodePanelState extends State<CodePanel> {
     final field = TextField(
       key: const Key('code-field'),
       controller: _code,
-      onChanged: _onChanged,
+      onChanged: (_) => setState(() {}),
       maxLines: null,
       style: style,
       keyboardType: TextInputType.multiline,
@@ -132,8 +130,14 @@ class _CodePanelState extends State<CodePanel> {
             runSpacing: 4,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
+              FilledButton.icon(
+                key: const Key('apply-code'),
+                onPressed: _hasPending ? _apply : null,
+                icon: const Icon(Icons.check_rounded, size: 18),
+                label: Text(l10n.applyCode),
+              ),
               OutlinedButton.icon(
-                onPressed: widget.editor.validation.isValid ? widget.editor.formatCode : null,
+                onPressed: _format,
                 icon: const Icon(Icons.format_align_left_rounded, size: 18),
                 label: Text(l10n.formatCode),
               ),

@@ -166,11 +166,16 @@ void main() {
     );
     await tester.enterText(find.byKey(const Key('code-field')), '<svg><g></svg>');
     await tester.pump(const Duration(milliseconds: 600));
+    expect(find.text('SVG inválido'), findsNothing, reason: 'validated only on Apply');
+    await tester.tap(find.byKey(const Key('apply-code')));
+    await tester.pumpAndSettle();
     expect(find.text('SVG inválido'), findsOneWidget);
     expect(save().onPressed, isNull);
 
     await tester.enterText(find.byKey(const Key('code-field')), _valid);
-    await tester.pump(const Duration(milliseconds: 600));
+    await tester.tap(find.byKey(const Key('apply-code')));
+    await tester.pumpAndSettle();
+    expect(find.text('SVG inválido'), findsNothing);
     expect(find.text('SVG válido'), findsNothing, reason: 'shown only after saving');
 
     await tester.tap(find.byKey(const Key('save')));
