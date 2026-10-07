@@ -131,6 +131,33 @@ void main() {
     expect(find.text('Editar SVG'), findsOneWidget, reason: 'a single edit button');
   });
 
+  testWidgets('editor crops the window and has a separate text tab', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+
+    await _tapTab(tester, 'Texto');
+    expect(find.text('Inserir texto'), findsOneWidget);
+    expect(find.text('Retângulo'), findsNothing);
+    await _tapTab(tester, 'Inserir');
+    expect(find.text('Retângulo'), findsOneWidget);
+
+    await _tapTab(tester, 'Janela');
+    expect(find.byKey(const Key('ratio-1:1')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('ratio-1:1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('ratio-9:16')));
+    await tester.pumpAndSettle();
+    final restore = tester.widget<IconButton>(find.byKey(const Key('window-restore')));
+    expect(restore.onPressed, isNotNull, reason: 'the window was cropped');
+    await tester.tap(find.byKey(const Key('window-restore')));
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('editor inserts a shape, undoes, validates code and saves', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:svg_core/svg_core.dart';
+import 'package:svg_view/src/playback_controller.dart' show SvgPlaybackTarget;
 import 'package:svg_view/svg_view.dart';
 
 const adaptive = '''
@@ -104,6 +105,24 @@ void main() {
       final html = buildHostHtml(svg: '<svg/>', scheme: SvgColorScheme.dark, bridge: true);
       expect(html, contains('select: function(path)'));
       expect(html, contains('b: boxOf()'));
+      expect(html, contains('measure: function(cycle, steps)'));
+    });
+
+    test('measures the content through the renderer and reports null when it cannot', () async {
+      final controller = SvgPlaybackController(cycle: const Duration(seconds: 2));
+      expect(await controller.measureContent(), isNull, reason: 'no renderer attached');
+
+      final target = _FakeTarget();
+      controller.attach(target);
+      final pending = controller.measureContent(cycle: const Duration(seconds: 2), samples: 10);
+      expect(target.calls.last.$1, 'measure');
+      expect(target.calls.last.$2, [2.0, 10]);
+      controller.reportMeasure([1, 2, 30, 40]);
+      expect(await pending, const Rect.fromLTWH(1, 2, 30, 40));
+
+      final empty = controller.measureContent();
+      controller.reportMeasure(null);
+      expect(await empty, isNull, reason: 'nothing is drawn');
     });
 
     test('ignores the renderer report that arrives right after a seek', () {
@@ -124,4 +143,12 @@ void main() {
     expect(find.byType(SvgPicture), findsOneWidget);
     expect(find.bySemanticsLabel('Preview'), findsOneWidget);
   });
+}
+
+class _FakeTarget implements SvgPlaybackTarget {
+  final calls = <(String, List<Object?>)>[];
+
+  @override
+  void invoke(String method, [List<Object?> arguments = const []]) =>
+      calls.add((method, arguments));
 }

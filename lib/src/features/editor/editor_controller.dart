@@ -16,6 +16,7 @@ class EditorController extends ChangeNotifier {
 
   /// The document as it was when the editor opened.
   final String _initial;
+  String get initialSvg => _initial;
 
   final EditHistory<EditorSnapshot> _history;
   String _saved;

@@ -46,6 +46,9 @@ class _StageDragLayerState extends State<StageDragLayer> {
   var _focalStart = Offset.zero;
   var _pointerCount = 0;
 
+  /// Where the first finger of the current touch landed.
+  Offset? _touchDown;
+
   // Corner handles.
   Offset _handleCenter = Offset.zero;
   var _handleStartDistance = 1.0;
@@ -102,12 +105,15 @@ class _StageDragLayerState extends State<StageDragLayer> {
   }
 
   void _bodyStart(ScaleStartDetails d, Size size) {
-    final hit = _hit(d.localFocalPoint, _mapping(size));
+    // The recognizer only starts after the finger moved past the touch slop;
+    // measure from where it first touched, so that part is not lost.
+    final from = _touchDown ?? d.localFocalPoint;
+    final hit = _hit(from, _mapping(size));
     if (hit == null) return;
     if (_editor.selection != hit.path) _editor.select(hit.path);
     setState(() {
       _reset(hit);
-      _focalStart = d.localFocalPoint;
+      _focalStart = from;
       _pointerCount = d.pointerCount;
     });
   }
@@ -178,17 +184,19 @@ class _StageDragLayerState extends State<StageDragLayer> {
     final offset = _offset;
     final factor = _factor;
     final angle = _angle;
+    // Reset wipes the starting values, so keep them for the edit below.
+    final start = _start;
     setState(() => _reset(null));
     if ((offset == Offset.zero && factor == 1 && angle == 0) || !map.isUsable) return;
     _editor.apply(
       SvgTransformEdit.apply(
         _editor.svg,
         target.path,
-        _start.copyWith(
-          translateX: _start.translateX + offset.dx / map.scale,
-          translateY: _start.translateY + offset.dy / map.scale,
-          scale: (_start.scale * factor).clamp(_minFactor, _maxFactor),
-          rotation: _fold(_start.rotation + angle),
+        start.copyWith(
+          translateX: start.translateX + offset.dx / map.scale,
+          translateY: start.translateY + offset.dy / map.scale,
+          scale: (start.scale * factor).clamp(_minFactor, _maxFactor),
+          rotation: _fold(start.rotation + angle),
         ),
       ),
     );
@@ -230,16 +238,21 @@ class _StageDragLayerState extends State<StageDragLayer> {
         return Stack(
           children: [
             Positioned.fill(
-              child: GestureDetector(
-                key: const Key('stage-drag'),
-                behavior: HitTestBehavior.opaque,
-                onTapUp: (d) => _tap(d.localPosition, size),
-                onScaleStart: (d) => _bodyStart(d, size),
-                onScaleUpdate: _bodyUpdate,
-                onScaleEnd: (_) => _end(size),
-                child: CustomPaint(
-                  size: size,
-                  painter: _OutlinePainter(outline, turn, color, active: _target != null),
+              child: Listener(
+                onPointerDown: (e) {
+                  if (e.down && _pointerCount == 0) _touchDown = e.localPosition;
+                },
+                child: GestureDetector(
+                  key: const Key('stage-drag'),
+                  behavior: HitTestBehavior.opaque,
+                  onTapUp: (d) => _tap(d.localPosition, size),
+                  onScaleStart: (d) => _bodyStart(d, size),
+                  onScaleUpdate: _bodyUpdate,
+                  onScaleEnd: (_) => _end(size),
+                  child: CustomPaint(
+                    size: size,
+                    painter: _OutlinePainter(outline, turn, color, active: _target != null),
+                  ),
                 ),
               ),
             ),

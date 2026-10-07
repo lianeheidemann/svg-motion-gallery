@@ -7,18 +7,24 @@ import '../editor_controller.dart';
 
 /// Adds shapes and text centered on the canvas.
 class InsertPanel extends StatefulWidget {
-  const InsertPanel({super.key, required this.editor});
+  const InsertPanel({super.key, required this.editor, this.text = false});
 
   final EditorController editor;
+
+  /// Inserts text instead of shapes (its own tab).
+  final bool text;
 
   @override
   State<InsertPanel> createState() => _InsertPanelState();
 }
 
 class _InsertPanelState extends State<InsertPanel> {
-  var _kind = SvgShapeKind.rectangle;
+  late var _kind = widget.text ? SvgShapeKind.text : SvgShapeKind.rectangle;
   Color? _color;
   var _size = 30.0;
+  var _stroke = 0.0;
+  double? _liveScale;
+  double? _liveStroke;
   var _picker = _ColorPicker.none;
   TextEditingController? _text;
   final _hex = TextEditingController();
@@ -55,17 +61,34 @@ class _InsertPanelState extends State<InsertPanel> {
     super.dispose();
   }
 
+  EditorController get editor => widget.editor;
+
+  SvgEditResult _scaled(ElementPath path, double scale) => SvgTransformEdit.apply(
+    editor.svg,
+    path,
+    SvgTransformEdit.read(editor.svg, path).copyWith(scale: scale),
+  );
+
+  /// Sets the outline width; the first time, the outline also gets a color.
+  String _outlined(ElementPath path, double width, Color fallback) {
+    var svg = editor.svg;
+    final paint = SvgPaintEdit.read(svg, path);
+    final hasStroke = paint.stroke != null && paint.stroke != 'none';
+    if (width > 0 && !hasStroke) svg = SvgPaintEdit.setStroke(svg, path, colorToHex(fallback));
+    return SvgPaintEdit.setStrokeWidth(svg, path, width);
+  }
+
   void _togglePicker(_ColorPicker picker) =>
       setState(() => _picker = _picker == picker ? _ColorPicker.none : picker);
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final palette = [for (final hex in widget.editor.palette) colorFromHex(hex)!];
+    final palette = [for (final hex in editor.palette) colorFromHex(hex)!];
     final color = _color ?? Theme.of(context).colorScheme.primary;
-    final selection = widget.editor.selection;
+    final selection = editor.selection;
     final selectedShape =
-        selection != null && SvgHitTest.movables(widget.editor.svg).any((m) => m.path == selection)
+        selection != null && SvgHitTest.movables(editor.svg).any((m) => m.path == selection)
         ? selection
         : null;
     return ListView(
@@ -73,19 +96,21 @@ class _InsertPanelState extends State<InsertPanel> {
       children: [
         SectionCard(
           icon: Icons.add_box_outlined,
-          title: l10n.insertTitle,
+          title: widget.text ? l10n.insertTextTitle : l10n.insertTitle,
           children: [
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
-                for (final kind in SvgShapeKind.values)
-                  ChoiceChip(
-                    avatar: Icon(_icon(kind), size: 18),
-                    label: Text(l10n.shape(kind)),
-                    selected: kind == _kind,
-                    onSelected: (_) => setState(() => _kind = kind),
-                  ),
+                if (!widget.text)
+                  for (final kind in SvgShapeKind.values)
+                    if (kind != SvgShapeKind.text)
+                      ChoiceChip(
+                        avatar: Icon(_icon(kind), size: 18),
+                        label: Text(l10n.shape(kind)),
+                        selected: kind == _kind,
+                        onSelected: (_) => setState(() => _kind = kind),
+                      ),
               ],
             ),
             Text(l10n.color),
@@ -163,14 +188,61 @@ class _InsertPanelState extends State<InsertPanel> {
                 },
               ),
             ],
-            SliderField(
-              label: l10n.shapeSize,
-              value: _size,
-              min: 5,
-              max: 100,
-              unit: '%',
-              onChanged: (v) => setState(() => _size = v.roundToDouble()),
-            ),
+            if (selectedShape == null) ...[
+              SliderField(
+                label: l10n.shapeSize,
+                value: _size,
+                min: 5,
+                max: 100,
+                unit: '%',
+                onChanged: (v) => setState(() => _size = v.roundToDouble()),
+              ),
+              SliderField(
+                key: const Key('new-stroke'),
+                label: l10n.outline,
+                value: _stroke,
+                min: 0,
+                max: 30,
+                fractionDigits: 1,
+                onChanged: (v) => setState(() => _stroke = v),
+              ),
+            ] else ...[
+              SliderField(
+                key: const Key('selected-size'),
+                label: l10n.shapeSize,
+                value: (_liveScale ?? SvgTransformEdit.read(editor.svg, selectedShape).scale * 100)
+                    .clamp(5, 400),
+                min: 5,
+                max: 400,
+                unit: '%',
+                onChanged: (v) {
+                  setState(() => _liveScale = v.roundToDouble());
+                  editor.preview(_scaled(selectedShape, v / 100).svg);
+                },
+                onChangeEnd: (v) {
+                  _liveScale = null;
+                  editor.apply(_scaled(selectedShape, v.roundToDouble() / 100));
+                },
+              ),
+              SliderField(
+                key: const Key('selected-stroke'),
+                label: l10n.outline,
+                value:
+                    (_liveStroke ?? SvgPaintEdit.read(editor.svg, selectedShape).strokeWidth ?? 0)
+                        .clamp(0, 30),
+                min: 0,
+                max: 30,
+                fractionDigits: 1,
+                onChanged: (v) {
+                  setState(() => _liveStroke = v);
+                  editor.preview(_outlined(selectedShape, v, color));
+                },
+                onChangeEnd: (v) {
+                  _liveStroke = null;
+                  editor.commit(_outlined(selectedShape, v, color));
+                },
+              ),
+            ],
             if (_kind == SvgShapeKind.text)
               TextField(
                 controller: _text,
@@ -184,21 +256,33 @@ class _InsertPanelState extends State<InsertPanel> {
                   tooltip: l10n.deleteSelectedElement,
                   onPressed: selectedShape == null
                       ? null
-                      : () =>
-                            widget.editor.apply(SvgLayers.remove(widget.editor.svg, selectedShape)),
+                      : () => editor.apply(SvgLayers.remove(editor.svg, selectedShape)),
                   icon: const Icon(Icons.delete_outline_rounded),
                 ),
                 FilledButton.icon(
                   key: const Key('insert-shape'),
-                  onPressed: () => widget.editor.apply(
-                    SvgInsertEdit.insert(
-                      widget.editor.svg,
+                  onPressed: () {
+                    final inserted = SvgInsertEdit.insert(
+                      editor.svg,
                       _kind,
                       color: colorToHex(color),
                       size: _size / 100,
                       text: _text!.text,
-                    ),
-                  ),
+                    );
+                    final path = inserted.selection;
+                    editor.apply(
+                      path == null || _stroke == 0 || _kind == SvgShapeKind.line
+                          ? inserted
+                          : SvgEditResult(
+                              SvgPaintEdit.setStrokeWidth(
+                                SvgPaintEdit.setStroke(inserted.svg, path, colorToHex(color)),
+                                path,
+                                _stroke,
+                              ),
+                              selection: path,
+                            ),
+                    );
+                  },
                   icon: const Icon(Icons.add_rounded),
                   label: Text(l10n.insertAction),
                 ),

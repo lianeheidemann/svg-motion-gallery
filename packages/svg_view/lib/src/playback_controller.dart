@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' show Rect;
 
 import 'package:flutter/foundation.dart';
@@ -47,6 +48,38 @@ class SvgPlaybackController extends ChangeNotifier {
     _selectionBounds = null;
     _target?.invoke('select', [_selection]);
     notifyListeners();
+  }
+
+  Completer<Rect?>? _measuring;
+
+  /// Measures what is drawn, in the svg's own units ([Rect] of x, y, width,
+  /// height), or null when nothing is drawn or the renderer cannot measure
+  /// (no scripting). With a [cycle], every animation is stepped through that
+  /// length of time in [samples] steps and the boxes are joined, so what
+  /// moves counts everywhere it goes. The playback position is kept.
+  Future<Rect?> measureContent({Duration? cycle, int samples = 24}) {
+    final target = _target;
+    if (target == null) return Future.value();
+    _measuring?.complete();
+    final done = _measuring = Completer<Rect?>();
+    final seconds = cycle == null ? 0 : cycle.inMicroseconds / Duration.microsecondsPerSecond;
+    target.invoke('measure', [seconds, samples]);
+    return done.future.timeout(
+      const Duration(seconds: 5),
+      onTimeout: () {
+        if (identical(_measuring, done)) _measuring = null;
+        return null;
+      },
+    );
+  }
+
+  /// Called by renderers with the answer to [measureContent].
+  @internal
+  void reportMeasure(List<double>? box) {
+    final pending = _measuring;
+    _measuring = null;
+    final valid = box != null && box.length == 4;
+    pending?.complete(valid ? Rect.fromLTWH(box[0], box[1], box[2], box[3]) : null);
   }
 
   bool get isAttached => _target != null;

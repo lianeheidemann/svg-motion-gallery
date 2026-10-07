@@ -74,6 +74,18 @@ class _WebViewSvgState extends State<_WebViewSvg> implements SvgPlaybackTarget {
   void _onMessage(JavaScriptMessage message) {
     final data = jsonDecode(message.message);
     if (data is! Map) return;
+    if (data.containsKey('m')) {
+      final box = data['m'];
+      _config.controller?.reportMeasure(
+        box is List
+            ? [
+                for (final v in box)
+                  if (v is num) v.toDouble(),
+              ]
+            : null,
+      );
+      return;
+    }
     final seconds = data['t'];
     final paused = data['p'];
     if (seconds is num && paused is bool) {

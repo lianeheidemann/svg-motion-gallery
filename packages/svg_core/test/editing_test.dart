@@ -282,6 +282,56 @@ void main() {
     });
   });
 
+  group('SvgDocumentEdit window', () {
+    const sized =
+        '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">'
+        '<rect x="100" y="50" width="200" height="100"/></svg>';
+
+    test('crops the viewBox and keeps one unit the same size on screen', () {
+      final cropped = SvgDocumentEdit.setViewBox(
+        sized,
+        minX: 100,
+        minY: 50,
+        width: 400,
+        height: 300,
+      );
+      expect(cropped, contains('viewBox="100 50 400 300"'));
+      expect(cropped, contains('width="400"'));
+      expect(cropped, contains('height="300"'));
+      final meta = SvgMetadata.parse(cropped);
+      expect(meta.canvas.minX, 100);
+      expect(meta.canvas.width, 400);
+    });
+
+    test('works without width/height and rejects empty windows', () {
+      const bare = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"/>';
+      final cropped = SvgDocumentEdit.setViewBox(bare, minX: 1, minY: 2, width: 5, height: 6);
+      expect(cropped, contains('viewBox="1 2 5 6"'));
+      expect(cropped, isNot(contains('width=')));
+      expect(SvgDocumentEdit.setViewBox(bare, minX: 0, minY: 0, width: 0, height: 5), bare);
+    });
+
+    test('uses width/height as the old window when there is no viewBox', () {
+      const noBox = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"/>';
+      final cropped = SvgDocumentEdit.setViewBox(noBox, minX: 0, minY: 0, width: 100, height: 100);
+      expect(cropped, contains('width="100"'));
+      expect(cropped, contains('height="100"'));
+    });
+
+    test('fits the window to a content box with a margin', () {
+      final fitted = SvgDocumentEdit.fitWindow(
+        sized,
+        x: 100,
+        y: 50,
+        width: 200,
+        height: 100,
+        margin: 0.1,
+      );
+      // 10 % of the larger side (200) = 20 on every side.
+      expect(fitted, contains('viewBox="80 30 240 140"'));
+    });
+  });
+
   group('SvgInsertEdit', () {
     test('inserts centered shapes on top and selects them', () {
       for (final kind in SvgShapeKind.values) {

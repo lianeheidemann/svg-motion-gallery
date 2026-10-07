@@ -1,5 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:xml/xml.dart';
 
+import '../metadata.dart';
 import '../xml_support.dart';
 import 'element_path.dart';
 
@@ -229,6 +232,61 @@ class SvgDocumentEdit {
     if (width == null || height == null || width <= 0 || height <= 0) return svg;
     root.setAttribute('viewBox', '0 0 ${formatNumber(width)} ${formatNumber(height)}');
     return document.toXmlString();
+  }
+
+  /// Sets the window of the drawing: the part of the canvas that is shown
+  /// (the `viewBox`). Anything outside it is cropped. A numeric root
+  /// `width`/`height` is scaled with the window, so one unit keeps the same
+  /// size on screen and the file's pixel size follows the crop.
+  static String setViewBox(
+    String svg, {
+    required double minX,
+    required double minY,
+    required double width,
+    required double height,
+  }) {
+    if (!(width > 0) || !(height > 0)) return svg;
+    final document = tryParseSvg(svg);
+    if (document == null) return svg;
+    final root = document.rootElement;
+    final oldWidth = parseLength(root.getAttribute('width'));
+    final oldHeight = parseLength(root.getAttribute('height'));
+    final old =
+        SvgViewBox.tryParse(root.getAttribute('viewBox')) ??
+        (oldWidth != null && oldHeight != null && oldWidth > 0 && oldHeight > 0
+            ? SvgViewBox(0, 0, oldWidth, oldHeight)
+            : null);
+    root.setAttribute(
+      'viewBox',
+      '${formatNumber(minX)} ${formatNumber(minY)} ${formatNumber(width)} ${formatNumber(height)}',
+    );
+    if (old != null) {
+      if (oldWidth != null) root.setAttribute('width', formatNumber(oldWidth * width / old.width));
+      if (oldHeight != null) {
+        root.setAttribute('height', formatNumber(oldHeight * height / old.height));
+      }
+    }
+    return document.toXmlString();
+  }
+
+  /// Crops the window to the box ([x], [y], [width], [height]) of the content,
+  /// grown by [margin] (a fraction of the box's larger side) on every side.
+  static String fitWindow(
+    String svg, {
+    required double x,
+    required double y,
+    required double width,
+    required double height,
+    double margin = 0,
+  }) {
+    final pad = math.max(width, height) * margin;
+    return setViewBox(
+      svg,
+      minX: x - pad,
+      minY: y - pad,
+      width: math.max(width + 2 * pad, 0.001),
+      height: math.max(height + 2 * pad, 0.001),
+    );
   }
 
   /// Sets the root `width`/`height`. A `viewBox` matching the previous size

@@ -363,7 +363,7 @@
   "tagPath": "Caminho",
   "tagImage": "Imagem",
   "tagUse": "Referência",
-  "insertTitle": "Inserir forma ou texto",
+  "insertTitle": "Inserir forma",
   "shapeRectangle": "Retângulo",
   "shapeCircle": "Círculo",
   "shapeEllipse": "Elipse",
@@ -498,5 +498,23 @@
       }
     }
   },
-  "infoLocation": "Local"
+  "infoLocation": "Local",
+  "outline": "Contorno",
+  "windowTitle": "Janela",
+  "windowRestore": "Restaurar janela",
+  "windowRatio": "Proporção",
+  "windowX": "Posição X",
+  "windowY": "Posição Y",
+  "windowWidth": "Largura da janela",
+  "windowHeight": "Altura da janela",
+  "windowAdjust": "Ajuste automático",
+  "windowAdjustHint": "Enquadra a janela no que foi desenhado, sem as bordas vazias.",
+  "windowMargin": "Margem",
+  "windowMotion": "Considerar movimento",
+  "windowNoMotion": "Este desenho não tem animação.",
+  "windowFitFailed": "Não foi possível medir o desenho.",
+  "windowFit": "Ajustar ao conteúdo",
+  "tabWindow": "Janela",
+  "tabText": "Texto",
+  "insertTextTitle": "Inserir texto"
 }

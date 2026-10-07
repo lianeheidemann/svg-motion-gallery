@@ -19,11 +19,12 @@ import 'panels/insert_panel.dart';
 import 'panels/layers_panel.dart';
 import 'panels/size_panel.dart';
 import 'panels/transform_panel.dart';
+import 'panels/window_panel.dart';
 import 'selection_highlight.dart';
 import 'stage_drag_layer.dart';
 import 'stage_geometry.dart';
 
-enum _EditorTab { layers, transform, size, colors, animation, insert, code }
+enum _EditorTab { layers, transform, size, window, colors, animation, insert, text, code }
 
 /// The single editor: live stage on top, one tab per kind of edit, a
 /// validation/status line at the bottom and one Save button.
@@ -41,6 +42,7 @@ class _EditorScreenState extends State<EditorScreen> {
   SvgDocument? _document;
   final _playback = SvgPlaybackController();
   var _tab = _EditorTab.layers;
+  bool get _isInsertTab => _tab == _EditorTab.insert || _tab == _EditorTab.text;
   var _saving = false;
 
   /// What the preview sits on. Only a viewing aid: never saved.
@@ -202,9 +204,11 @@ class _EditorScreenState extends State<EditorScreen> {
                     ),
                     PillTab(l10n.tabTransform, icon: Icons.open_with_rounded),
                     PillTab(l10n.tabSize, icon: Icons.aspect_ratio_rounded),
+                    PillTab(l10n.tabWindow, icon: Icons.crop_rounded),
                     PillTab(l10n.tabColors, icon: Icons.palette_outlined),
                     PillTab(l10n.tabAnimation, icon: Icons.animation_rounded),
                     PillTab(l10n.tabInsert, icon: Icons.add_box_outlined),
+                    PillTab(l10n.tabText, icon: Icons.text_fields_rounded),
                     PillTab(l10n.tabCode, icon: Icons.code_rounded),
                   ],
                 ),
@@ -292,14 +296,14 @@ class _EditorScreenState extends State<EditorScreen> {
                   child: CanvasFrame(svg: editor.displaySvg, padding: const EdgeInsets.all(16)),
                 ),
                 // The Insert tab draws its own outline (with handles) for shapes.
-                if (!(_tab == _EditorTab.insert && _selectedIsShape(editor)))
+                if (!(_isInsertTab && _selectedIsShape(editor)))
                   Positioned.fill(
                     child: SelectionHighlight(
                       controller: _playback,
                       padding: const EdgeInsets.all(16),
                     ),
                   ),
-                if (_tab == _EditorTab.insert)
+                if (_isInsertTab)
                   Positioned.fill(
                     child: StageDragLayer(editor: editor, padding: const EdgeInsets.all(16)),
                   ),
@@ -362,10 +366,12 @@ class _EditorScreenState extends State<EditorScreen> {
   Widget _panel(EditorController editor) => switch (_tab) {
     _EditorTab.transform => TransformPanel(editor: editor),
     _EditorTab.size => SizePanel(editor: editor),
+    _EditorTab.window => WindowPanel(editor: editor, playback: _playback),
     _EditorTab.colors => ColorsPanel(editor: editor),
     _EditorTab.animation => AnimationPanel(editor: editor, playback: _playback),
     _EditorTab.layers => LayersPanel(editor: editor),
     _EditorTab.insert => InsertPanel(editor: editor),
+    _EditorTab.text => InsertPanel(key: const Key('text-panel'), editor: editor, text: true),
     _EditorTab.code => CodePanel(editor: editor),
   };
 
