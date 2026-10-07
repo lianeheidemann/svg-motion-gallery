@@ -147,7 +147,6 @@
   "animationsTitle": "File animations",
   "cycleSeconds": "{seconds} s cycle",
   "speed": "Speed",
-  "speedHint": "The new speed is applied when you release the slider.",
   "removeAnimations": "Remove all animations",
   "presetsTitle": "Add motion",
   "presetTarget": "Apply to: {name}",

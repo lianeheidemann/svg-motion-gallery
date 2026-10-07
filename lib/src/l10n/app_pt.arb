@@ -282,7 +282,6 @@
     }
   },
   "speed": "Velocidade",
-  "speedHint": "A nova velocidade é aplicada ao soltar a barra.",
   "removeAnimations": "Remover todas as animações",
   "presetsTitle": "Adicionar movimento",
   "presetTarget": "Aplicar em: {name}",

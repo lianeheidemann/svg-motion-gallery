@@ -54,16 +54,12 @@ class _AnimationPanelState extends State<AnimationPanel> {
                 max: 4,
                 fractionDigits: 2,
                 unit: '×',
-                onChanged: (v) {
-                  setState(() => _speed = v);
-                  _editor.preview(SvgAnimationEdit.changeSpeed(_editor.svg, v));
-                },
+                onChanged: (v) => setState(() => _speed = v),
                 onChangeEnd: (v) {
                   _editor.commit(SvgAnimationEdit.changeSpeed(_editor.svg, v));
                   setState(() => _speed = 1);
                 },
               ),
-              Text(l10n.speedHint, style: muted),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton.icon(
