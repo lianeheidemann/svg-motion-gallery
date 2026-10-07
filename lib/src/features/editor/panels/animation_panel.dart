@@ -111,7 +111,7 @@ class _AnimationPanelState extends State<AnimationPanel> {
             if (layer == null)
               Text(l10n.selectLayerHint, style: muted)
             else ...[
-              Text(l10n.presetTarget(l10n.layer(layer)), style: muted),
+              Text(l10n.presetTarget(l10n.layerLabel(layer, _editor.layers)), style: muted),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,

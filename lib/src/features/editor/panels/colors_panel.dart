@@ -194,7 +194,7 @@ class _ColorsPanelState extends State<ColorsPanel> {
     };
     return SectionCard(
       icon: Icons.format_color_fill_rounded,
-      title: l10n.layerPaint(l10n.layer(_editor.selectedLayer!)),
+      title: l10n.layerPaint(l10n.layerLabel(_editor.selectedLayer!, _editor.layers)),
       children: [
         SegmentedButton<_PaintTarget>(
           showSelectedIcon: false,

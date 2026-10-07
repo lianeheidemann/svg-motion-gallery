@@ -67,7 +67,9 @@ class _TransformPanelState extends State<TransformPanel> {
       children: [
         SectionCard(
           icon: Icons.open_with_rounded,
-          title: layer == null ? l10n.transformDocument : l10n.transformLayer(l10n.layer(layer)),
+          title: layer == null
+              ? l10n.transformDocument
+              : l10n.transformLayer(l10n.layerLabel(layer, _editor.layers)),
           spacing: 6,
           children: [
             if (layer == null)

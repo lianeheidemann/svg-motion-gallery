@@ -31,6 +31,9 @@ const editorAttribute = 'data-sm-edit';
 /// Marker attribute on groups the editor creates to hold a preset animation.
 const animationAttribute = 'data-sm-anim';
 
+/// Attribute holding a layer's user-given name.
+const nameAttribute = 'data-name';
+
 /// Whether [element] is a group created by the editor.
 bool isEditorGroup(XmlElement element) =>
     element.getAttribute(editorAttribute) != null ||

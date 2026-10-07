@@ -27,6 +27,16 @@ void main() {
       expect(SvgLayers.list(shown).first.visible, isTrue);
     });
 
+    test('renames a layer without touching its id, and clears the name', () {
+      final named = SvgLayers.rename(base, const ElementPath([1]), '  Fundo  ');
+      expect(named, contains('data-name="Fundo"'));
+      expect(named, contains('id="bg"'));
+      expect(SvgLayers.list(named).firstWhere((l) => l.id == 'bg').name, 'Fundo');
+      final cleared = SvgLayers.rename(named, const ElementPath([1]), '   ');
+      expect(cleared, isNot(contains('data-name')));
+      expect(SvgLayers.list(cleared).firstWhere((l) => l.id == 'bg').name, isNull);
+    });
+
     test('removes, duplicates and reorders', () {
       final removed = SvgLayers.remove(base, const ElementPath([1]));
       expect(removed.selection, isNull);

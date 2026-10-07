@@ -11,6 +11,7 @@ class SvgLayer {
     required this.depth,
     required this.visible,
     this.id,
+    this.name,
     this.text,
     this.isEditorGroup = false,
     this.isAnimated = false,
@@ -19,6 +20,9 @@ class SvgLayer {
   final ElementPath path;
   final String tag;
   final String? id;
+
+  /// Name the user gave the layer (`data-name`), or null for the default.
+  final String? name;
 
   /// Text content for `<text>` elements (trimmed, first 24 characters).
   final String? text;
@@ -52,6 +56,7 @@ class SvgLayers {
             path: path,
             tag: child.localName,
             id: child.getAttribute('id'),
+            name: _nameOf(child),
             text: text == null || text.isEmpty
                 ? null
                 : (text.length > 24 ? '${text.substring(0, 24)}…' : text),
@@ -69,6 +74,11 @@ class SvgLayers {
 
     visit(document.rootElement, ElementPath.root, 0);
     return layers;
+  }
+
+  static String? _nameOf(XmlElement element) {
+    final name = element.getAttribute(nameAttribute)?.trim();
+    return name == null || name.isEmpty ? null : name;
   }
 
   static bool _isHidden(XmlElement element) =>
@@ -141,6 +151,14 @@ class SvgLayers {
   }
 
   /// Replaces the text of a `<text>` element.
+  /// Gives the layer a name of the user's choosing, stored as `data-name`
+  /// (the `id`, which CSS and animations may point at, is left alone). An
+  /// empty [name] removes it, so the layer goes back to its default name.
+  static String rename(String svg, ElementPath path, String name) => _edit(svg, path, (element) {
+    final trimmed = name.trim();
+    element.setAttribute(nameAttribute, trimmed.isEmpty ? null : trimmed);
+  });
+
   static String setText(String svg, ElementPath path, String text) => _edit(svg, path, (element) {
     element.children
       ..clear()

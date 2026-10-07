@@ -312,7 +312,9 @@ class _EditorScreenState extends State<EditorScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    layer == null ? l10n.selectionNone : l10n.selectionLayer(l10n.layer(layer)),
+                    layer == null
+                        ? l10n.selectionNone
+                        : l10n.selectionLayer(l10n.layerLabel(layer, editor.layers)),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),

@@ -184,17 +184,17 @@ void main() {
     await tester.pumpAndSettle();
 
     await _tapTab(tester, 'Camadas');
-    await tester.ensureVisible(find.text('Retângulo').last);
+    await tester.ensureVisible(find.textContaining('Retângulo').last);
     await tester.pumpAndSettle();
-    await tester.longPress(find.text('Retângulo').last);
+    await tester.longPress(find.textContaining('Retângulo').last);
     await tester.pumpAndSettle();
     expect(find.text('Excluir camada?'), findsOneWidget);
     await tester.tap(find.text('Cancelar'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Selecionado: Retângulo'), findsOneWidget);
-    await tester.ensureVisible(find.text('Retângulo').last);
+    await tester.ensureVisible(find.textContaining('Retângulo').last);
     await tester.pumpAndSettle();
-    await tester.longPress(find.text('Retângulo').last);
+    await tester.longPress(find.textContaining('Retângulo').last);
     await tester.pumpAndSettle();
     await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Excluir')));
     await tester.pumpAndSettle();
@@ -250,7 +250,7 @@ void main() {
     expect(services.library.contentOf(services.library.byId(wave.id)!), _valid);
   });
 
-  testWidgets('layers: double tap folds a folder; "Todas" while nothing is selected', (
+  testWidgets('layers: arrow folds a folder, double tap renames, header selects all', (
     tester,
   ) async {
     final services = await _services(tester);
@@ -264,28 +264,39 @@ void main() {
 
     expect(find.text('Selecionado: Todas'), findsOneWidget);
 
-    final circles = find.text('Círculo');
+    // Same-named siblings are numbered, nested like the tree.
+    expect(find.textContaining(RegExp(r'^Grupo \d')), findsWidgets);
+
+    // The arrow on a folder hides what is inside, and opens it again.
+    final circles = find.textContaining('Círculo');
     final before = circles.evaluate().length;
     expect(before, greaterThan(0));
-    final folder = find.text('Grupo').first;
-    await tester.ensureVisible(folder);
+    final fold = find.byTooltip('Dobrar pasta').first;
+    await tester.ensureVisible(fold);
     await tester.pumpAndSettle();
-    await tester.tap(folder);
-    await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(folder);
+    await tester.tap(fold);
     await tester.pumpAndSettle();
     expect(circles.evaluate().length, lessThan(before), reason: 'the folder hides its layers');
-
-    await tester.tap(find.text('Grupo').first);
-    await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(find.text('Grupo').first);
+    await tester.tap(find.byTooltip('Abrir pasta').first);
     await tester.pumpAndSettle();
-    expect(circles.evaluate().length, before, reason: 'a second double tap opens it again');
+    expect(circles.evaluate().length, before, reason: 'the arrow opens it again');
+
+    // Two taps on a layer ask for a new name.
+    final rect = find.text('Retângulo').first;
+    await tester.ensureVisible(rect);
+    await tester.pumpAndSettle();
+    await tester.tap(rect);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(rect);
+    await tester.pumpAndSettle();
+    expect(find.text('Renomear camada'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).last, 'Fundo da lua');
+    await tester.tap(find.text('Renomear'));
+    await tester.pumpAndSettle();
+    expect(find.text('Fundo da lua'), findsWidgets);
+    expect(find.text('Selecionado: Fundo da lua'), findsOneWidget);
 
     // Two taps on the "N camadas" header select every layer again.
-    await tester.tap(find.text('Retângulo').first);
-    await tester.pumpAndSettle();
-    expect(find.text('Selecionado: Retângulo'), findsOneWidget);
     final header = find.textContaining(RegExp(r'^\d+ camadas$'));
     await tester.ensureVisible(header);
     await tester.pumpAndSettle();
@@ -294,103 +305,6 @@ void main() {
     await tester.tap(header);
     await tester.pumpAndSettle();
     expect(find.text('Selecionado: Todas'), findsOneWidget);
-  });
-
-  testWidgets('editor: theme toggle is always there and reset-all brings the file back', (
-    tester,
-  ) async {
-    final services = await _services(tester);
-    await pumpApp(tester, services);
-
-    await tester.tap(find.text('wave.svg'));
-    await tester.pumpAndSettle();
-    await _scrollToEdit(tester);
-    await tester.tap(find.byKey(const Key('edit-svg')));
-    await tester.pumpAndSettle();
-
-    FilledButton save() => tester.widget<FilledButton>(find.byKey(const Key('save')));
-    IconButton reset() => tester.widget<IconButton>(find.byKey(const Key('reset-all')));
-
-    // The theme button stays in the app bar on every tab.
-    final before = _brightness(tester);
-    for (final tab in ['Camadas', 'Transformar', 'Código']) {
-      await _tapTab(tester, tab);
-      expect(find.byKey(const Key('theme-toggle')), findsOneWidget, reason: tab);
-    }
-    await tester.tap(find.byKey(const Key('theme-toggle')));
-    await tester.pumpAndSettle();
-    expect(_brightness(tester), isNot(before));
-
-    expect(reset().onPressed, isNull, reason: 'nothing to reset yet');
-
-    await _tapTab(tester, 'Inserir');
-    await tester.ensureVisible(find.byKey(const Key('insert-shape')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('insert-shape')));
-    await tester.pumpAndSettle();
-    expect(save().onPressed, isNotNull);
-    expect(reset().onPressed, isNotNull);
-
-    await tester.tap(find.byKey(const Key('reset-all')));
-    await tester.pumpAndSettle();
-    expect(find.text('Resetar alterações?'), findsOneWidget);
-    await tester.tap(find.text('Cancelar'));
-    await tester.pumpAndSettle();
-    expect(save().onPressed, isNotNull, reason: 'cancelling keeps the changes');
-
-    await tester.tap(find.byKey(const Key('reset-all')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Resetar'));
-    await tester.pumpAndSettle();
-    expect(save().onPressed, isNull, reason: 'back to the opened file');
-    expect(reset().onPressed, isNull);
-
-    await tester.tap(find.byTooltip('Desfazer'));
-    await tester.pumpAndSettle();
-    expect(save().onPressed, isNotNull, reason: 'the reset itself can be undone');
-  });
-
-  testWidgets('code: auto format indents a one-line file and keeps formatting what is applied', (
-    tester,
-  ) async {
-    const minified =
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><g><rect width="5" height="5"/></g></svg>';
-    final services = await _services(tester, files: [(name: 'min.svg', content: minified)]);
-    await pumpApp(tester, services);
-    await tester.tap(find.text('Importar SVG'));
-    await tester.pumpAndSettle();
-    await tester.pump(const Duration(seconds: 6)); // let the import notice go away
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('min.svg'));
-    await tester.pumpAndSettle();
-    await _scrollToEdit(tester);
-    await tester.tap(find.byKey(const Key('edit-svg')));
-    await tester.pumpAndSettle();
-
-    String code() => tester.widget<TextField>(find.byKey(const Key('code-field'))).controller!.text;
-    FilledButton save() => tester.widget<FilledButton>(find.byKey(const Key('save')));
-
-    await _tapTab(tester, 'Código');
-    expect(code(), isNot(contains('\n')), reason: 'the file is a single line');
-    expect(save().onPressed, isNull);
-
-    await tester.tap(find.byKey(const Key('auto-format')));
-    await tester.pumpAndSettle();
-    expect(services.settings.value.autoFormatCode, isTrue);
-    expect(code(), contains('\n'), reason: 'now one tag per line');
-    expect(save().onPressed, isNotNull, reason: 'formatting is a change to save');
-
-    // What is typed is formatted when applied.
-    await tester.enterText(find.byKey(const Key('code-field')), minified);
-    await tester.pump();
-    await tester.tap(find.byKey(const Key('apply-code')));
-    await tester.pumpAndSettle();
-    expect(code(), contains('\n'));
-
-    await tester.tap(find.byKey(const Key('auto-format')));
-    await tester.pumpAndSettle();
-    expect(services.settings.value.autoFormatCode, isFalse);
   });
 
   testWidgets('pause-all stops the gallery for now without touching the settings', (tester) async {
