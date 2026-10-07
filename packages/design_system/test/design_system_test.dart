@@ -199,4 +199,36 @@ void main() {
     );
     expect(material.color, accent.withValues(alpha: .16));
   });
+
+  testWidgets('PillTabs shows arrows, not a scrollbar, when there is more to scroll', (
+    tester,
+  ) async {
+    double opacity(String key) => tester.widget<AnimatedOpacity>(find.byKey(Key(key))).opacity;
+    Widget tabs(int count) => _app(
+      SizedBox(
+        width: 200,
+        child: PillTabs(
+          selectedIndex: 0,
+          onChanged: _ignoreIndex,
+          tabs: [for (var i = 0; i < count; i++) PillTab('Tab $i', icon: Icons.circle)],
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(tabs(8));
+    await tester.pumpAndSettle();
+    expect(find.byType(Scrollbar), findsNothing);
+    expect(opacity('pill-tabs-more-after'), 1);
+    expect(opacity('pill-tabs-more-before'), 0);
+
+    await tester.drag(find.byType(ListView), const Offset(-2000, 0));
+    await tester.pumpAndSettle();
+    expect(opacity('pill-tabs-more-after'), 0);
+    expect(opacity('pill-tabs-more-before'), 1);
+
+    await tester.pumpWidget(tabs(1));
+    await tester.pumpAndSettle();
+    expect(opacity('pill-tabs-more-after'), 0);
+    expect(opacity('pill-tabs-more-before'), 0);
+  });
 }
