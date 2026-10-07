@@ -318,6 +318,38 @@ void main() {
     expect(services.library.contentOf(services.library.byId(wave.id)!), formatSvg(_valid));
   });
 
+  testWidgets('insert: a color picked in the row repaints the selected shape', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+
+    await _tapTab(tester, 'Inserir');
+    await tester.ensureVisible(find.byKey(const Key('insert-shape')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('insert-shape')));
+    await tester.pumpAndSettle();
+
+    // The second swatch is purple (#A04BFF); the shape is hollow, so its
+    // outline changes.
+    final swatch = find.descendant(
+      of: find.byKey(const Key('insert-colors')),
+      matching: find.byType(ColorDot),
+    );
+    await tester.ensureVisible(swatch.at(1));
+    await tester.pumpAndSettle();
+    await tester.tap(swatch.at(1));
+    await tester.pumpAndSettle();
+
+    await _tapTab(tester, 'Código');
+    final code = tester.widget<TextField>(find.byKey(const Key('code-field'))).controller!.text;
+    expect(code, contains('stroke="#A04BFF"'));
+    expect(code, contains('fill="none"'), reason: 'still hollow');
+  });
+
   testWidgets('layers: arrow folds a folder, double tap renames, header folds all', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);

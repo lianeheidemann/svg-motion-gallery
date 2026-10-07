@@ -23,6 +23,10 @@ class InsertPanel extends StatefulWidget {
 class _InsertPanelState extends State<InsertPanel> {
   late var _kind = widget.text ? SvgShapeKind.text : SvgShapeKind.rectangle;
   Color? _color;
+
+  /// True while a color is being dragged in the free picker, so the row keeps
+  /// showing that color instead of the one stored in the file.
+  var _picking = false;
   var _size = 30.0;
 
   /// Outline of new shapes, as a percentage of the smaller canvas side.
@@ -127,6 +131,41 @@ class _InsertPanelState extends State<InsertPanel> {
     editor.commit(svg);
   }
 
+  /// The color of a shape: its outline, else its fill.
+  Color? _shapeColor(ElementPath path) {
+    final paint = SvgPaintEdit.read(editor.svg, path);
+    final stroke = paint.stroke == 'none' ? null : paint.strokeColor;
+    final fill = paint.fill == 'none' ? null : paint.fillColor;
+    final hex = stroke ?? fill;
+    return hex == null ? null : colorFromHex(hex);
+  }
+
+  /// [svg] with the shape at [path] painted [color]: the fill when it has one
+  /// (filled shapes, text) and the outline when it has one (hollow shapes,
+  /// lines).
+  String _recolor(String svg, ElementPath path, Color color) {
+    final paint = SvgPaintEdit.read(svg, path);
+    final hex = colorToHex(color);
+    final hasStroke = paint.stroke != null && paint.stroke != 'none';
+    final hasFill = paint.fill != 'none' && (paint.fill != null || !hasStroke);
+    var result = svg;
+    if (hasFill) result = SvgPaintEdit.setFill(result, path, hex);
+    if (hasStroke) result = SvgPaintEdit.setStroke(result, path, hex);
+    return result;
+  }
+
+  /// A color was picked: it is the color of the next shapes, and it repaints
+  /// the selected shape (right away when [live], as one undoable step when not).
+  void _pick(Color value, ElementPath? shape, {bool live = false}) {
+    setState(() {
+      _color = value;
+      _picking = live;
+    });
+    if (shape == null) return;
+    final svg = _recolor(editor.svg, shape, value);
+    live ? editor.preview(svg) : editor.commit(svg);
+  }
+
   void _togglePicker(_ColorPicker picker) =>
       setState(() => _picker = _picker == picker ? _ColorPicker.none : picker);
 
@@ -134,12 +173,16 @@ class _InsertPanelState extends State<InsertPanel> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final palette = [for (final hex in editor.palette) colorFromHex(hex)!];
-    final color = _color ?? Theme.of(context).colorScheme.primary;
     final selection = editor.selection;
     final selectedShape =
         selection != null && SvgHitTest.movables(editor.svg).any((m) => m.path == selection)
         ? selection
         : null;
+    // With a shape selected the row shows (and changes) that shape's color.
+    final color =
+        (selectedShape != null && !_picking ? _shapeColor(selectedShape) : null) ??
+        _color ??
+        Theme.of(context).colorScheme.primary;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
@@ -168,10 +211,10 @@ class _InsertPanelState extends State<InsertPanel> {
               colors: _quickColors,
               size: 36,
               selected: color,
-              onSelected: (value) => setState(() {
-                _color = value;
-                _picker = _ColorPicker.none;
-              }),
+              onSelected: (value) {
+                setState(() => _picker = _ColorPicker.none);
+                _pick(value, selectedShape);
+              },
               trailing: [
                 _ToolDot(
                   key: const Key('insert-eyedropper'),
@@ -212,16 +255,17 @@ class _InsertPanelState extends State<InsertPanel> {
                       colors: palette,
                       size: 32,
                       selected: color,
-                      onSelected: (value) => setState(() => _color = value),
+                      onSelected: (value) => _pick(value, selectedShape),
                     ),
             if (_picker == _ColorPicker.custom) ...[
               ColorAreaPicker(
                 key: const Key('insert-color-area'),
                 color: color,
-                onChanged: (value) => setState(() {
-                  _color = value;
+                onChanged: (value) {
                   _hex.text = colorToHex(value);
-                }),
+                  _pick(value, selectedShape, live: true);
+                },
+                onChangeEnd: (value) => _pick(value, selectedShape),
               ),
               TextField(
                 key: const Key('insert-hex'),
@@ -229,7 +273,11 @@ class _InsertPanelState extends State<InsertPanel> {
                 decoration: InputDecoration(labelText: l10n.hex),
                 onChanged: (value) {
                   final parsed = colorFromHex(value);
-                  if (parsed != null) setState(() => _color = parsed);
+                  if (parsed == null) return;
+                  // A whole color (#RRGGBB) is one undoable step; a partial
+                  // one only previews.
+                  final whole = value.replaceAll('#', '').length >= 6;
+                  _pick(parsed, selectedShape, live: !whole);
                 },
                 onSubmitted: (value) {
                   final parsed = colorFromHex(value);
