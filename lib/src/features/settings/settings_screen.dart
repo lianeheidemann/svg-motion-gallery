@@ -69,19 +69,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   SettingSwitchTile(
                     title: l10n.autoplayTitle,
-                    subtitle: l10n.autoplaySubtitle,
                     value: value.autoplay,
                     onChanged: settings.setAutoplay,
                   ),
                   SettingSwitchTile(
                     title: l10n.loopTitle,
-                    subtitle: l10n.loopSubtitle,
                     value: value.loop,
                     onChanged: settings.setLoop,
                   ),
                   SettingSwitchTile(
                     title: l10n.hqTitle,
-                    subtitle: l10n.hqSubtitle,
                     value: value.highQualityPreviews,
                     onChanged: settings.setHighQualityPreviews,
                   ),
@@ -107,7 +104,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: l10n.appearanceSection,
                 children: [
                   Text(l10n.accentTitle, style: const TextStyle(fontWeight: FontWeight.w600)),
-                  Text(l10n.accentSubtitle, style: muted),
                   ColorSwatchPicker(
                     colors: [for (final accent in AccentColor.values) accent.color],
                     selected: value.accent.color,
@@ -119,9 +115,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       AccentColor.values.firstWhere((accent) => accent.color == color),
                     ),
                   ),
-                  Text(l10n.themeOnHomeHint, style: muted),
                   const Divider(height: 1),
-                  Text(l10n.uiScaleHint, style: muted),
                   SliderField(
                     key: const Key('ui-scale'),
                     label: l10n.uiScaleTitle,
