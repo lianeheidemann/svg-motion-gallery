@@ -19,7 +19,7 @@ import 'panels/transform_panel.dart';
 import 'stage_drag_layer.dart';
 import 'stage_geometry.dart';
 
-enum _EditorTab { transform, colors, animation, layers, insert, code }
+enum _EditorTab { layers, transform, colors, animation, insert, code }
 
 /// The single editor: live stage on top, one tab per kind of edit, a
 /// validation/status line at the bottom and one Save button.
@@ -36,7 +36,7 @@ class _EditorScreenState extends State<EditorScreen> {
   EditorController? _editor;
   SvgDocument? _document;
   final _playback = SvgPlaybackController();
-  var _tab = _EditorTab.transform;
+  var _tab = _EditorTab.layers;
   var _saving = false;
 
   /// The "valid SVG" banner only shows after a save, until the next edit.
@@ -150,10 +150,17 @@ class _EditorScreenState extends State<EditorScreen> {
                     selectedIndex: _tab.index,
                     onChanged: (index) => setState(() => _tab = _EditorTab.values[index]),
                     tabs: [
+                      // Always first and highlighted; another color while the
+                      // whole drawing (every layer) is the target.
+                      PillTab(
+                        l10n.tabLayers,
+                        icon: Icons.layers_outlined,
+                        emphasized: true,
+                        accent: editor.selection == null ? GalleryColors.of(context).success : null,
+                      ),
                       PillTab(l10n.tabTransform, icon: Icons.open_with_rounded),
                       PillTab(l10n.tabColors, icon: Icons.palette_outlined),
                       PillTab(l10n.tabAnimation, icon: Icons.animation_rounded),
-                      PillTab(l10n.tabLayers, icon: Icons.layers_outlined),
                       PillTab(l10n.tabInsert, icon: Icons.add_box_outlined),
                       PillTab(l10n.tabCode, icon: Icons.code_rounded),
                     ],

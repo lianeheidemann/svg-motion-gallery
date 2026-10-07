@@ -10,6 +10,8 @@ Widget _app(Widget child, {Brightness brightness = Brightness.dark}) => Material
 
 void _ignore(double _) {}
 
+void _ignoreIndex(int _) {}
+
 void main() {
   group('buildAppTheme', () {
     test('uses the accent and exposes GalleryColors in both brightnesses', () {
@@ -173,5 +175,28 @@ void main() {
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pump();
     expect(colorToHex(result!), '#FF0000');
+  });
+
+  testWidgets('an emphasized PillTab keeps its label and uses its own accent', (tester) async {
+    const accent = Color(0xFF22C55E);
+    await tester.pumpWidget(
+      _app(
+        const PillTabs(
+          labelSelectedOnly: true,
+          selectedIndex: 1,
+          onChanged: _ignoreIndex,
+          tabs: [
+            PillTab('Layers', icon: Icons.layers_outlined, emphasized: true, accent: accent),
+            PillTab('Transform', icon: Icons.open_with_rounded),
+          ],
+        ),
+      ),
+    );
+    expect(find.text('Layers'), findsOneWidget, reason: 'label stays while not selected');
+    expect(find.text('Transform'), findsOneWidget);
+    final material = tester.widget<Material>(
+      find.ancestor(of: find.text('Layers'), matching: find.byType(Material)).first,
+    );
+    expect(material.color, accent.withValues(alpha: .16));
   });
 }

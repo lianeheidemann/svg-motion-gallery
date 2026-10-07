@@ -4,10 +4,16 @@ import '../theme/tokens.dart';
 
 /// One tab of [PillTabs].
 class PillTab {
-  const PillTab(this.label, {this.icon});
+  const PillTab(this.label, {this.icon, this.emphasized = false, this.accent});
 
   final String label;
   final IconData? icon;
+
+  /// Always shows its label and a soft tint, even when not selected.
+  final bool emphasized;
+
+  /// Highlight color for this tab (defaults to the theme's primary color).
+  final Color? accent;
 }
 
 /// Segmented, horizontally scrollable tab strip in a rounded container
@@ -63,16 +69,22 @@ class _PillTabsState extends State<PillTabs> {
           itemBuilder: (context, index) {
             final tab = widget.tabs[index];
             final selected = index == widget.selectedIndex;
-            final color = selected ? Colors.white : scheme.onSurfaceVariant;
-            final showLabel = selected || !widget.labelSelectedOnly || tab.icon == null;
+            final accent = tab.accent ?? scheme.primary;
+            final color = selected
+                ? Colors.white
+                : (tab.emphasized ? accent : scheme.onSurfaceVariant);
+            final showLabel =
+                selected || tab.emphasized || !widget.labelSelectedOnly || tab.icon == null;
             return Semantics(
               selected: selected,
               button: true,
               label: showLabel ? null : tab.label,
               child: Tooltip(
-                message: showLabel ? '' : tab.label,
+                message: tab.label,
                 child: Material(
-                  color: selected ? scheme.primary : Colors.transparent,
+                  color: selected
+                      ? accent
+                      : (tab.emphasized ? accent.withValues(alpha: .16) : Colors.transparent),
                   borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
