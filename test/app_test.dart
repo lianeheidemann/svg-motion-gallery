@@ -318,9 +318,7 @@ void main() {
     expect(services.library.contentOf(services.library.byId(wave.id)!), formatSvg(_valid));
   });
 
-  testWidgets('layers: arrow folds a folder, double tap renames, header selects all', (
-    tester,
-  ) async {
+  testWidgets('layers: arrow folds a folder, double tap renames, header folds all', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);
 
@@ -364,15 +362,24 @@ void main() {
     expect(find.text('Fundo da lua'), findsWidgets);
     expect(find.text('Selecionado: Fundo da lua'), findsOneWidget);
 
-    // Two taps on the "N camadas" header select every layer again.
+    // Two taps on the "N camadas" header fold every folder, and again open them.
     final header = find.textContaining(RegExp(r'^\d+ camadas$'));
     await tester.ensureVisible(header);
     await tester.pumpAndSettle();
-    await tester.tap(header);
-    await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(header);
-    await tester.pumpAndSettle();
-    expect(find.text('Selecionado: Todas'), findsOneWidget);
+    Future<void> twoTaps() async {
+      await tester.tap(header);
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(header);
+      await tester.pumpAndSettle();
+    }
+
+    final shown = circles.evaluate().length;
+    await twoTaps();
+    expect(find.byTooltip('Dobrar pasta'), findsNothing, reason: 'every folder is folded');
+    expect(circles.evaluate().length, lessThan(shown));
+    await twoTaps();
+    expect(find.byTooltip('Abrir pasta'), findsNothing, reason: 'every folder is open');
+    expect(circles.evaluate().length, shown);
   });
 
   testWidgets('transform: width and height can be changed on their own', (tester) async {

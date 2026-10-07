@@ -46,6 +46,17 @@ void main() {
     ]);
   });
 
+  test('layers inside unnumbered folders carry the number of the folder above', () {
+    expect(_labels(_svg('<g><circle r="1"/></g><g><g><rect/><rect/></g></g>')), [
+      'Grupo 1',
+      'Círculo',
+      'Grupo 2',
+      'Grupo',
+      'Retângulo 2.1',
+      'Retângulo 2.2',
+    ]);
+  });
+
   test('editor wrappers are transparent for numbering', () {
     var svg = _svg('<circle r="1"/><circle r="1"/><circle r="1"/>');
     svg = SvgTransformEdit.apply(
