@@ -34,14 +34,16 @@ class _AnimationPanelState extends State<AnimationPanel> {
   /// (undo, another edit) the bar starts over from that document.
   String? _applied;
 
-  /// The motion picked in the chips; null is "None". Until the user picks, the
-  /// chips show what the selected layer already has.
-  SvgAnimationPreset? _preset;
-  var _picked = false;
-  ElementPath? _pickedFor;
   var _seconds = 2.0;
 
   EditorController get _editor => widget.editor;
+
+  /// Puts [preset] on the layer at [path] (replacing its motion), lasting
+  /// [seconds] (the bar's value when not given).
+  void _setPreset(ElementPath path, SvgAnimationPreset preset, [double? seconds]) {
+    setState(() => _seconds = seconds ?? _seconds);
+    _editor.apply(SvgAnimationEdit.addPreset(_editor.svg, path, preset, seconds: _seconds));
+  }
 
   void _syncBase() {
     if (_editor.svg == (_applied ?? _base)) return;
@@ -59,12 +61,8 @@ class _AnimationPanelState extends State<AnimationPanel> {
     final layer = _editor.selectedLayer;
     final currentPreset = layer == null ? null : SvgAnimationEdit.presetAt(_editor.svg, layer.path);
     final cycle = metadata.cycleDuration;
-    if (layer?.path != _pickedFor) {
-      // Another layer: start over from what it has.
-      _pickedFor = layer?.path;
-      _picked = false;
-    }
-    final chosen = _picked ? _preset : currentPreset;
+    // The chips show what the layer has; tapping one applies it right away.
+    final chosen = currentPreset;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -122,7 +120,6 @@ class _AnimationPanelState extends State<AnimationPanel> {
             if (layer == null)
               Text(l10n.selectLayerHint, style: muted)
             else ...[
-              Text(l10n.presetTarget(l10n.layerLabel(layer, _editor.layers)), style: muted),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -131,19 +128,18 @@ class _AnimationPanelState extends State<AnimationPanel> {
                     key: const Key('preset-none'),
                     label: Text(l10n.presetNone),
                     selected: chosen == null,
-                    onSelected: (_) => setState(() {
-                      _picked = true;
-                      _preset = null;
-                    }),
+                    // "None" takes the motion off the layer.
+                    onSelected: (_) {
+                      if (currentPreset != null) {
+                        _editor.apply(SvgAnimationEdit.removePreset(_editor.svg, layer.path));
+                      }
+                    },
                   ),
                   for (final preset in SvgAnimationPreset.values)
                     ChoiceChip(
                       label: Text(l10n.preset(preset)),
                       selected: preset == chosen,
-                      onSelected: (_) => setState(() {
-                        _picked = true;
-                        _preset = preset;
-                      }),
+                      onSelected: (_) => _setPreset(layer.path, preset),
                     ),
                 ],
               ),
@@ -156,33 +152,7 @@ class _AnimationPanelState extends State<AnimationPanel> {
                 unit: 's',
                 // Nothing to time while "None" is picked.
                 onChanged: chosen == null ? null : (v) => setState(() => _seconds = v),
-              ),
-              Row(
-                children: [
-                  if (currentPreset != null)
-                    TextButton.icon(
-                      onPressed: () =>
-                          _editor.apply(SvgAnimationEdit.removePreset(_editor.svg, layer.path)),
-                      icon: const Icon(Icons.close_rounded),
-                      label: Text(l10n.removePreset),
-                    ),
-                  const Spacer(),
-                  FilledButton.icon(
-                    key: const Key('apply-preset'),
-                    onPressed: chosen == null
-                        ? null
-                        : () => _editor.apply(
-                            SvgAnimationEdit.addPreset(
-                              _editor.svg,
-                              layer.path,
-                              chosen,
-                              seconds: _seconds,
-                            ),
-                          ),
-                    icon: const Icon(Icons.play_circle_outline_rounded),
-                    label: Text(l10n.applyPreset),
-                  ),
-                ],
+                onChangeEnd: chosen == null ? null : (v) => _setPreset(layer.path, chosen, v),
               ),
             ],
           ],

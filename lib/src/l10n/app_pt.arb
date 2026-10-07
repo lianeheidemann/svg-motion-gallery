@@ -314,22 +314,12 @@
   "speed": "Velocidade",
   "removeAnimations": "Remover todas as animações",
   "presetsTitle": "Adicionar movimento",
-  "presetTarget": "Aplicar em: {name}",
-  "@presetTarget": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "presetSpin": "Girar",
   "presetPulse": "Pulsar",
   "presetFloat": "Flutuar",
   "presetSway": "Balançar",
   "presetFade": "Esmaecer",
   "duration": "Duração",
-  "applyPreset": "Aplicar movimento",
-  "removePreset": "Remover movimento",
   "layersTitle": "{count, plural, =0{Camadas} =1{1 camada} other{{count} camadas}}",
   "@layersTitle": {
     "placeholders": {
