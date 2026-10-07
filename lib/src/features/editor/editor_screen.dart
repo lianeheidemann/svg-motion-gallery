@@ -38,6 +38,9 @@ class _EditorScreenState extends State<EditorScreen> {
   var _tab = _EditorTab.transform;
   var _saving = false;
 
+  /// The "valid SVG" banner only shows after a save, until the next edit.
+  var _justSaved = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -68,6 +71,7 @@ class _EditorScreenState extends State<EditorScreen> {
         backup: services.settings.value.autoBackup,
       );
       editor.markSaved();
+      _justSaved = true;
       messenger.showSnackBar(SnackBar(content: Text(l10n.saved)));
       return true;
     } catch (_) {
@@ -135,6 +139,7 @@ class _EditorScreenState extends State<EditorScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _stage(context, editor),
+                Expanded(child: _panel(editor)),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   child: PillTabs(
@@ -151,7 +156,6 @@ class _EditorScreenState extends State<EditorScreen> {
                     ],
                   ),
                 ),
-                Expanded(child: _panel(editor)),
                 _statusBar(context, editor),
               ],
             ),
@@ -273,6 +277,8 @@ class _EditorScreenState extends State<EditorScreen> {
     final l10n = context.l10n;
     final issue = editor.validation.issue;
     final metadata = editor.metadata;
+    final showValid = _justSaved && !editor.hasUnsavedChanges;
+    if (issue == null && !showValid) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       child: StatusBanner(

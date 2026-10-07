@@ -171,12 +171,13 @@ void main() {
 
     await tester.enterText(find.byKey(const Key('code-field')), _valid);
     await tester.pump(const Duration(milliseconds: 600));
-    expect(find.text('SVG válido'), findsOneWidget);
+    expect(find.text('SVG válido'), findsNothing, reason: 'shown only after saving');
 
     await tester.tap(find.byKey(const Key('save')));
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
     await tester.pumpAndSettle();
     expect(find.text('Alterações salvas'), findsOneWidget);
+    expect(find.text('SVG válido'), findsOneWidget);
     expect(services.library.contentOf(services.library.byId(wave.id)!), _valid);
   });
 
