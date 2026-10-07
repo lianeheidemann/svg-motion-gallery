@@ -158,6 +158,28 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('wrapping lines in the code tab is not an unapplied edit', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Código');
+
+    String squash(String s) => s.replaceAll(RegExp(r'\s+'), ' ').trim();
+    String text() => tester.widget<TextField>(find.byKey(const Key('code-field'))).controller!.text;
+    final before = squash(text());
+    await tester.tap(find.text('Quebrar linhas'));
+    await tester.pumpAndSettle();
+    expect(squash(text()), before, reason: 'only whitespace changes');
+    expect(tester.widget<FilledButton>(find.byKey(const Key('apply-code'))).onPressed, isNull);
+    await tester.tap(find.text('Quebrar linhas'));
+    await tester.pumpAndSettle();
+    expect(squash(text()), before);
+  });
+
   testWidgets('editor inserts a shape, undoes, validates code and saves', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);

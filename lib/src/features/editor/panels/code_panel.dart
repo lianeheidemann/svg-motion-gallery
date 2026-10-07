@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:svg_core/svg_core.dart';
@@ -65,6 +67,21 @@ class _CodePanelState extends State<CodePanel> {
   var _fontSize = 11.0;
   var _checkedAuto = false;
 
+  /// Width of the text area, in characters, used to break long lines.
+  var _columns = 0;
+
+  /// [code] as the field shows it: with wrapping on, long lines are really
+  /// broken (continuing with a deeper indent), so the indent survives.
+  String _view(String code) => _wrap && _columns > 0 ? wrapSvgLines(code, _columns) : code;
+
+  /// Changes [change] and re-lays out the text, unless the user has typed
+  /// something that was not applied yet.
+  void _relayout(VoidCallback change) {
+    final pending = _hasPending;
+    setState(change);
+    if (!pending) _code.text = _view(widget.editor.code);
+  }
+
   bool get _auto => AppScope.of(context).settings.value.autoFormatCode;
 
   @override
@@ -81,7 +98,7 @@ class _CodePanelState extends State<CodePanel> {
     super.didUpdateWidget(oldWidget);
     if (widget.editor.revision != _revision) {
       _revision = widget.editor.revision;
-      _code.text = widget.editor.code;
+      _code.text = _view(widget.editor.code);
       _autoFormat();
     }
   }
@@ -108,20 +125,20 @@ class _CodePanelState extends State<CodePanel> {
     // tabs). Deferred because listeners must not rebuild during disposal.
     final pending = _code.text;
     final editor = widget.editor;
-    if (pending != editor.code) Future.microtask(() => editor.updateCode(pending));
+    if (_hasPending) Future.microtask(() => editor.updateCode(pending));
     _code.dispose();
     _vertical.dispose();
     _horizontal.dispose();
     super.dispose();
   }
 
-  bool get _hasPending => _code.text != widget.editor.code;
+  bool get _hasPending => _code.text != _view(widget.editor.code);
 
   void _apply() {
     if (_auto) {
       // The typed text is formatted as it is applied.
       final formatted = formatSvg(_code.text);
-      if (formatted != null) _code.text = formatted;
+      if (formatted != null) _code.text = _view(formatted);
     }
     widget.editor.updateCode(_code.text);
     final validation = widget.editor.validation;
@@ -164,6 +181,24 @@ class _CodePanelState extends State<CodePanel> {
       decoration: const InputDecoration.collapsed(hintText: null),
     );
 
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Side padding 16 + 16, text padding 10 + 10, border 2; monospace
+        // glyphs are about 0.6 em wide.
+        _columns = math.max(((constraints.maxWidth - 54) / (_fontSize * 0.62)).floor(), 0);
+        return _body(context, l10n, colors, style, lines, field);
+      },
+    );
+  }
+
+  Widget _body(
+    BuildContext context,
+    AppLocalizations l10n,
+    GalleryColors colors,
+    TextStyle style,
+    int lines,
+    Widget field,
+  ) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Column(
@@ -210,7 +245,7 @@ class _CodePanelState extends State<CodePanel> {
                       ),
                       selected: _wrap,
                       side: BorderSide(color: Theme.of(context).colorScheme.outline),
-                      onSelected: (value) => setState(() => _wrap = value),
+                      onSelected: (value) => _relayout(() => _wrap = value),
                     ),
                   ],
                 ),
@@ -230,7 +265,7 @@ class _CodePanelState extends State<CodePanel> {
             min: 9,
             max: 24,
             unit: 'pt',
-            onChanged: (v) => setState(() => _fontSize = v.roundToDouble()),
+            onChanged: (v) => _relayout(() => _fontSize = v.roundToDouble()),
           ),
           const SizedBox(height: 4),
           Expanded(
