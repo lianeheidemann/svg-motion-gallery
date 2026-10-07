@@ -173,6 +173,7 @@ void main() {
     expect(save().onPressed, isNull);
 
     await tester.enterText(find.byKey(const Key('code-field')), _valid);
+    await tester.pump();
     await tester.tap(find.byKey(const Key('apply-code')));
     await tester.pumpAndSettle();
     expect(find.text('SVG inválido'), findsNothing);

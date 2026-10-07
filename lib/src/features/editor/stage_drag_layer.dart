@@ -37,7 +37,8 @@ class _StageDragLayerState extends State<StageDragLayer> {
     return _Mapping(
       scale: scale,
       originX: widget.padding.left + (inner.width - canvas.width * scale) / 2 - canvas.minX * scale,
-      originY: widget.padding.top + (inner.height - canvas.height * scale) / 2 - canvas.minY * scale,
+      originY:
+          widget.padding.top + (inner.height - canvas.height * scale) / 2 - canvas.minY * scale,
     );
   }
 
