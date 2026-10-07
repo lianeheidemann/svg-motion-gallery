@@ -5,6 +5,7 @@ import 'package:svg_core/svg_core.dart';
 
 import '../../l10n/l10n.dart';
 import 'editor_controller.dart';
+import 'stage_geometry.dart';
 
 /// Transparent layer over the stage that lets a finger select, move and
 /// resize the shapes drawn on the canvas: drag to move, pinch or drag the
@@ -48,20 +49,10 @@ class _StageDragLayerState extends State<StageDragLayer> {
 
   EditorController get _editor => widget.editor;
 
-  _Mapping _mapping(Size size) {
-    final canvas = SvgMetadata.parse(_editor.svg).canvas;
-    final inner = widget.padding.deflateSize(size);
-    final scale = math.min(inner.width / canvas.width, inner.height / canvas.height);
-    return _Mapping(
-      scale: scale,
-      originX: widget.padding.left + (inner.width - canvas.width * scale) / 2 - canvas.minX * scale,
-      originY:
-          widget.padding.top + (inner.height - canvas.height * scale) / 2 - canvas.minY * scale,
-    );
-  }
+  StageGeometry _mapping(Size size) => StageGeometry.of(_editor.svg, size, widget.padding);
 
-  SvgMovable? _hit(Offset position, _Mapping map) {
-    if (!map.scale.isFinite || map.scale <= 0) return null;
+  SvgMovable? _hit(Offset position, StageGeometry map) {
+    if (!map.isUsable) return null;
     return SvgHitTest.at(
       _editor.svg,
       (position.dx - map.originX) / map.scale,
@@ -76,7 +67,7 @@ class _StageDragLayerState extends State<StageDragLayer> {
     return SvgHitTest.movables(_editor.svg).where((m) => m.path == path).firstOrNull;
   }
 
-  Rect _rect(SvgBounds b, _Mapping map) => Rect.fromLTRB(
+  Rect _rect(SvgBounds b, StageGeometry map) => Rect.fromLTRB(
     b.left * map.scale + map.originX,
     b.top * map.scale + map.originY,
     b.right * map.scale + map.originX,
@@ -156,7 +147,7 @@ class _StageDragLayerState extends State<StageDragLayer> {
     final offset = _offset;
     final factor = _factor;
     setState(() => _reset(null));
-    if ((offset == Offset.zero && factor == 1) || !map.scale.isFinite || map.scale <= 0) return;
+    if ((offset == Offset.zero && factor == 1) || !map.isUsable) return;
     _editor.apply(
       SvgTransformEdit.apply(
         _editor.svg,
@@ -240,15 +231,6 @@ class _StageDragLayerState extends State<StageDragLayer> {
       },
     );
   }
-}
-
-class _Mapping {
-  const _Mapping({required this.scale, required this.originX, required this.originY});
-
-  /// Logical pixels per user unit, and where user (0, 0) lands in the layer.
-  final double scale;
-  final double originX;
-  final double originY;
 }
 
 class _OutlinePainter extends CustomPainter {

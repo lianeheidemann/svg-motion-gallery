@@ -17,6 +17,7 @@ import 'panels/insert_panel.dart';
 import 'panels/layers_panel.dart';
 import 'panels/transform_panel.dart';
 import 'stage_drag_layer.dart';
+import 'stage_geometry.dart';
 
 enum _EditorTab { transform, colors, animation, layers, insert, code }
 
@@ -229,6 +230,9 @@ class _EditorScreenState extends State<EditorScreen> {
                     padding: const EdgeInsets.all(16),
                     semanticLabel: l10n.previewOf(_document!.name),
                   ),
+                ),
+                Positioned.fill(
+                  child: CanvasFrame(svg: editor.displaySvg, padding: const EdgeInsets.all(16)),
                 ),
                 if (_tab == _EditorTab.insert)
                   Positioned.fill(
