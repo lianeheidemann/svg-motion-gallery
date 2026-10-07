@@ -34,8 +34,12 @@ class _WindowPanelState extends State<WindowPanel> {
   SvgViewBox? _live;
   var _margin = 4.0;
   bool? _withMotion;
-  var _fitting = false;
   var _failed = false;
+
+  /// What is drawn, measured when the margin bar is first touched, and
+  /// whether the bar is being dragged.
+  Rect? _content;
+  var _dragging = false;
 
   EditorController get _editor => widget.editor;
 
@@ -68,55 +72,68 @@ class _WindowPanelState extends State<WindowPanel> {
     return SvgViewBox(around.centerX - width / 2, around.centerY - height / 2, width, height);
   }
 
-  /// What is drawn (with the margin), measured by the renderer; null when it
-  /// cannot tell or nothing is drawn.
-  Future<SvgViewBox?> _measureContent() async {
+  /// What is drawn, measured by the renderer; null when it cannot tell or
+  /// nothing is drawn.
+  Future<Rect?> _measureContent() async {
     final playback = widget.playback;
     if (playback == null) return null;
     final metadata = _editor.metadata;
     final moving = (_withMotion ?? metadata.isAnimated) && metadata.isAnimated;
     final box = await playback.measureContent(cycle: moving ? metadata.cycleDuration : null);
-    if (box == null || box.width <= 0 || box.height <= 0) return null;
-    final pad = math.max(box.width, box.height) * _margin / 100;
-    return SvgViewBox(box.left - pad, box.top - pad, box.width + 2 * pad, box.height + 2 * pad);
+    return box == null || box.width <= 0 || box.height <= 0 ? null : box;
+  }
+
+  /// [content] with the margin on every side. The margin is the same share
+  /// of each side, so a wide drawing keeps its proportion inside the window
+  /// instead of getting the same gap on a long and a short side.
+  SvgViewBox _framed(Rect content) {
+    final m = _margin / 100;
+    return SvgViewBox(
+      content.left - content.width * m,
+      content.top - content.height * m,
+      content.width * (1 + 2 * m),
+      content.height * (1 + 2 * m),
+    );
+  }
+
+  /// Touching the margin bar measures the drawing once; the window then
+  /// follows the bar live.
+  Future<void> _startMargin() async {
+    _dragging = true;
+    _content = null;
+    setState(() => _failed = false);
+    final box = await _measureContent();
+    if (!mounted) return;
+    _content = box;
+    if (box == null) {
+      setState(() => _failed = true);
+    } else if (_dragging) {
+      _preview(_framed(box));
+    } else {
+      _commit(_framed(box));
+    }
+  }
+
+  void _moveMargin(double value) {
+    setState(() => _margin = value);
+    final box = _content;
+    if (box != null) _preview(_framed(box));
+  }
+
+  void _endMargin() {
+    _dragging = false;
+    if (_live != null) _commit();
   }
 
   /// A new proportion refits the drawing: the window becomes the smallest one
-  /// of that proportion that shows everything drawn. Where the renderer cannot
-  /// measure, it grows around the current window instead (nothing is cut).
+  /// of that proportion that shows everything drawn, with the margin. Where
+  /// the renderer cannot measure, it grows around the current window instead
+  /// (nothing is cut).
   Future<void> _setRatio(double ratio) async {
     setState(() => _failed = false);
     final content = await _measureContent();
     if (!mounted) return;
-    _commit(_containing(content ?? _window, ratio));
-  }
-
-  Future<void> _fit() async {
-    final playback = widget.playback;
-    if (playback == null) return;
-    final metadata = _editor.metadata;
-    final moving = (_withMotion ?? metadata.isAnimated) && metadata.isAnimated;
-    setState(() {
-      _fitting = true;
-      _failed = false;
-    });
-    final box = await playback.measureContent(cycle: moving ? metadata.cycleDuration : null);
-    if (!mounted) return;
-    setState(() => _fitting = false);
-    if (box == null || box.width <= 0 || box.height <= 0) {
-      setState(() => _failed = true);
-      return;
-    }
-    _editor.commit(
-      SvgDocumentEdit.fitWindow(
-        _editor.svg,
-        x: box.left,
-        y: box.top,
-        width: box.width,
-        height: box.height,
-        margin: _margin / 100,
-      ),
-    );
+    _commit(_containing(content == null ? _window : _framed(content), ratio));
   }
 
   @override
@@ -207,7 +224,9 @@ class _WindowPanelState extends State<WindowPanel> {
               min: 0,
               max: 30,
               unit: '%',
-              onChanged: (v) => setState(() => _margin = v.roundToDouble()),
+              onChangeStart: (_) => _startMargin(),
+              onChanged: (v) => _moveMargin(v.roundToDouble()),
+              onChangeEnd: (_) => _endMargin(),
             ),
             SwitchListTile(
               key: const Key('window-motion'),
@@ -219,15 +238,6 @@ class _WindowPanelState extends State<WindowPanel> {
             ),
             if (_failed)
               Text(l10n.windowFitFailed, style: const TextStyle(color: Colors.redAccent)),
-            Align(
-              alignment: Alignment.centerRight,
-              child: FilledButton.icon(
-                key: const Key('window-fit'),
-                onPressed: _fitting || widget.playback == null ? null : _fit,
-                icon: const Icon(Icons.fit_screen_rounded, size: 18),
-                label: Text(l10n.windowFit),
-              ),
-            ),
           ],
         ),
       ],

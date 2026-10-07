@@ -71,4 +71,41 @@ void main() {
     expect(window.height, closeTo(400, 0.001));
     expect(window.centerY, closeTo(50, 0.001));
   });
+
+  testWidgets('the margin bar frames the drawing live, with the same share on every side', (
+    tester,
+  ) async {
+    final editor = EditorController(_svg);
+    addTearDown(editor.dispose);
+    final playback = SvgPlaybackController();
+    final renderer = _Renderer();
+    // ignore: invalid_use_of_internal_member
+    playback.attach(renderer);
+    await _pump(tester, editor, playback);
+    expect(find.byKey(const Key('window-fit')), findsNothing, reason: 'no fit button');
+
+    final bar = find.descendant(
+      of: find.byKey(const Key('window-margin')),
+      matching: find.byType(Slider),
+    );
+    final gesture = await tester.startGesture(tester.getCenter(bar));
+    await gesture.moveBy(const Offset(30, 0));
+    await tester.pump();
+    expect(renderer.calls, contains('measure'), reason: 'touching the bar measures the drawing');
+    // ignore: invalid_use_of_internal_member
+    playback.reportMeasure([150, 20, 100, 60]);
+    await tester.pump();
+    await gesture.moveBy(const Offset(30, 0));
+    await tester.pump();
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    final window = editor.metadata.canvas;
+    final left = (150 - window.minX) / 100; // gap / drawing width
+    final top = (20 - window.minY) / 60; // gap / drawing height
+    expect(left, greaterThan(0));
+    expect(left, closeTo(top, 0.001), reason: 'the gap is the same share of each side');
+    expect(window.width, closeTo(100 * (1 + 2 * left), 0.001));
+    expect(window.height, closeTo(60 * (1 + 2 * left), 0.001));
+  });
 }
