@@ -176,97 +176,101 @@ class _ViewerScreenState extends State<ViewerScreen> {
               ),
             ],
           ),
-          body: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-            children: [
-              SizedBox(
-                height: stageHeight,
-                child: Stack(
-                  children: [
-                    PageView.builder(
-                      controller: _pages,
-                      itemCount: documents.length,
-                      onPageChanged: (page) {
-                        setState(() {
-                          _index = page;
-                          _variant = VariantMode.auto;
-                        });
-                        _onPageShown();
-                      },
-                      itemBuilder: (context, page) {
-                        final pageDocument = documents[page];
-                        final pageSvg = library.contentOf(pageDocument);
-                        if (!library.hasContent(pageDocument)) {
-                          return Center(
-                            child: library.isUnreadable(pageDocument)
-                                ? const Icon(Icons.broken_image_outlined, size: 56)
-                                : const CircularProgressIndicator(),
+          // Keeps the last button above the system navigation bar.
+          body: SafeArea(
+            top: false,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+              children: [
+                SizedBox(
+                  height: stageHeight,
+                  child: Stack(
+                    children: [
+                      PageView.builder(
+                        controller: _pages,
+                        itemCount: documents.length,
+                        onPageChanged: (page) {
+                          setState(() {
+                            _index = page;
+                            _variant = VariantMode.auto;
+                          });
+                          _onPageShown();
+                        },
+                        itemBuilder: (context, page) {
+                          final pageDocument = documents[page];
+                          final pageSvg = library.contentOf(pageDocument);
+                          if (!library.hasContent(pageDocument)) {
+                            return Center(
+                              child: library.isUnreadable(pageDocument)
+                                  ? const Icon(Icons.broken_image_outlined, size: 56)
+                                  : const CircularProgressIndicator(),
+                            );
+                          }
+                          if (page == index && _variant == VariantMode.sideBySide) {
+                            return SideBySideVariants(svg: pageSvg);
+                          }
+                          return SvgPreview(
+                            key: ValueKey('page-${pageDocument.id}'),
+                            svg: pageSvg,
+                            scheme: page == index ? _forcedScheme : null,
+                            controller: page == index ? _playback : null,
+                            padding: const EdgeInsets.all(20),
+                            semanticLabel: l10n.previewOf(pageDocument.name),
                           );
-                        }
-                        if (page == index && _variant == VariantMode.sideBySide) {
-                          return SideBySideVariants(svg: pageSvg);
-                        }
-                        return SvgPreview(
-                          key: ValueKey('page-${pageDocument.id}'),
-                          svg: pageSvg,
-                          scheme: page == index ? _forcedScheme : null,
-                          controller: page == index ? _playback : null,
-                          padding: const EdgeInsets.all(20),
-                          semanticLabel: l10n.previewOf(pageDocument.name),
-                        );
-                      },
-                    ),
-                    if (documents.length > 1) ...[
-                      _PageArrow(
-                        alignment: Alignment.centerLeft,
-                        icon: Icons.chevron_left_rounded,
-                        tooltip: l10n.previous,
-                        onPressed: () => _goTo(index - 1, documents.length),
+                        },
                       ),
-                      _PageArrow(
-                        alignment: Alignment.centerRight,
-                        icon: Icons.chevron_right_rounded,
-                        tooltip: l10n.next,
-                        onPressed: () => _goTo(index + 1, documents.length),
-                      ),
+                      if (documents.length > 1) ...[
+                        _PageArrow(
+                          alignment: Alignment.centerLeft,
+                          icon: Icons.chevron_left_rounded,
+                          tooltip: l10n.previous,
+                          onPressed: () => _goTo(index - 1, documents.length),
+                        ),
+                        _PageArrow(
+                          alignment: Alignment.centerRight,
+                          icon: Icons.chevron_right_rounded,
+                          tooltip: l10n.next,
+                          onPressed: () => _goTo(index + 1, documents.length),
+                        ),
+                      ],
                     ],
-                  ],
-                ),
-              ),
-              if (documents.length > 1)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    l10n.pageOf(index + 1, documents.length),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: GalleryColors.of(context).muted),
                   ),
                 ),
-              const SizedBox(height: AppSpacing.md),
-              PlaybackBar(
-                controller: _playback!,
-                animated: metadata.isAnimated && live,
-                slideshowOn: _slideshow != null,
-                onToggleSlideshow: _toggleSlideshow,
-                onFullscreen: () => _openFullscreen(svg),
-              ),
-              if (adaptive) ...[
+                if (documents.length > 1)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      l10n.pageOf(index + 1, documents.length),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: GalleryColors.of(context).muted),
+                    ),
+                  ),
                 const SizedBox(height: AppSpacing.md),
-                VariantSelector(
-                  mode: _variant,
-                  onChanged: (mode) => setState(() => _variant = mode),
+                PlaybackBar(
+                  controller: _playback!,
+                  animated: metadata.isAnimated && live,
+                  slideshowOn: _slideshow != null,
+                  onToggleSlideshow: _toggleSlideshow,
+                  onFullscreen: () => _openFullscreen(svg),
+                ),
+                if (adaptive) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  VariantSelector(
+                    mode: _variant,
+                    onChanged: (mode) => setState(() => _variant = mode),
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.md),
+                FileInfoCard(document: document, metadata: metadata),
+                const SizedBox(height: AppSpacing.lg),
+                FilledButton.icon(
+                  key: const Key('edit-svg'),
+                  onPressed: () => _edit(document),
+                  icon: const Icon(Icons.edit_rounded),
+                  label: Text(l10n.editSvg),
                 ),
               ],
-              const SizedBox(height: AppSpacing.md),
-              FileInfoCard(document: document, metadata: metadata),
-              const SizedBox(height: AppSpacing.lg),
-              FilledButton.icon(
-                key: const Key('edit-svg'),
-                onPressed: () => _edit(document),
-                icon: const Icon(Icons.edit_rounded),
-                label: Text(l10n.editSvg),
-              ),
-            ],
+            ),
           ),
         );
       },

@@ -21,6 +21,7 @@ class SvgPreview extends StatelessWidget {
     this.forceStill = false,
     this.controller,
     this.showGrid = false,
+    this.background = StageBackground.current,
     this.interactive = false,
     this.padding = const EdgeInsets.all(12),
     this.borderRadius = AppSpacing.radius,
@@ -39,6 +40,7 @@ class SvgPreview extends StatelessWidget {
   final bool forceStill;
   final SvgPlaybackController? controller;
   final bool showGrid;
+  final StageBackground background;
   final bool interactive;
   final EdgeInsetsGeometry padding;
   final double borderRadius;
@@ -54,6 +56,7 @@ class SvgPreview extends StatelessWidget {
         final still = forceStill || (thumbnail && (!value.highQualityPreviews || !value.autoplay));
         return Stage(
           showGrid: showGrid,
+          background: background,
           borderRadius: borderRadius,
           padding: padding,
           child: SvgView(

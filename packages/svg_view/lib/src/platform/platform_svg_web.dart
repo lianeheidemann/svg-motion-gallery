@@ -44,10 +44,32 @@ class _IframeSvgState extends State<_IframeSvg> implements SvgPlaybackTarget {
     if (data is! Map || data['smId'] != _id) return;
     final message = data['sm'];
     if (message is! Map) return;
+    if (message.containsKey('m')) {
+      final box = message['m'];
+      _config.controller?.reportMeasure(
+        box is List
+            ? [
+                for (final v in box)
+                  if (v is num) v.toDouble(),
+              ]
+            : null,
+      );
+      return;
+    }
     final seconds = message['t'];
     final paused = message['p'];
     if (seconds is num && paused is bool) {
-      _config.controller?.report(seconds: seconds.toDouble(), paused: paused);
+      final box = message['b'];
+      _config.controller?.report(
+        seconds: seconds.toDouble(),
+        paused: paused,
+        box: box is List
+            ? [
+                for (final v in box)
+                  if (v is num) v.toDouble(),
+              ]
+            : null,
+      );
     }
   }
 

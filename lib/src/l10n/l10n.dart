@@ -1,3 +1,4 @@
+import 'package:design_system/design_system.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:svg_core/svg_core.dart';
@@ -19,6 +20,7 @@ extension AppLocalizationsFormat on AppLocalizations {
       SvgIssueCode.rootNotSvg => issueRootNotSvg,
       SvgIssueCode.malformedXml =>
         issue.line == null ? issueMalformed : issueMalformedAt(issue.line!, issue.column ?? 0),
+      SvgIssueCode.malformedCss => issue.line == null ? issueCss : issueCssAt(issue.line!),
     };
     return issue.detail == null ? base : '$base — ${issue.detail}';
   }
@@ -83,9 +85,69 @@ extension AppLocalizationsFormat on AppLocalizations {
     SvgShapeKind.text => shapeText,
   };
 
+  String backgroundName(StageBackground background) => switch (background) {
+    StageBackground.current => backgroundCurrent,
+    StageBackground.light => backgroundLight,
+    StageBackground.dark => backgroundDark,
+    StageBackground.checkerboard => backgroundChecker,
+  };
+
+  /// Labels for a whole layer list: [layer] names, with a number added to
+  /// layers that share a name among their siblings, nested like the tree
+  /// (`Grupo 1` → `Círculo 1.1`, `Círculo 1.2`; `Grupo 2` → `Círculo 2.1`).
+  /// Editor wrappers are transparent: what they wrap counts as their sibling.
+  /// Only for display; nothing here is written to the file.
+  Map<ElementPath, String> layerLabels(List<SvgLayer> layers) {
+    final byPath = {for (final l in layers) l.path: l};
+
+    /// Nearest ancestor that is not an editor wrapper.
+    ElementPath ownerOf(SvgLayer layer) {
+      var parent = layer.path.parent ?? ElementPath.root;
+      while (!parent.isRoot && (byPath[parent]?.isEditorGroup ?? false)) {
+        parent = parent.parent ?? ElementPath.root;
+      }
+      return parent;
+    }
+
+    final totals = <ElementPath, Map<String, int>>{};
+    for (final l in layers.where((l) => !l.isEditorGroup)) {
+      final counts = totals.putIfAbsent(ownerOf(l), () => {});
+      counts.update(layer(l), (n) => n + 1, ifAbsent: () => 1);
+    }
+
+    final seen = <ElementPath, Map<String, int>>{};
+    // The number text of each layer that has one, to prefix its children.
+    final numbers = <ElementPath, String>{};
+    final labels = <ElementPath, String>{};
+    for (final l in layers) {
+      final base = layer(l);
+      if (l.isEditorGroup) {
+        labels[l.path] = base;
+        continue;
+      }
+      final owner = ownerOf(l);
+      final total = totals[owner]![base]!;
+      if (total < 2) {
+        labels[l.path] = base;
+        continue;
+      }
+      final index = seen.putIfAbsent(owner, () => {}).update(base, (n) => n + 1, ifAbsent: () => 1);
+      final prefix = numbers[owner];
+      final number = prefix == null ? '$index' : '$prefix.$index';
+      numbers[l.path] = number;
+      labels[l.path] = '$base $number';
+    }
+    return labels;
+  }
+
+  /// The label of [layer] within [all] (see [layerLabels]).
+  String layerLabel(SvgLayer layer, List<SvgLayer> all) =>
+      layerLabels(all)[layer.path] ?? this.layer(layer);
+
   /// Human label of a layer: text content, `#id`, or a translated tag name.
   String layer(SvgLayer layer) {
     if (layer.isEditorGroup) return layerEditorGroup;
+    if (layer.name != null) return layer.name!;
     final tag = switch (layer.tag) {
       'g' => tagGroup,
       'rect' => shapeRectangle,

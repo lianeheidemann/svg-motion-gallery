@@ -1,5 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:xml/xml.dart';
 
+import '../metadata.dart';
 import '../xml_support.dart';
 import 'element_path.dart';
 
@@ -10,6 +13,8 @@ class SvgTransformValues {
     this.translateY = 0,
     this.rotation = 0,
     this.scale = 1,
+    this.widthFactor = 1,
+    this.heightFactor = 1,
     this.opacity = 1,
   });
 
@@ -25,29 +30,48 @@ class SvgTransformValues {
   /// Uniform scale factor around the center of the target (1 = 100 %).
   final double scale;
 
+  /// Extra stretch of the width and of the height alone (1 = none), on top of
+  /// [scale]. The element's own axes are stretched, before it is rotated.
+  final double widthFactor;
+  final double heightFactor;
+
   /// 0..1.
   final double opacity;
 
   bool get isIdentity =>
-      translateX == 0 && translateY == 0 && rotation == 0 && scale == 1 && opacity == 1;
+      translateX == 0 &&
+      translateY == 0 &&
+      rotation == 0 &&
+      scale == 1 &&
+      widthFactor == 1 &&
+      heightFactor == 1 &&
+      opacity == 1;
 
   SvgTransformValues copyWith({
     double? translateX,
     double? translateY,
     double? rotation,
     double? scale,
+    double? widthFactor,
+    double? heightFactor,
     double? opacity,
   }) => SvgTransformValues(
     translateX: translateX ?? this.translateX,
     translateY: translateY ?? this.translateY,
     rotation: rotation ?? this.rotation,
     scale: scale ?? this.scale,
+    widthFactor: widthFactor ?? this.widthFactor,
+    heightFactor: heightFactor ?? this.heightFactor,
     opacity: opacity ?? this.opacity,
   );
 
+  String get _scaleArguments => widthFactor == 1 && heightFactor == 1
+      ? formatNumber(scale)
+      : '${formatNumber(scale * widthFactor)} ${formatNumber(scale * heightFactor)}';
+
   String get _transformAttribute =>
       'translate(${formatNumber(translateX)} ${formatNumber(translateY)}) '
-      'rotate(${formatNumber(rotation)}) scale(${formatNumber(scale)})';
+      'rotate(${formatNumber(rotation)}) scale($_scaleArguments)';
 
   @override
   bool operator ==(Object other) =>
@@ -56,10 +80,13 @@ class SvgTransformValues {
       other.translateY == translateY &&
       other.rotation == rotation &&
       other.scale == scale &&
+      other.widthFactor == widthFactor &&
+      other.heightFactor == heightFactor &&
       other.opacity == opacity;
 
   @override
-  int get hashCode => Object.hash(translateX, translateY, rotation, scale, opacity);
+  int get hashCode =>
+      Object.hash(translateX, translateY, rotation, scale, widthFactor, heightFactor, opacity);
 }
 
 /// Applies [SvgTransformValues] through an editor-owned `<g>` wrapper, so the
@@ -177,7 +204,11 @@ class SvgTransformEdit {
           translateY: numbers.length > 1 ? numbers[1] : 0,
         ),
         'rotate' => values.copyWith(rotation: numbers[0]),
-        _ => values.copyWith(scale: numbers[0]),
+        _ => values.copyWith(
+          scale: numbers[0],
+          // scale(sx sy): the height is stretched relative to the width.
+          heightFactor: numbers.length > 1 && numbers[0] != 0 ? numbers[1] / numbers[0] : 1,
+        ),
       };
     }
     return values;
@@ -201,6 +232,61 @@ class SvgDocumentEdit {
     if (width == null || height == null || width <= 0 || height <= 0) return svg;
     root.setAttribute('viewBox', '0 0 ${formatNumber(width)} ${formatNumber(height)}');
     return document.toXmlString();
+  }
+
+  /// Sets the window of the drawing: the part of the canvas that is shown
+  /// (the `viewBox`). Anything outside it is cropped. A numeric root
+  /// `width`/`height` is scaled with the window, so one unit keeps the same
+  /// size on screen and the file's pixel size follows the crop.
+  static String setViewBox(
+    String svg, {
+    required double minX,
+    required double minY,
+    required double width,
+    required double height,
+  }) {
+    if (!(width > 0) || !(height > 0)) return svg;
+    final document = tryParseSvg(svg);
+    if (document == null) return svg;
+    final root = document.rootElement;
+    final oldWidth = parseLength(root.getAttribute('width'));
+    final oldHeight = parseLength(root.getAttribute('height'));
+    final old =
+        SvgViewBox.tryParse(root.getAttribute('viewBox')) ??
+        (oldWidth != null && oldHeight != null && oldWidth > 0 && oldHeight > 0
+            ? SvgViewBox(0, 0, oldWidth, oldHeight)
+            : null);
+    root.setAttribute(
+      'viewBox',
+      '${formatNumber(minX)} ${formatNumber(minY)} ${formatNumber(width)} ${formatNumber(height)}',
+    );
+    if (old != null) {
+      if (oldWidth != null) root.setAttribute('width', formatNumber(oldWidth * width / old.width));
+      if (oldHeight != null) {
+        root.setAttribute('height', formatNumber(oldHeight * height / old.height));
+      }
+    }
+    return document.toXmlString();
+  }
+
+  /// Crops the window to the box ([x], [y], [width], [height]) of the content,
+  /// grown by [margin] (a fraction of the box's larger side) on every side.
+  static String fitWindow(
+    String svg, {
+    required double x,
+    required double y,
+    required double width,
+    required double height,
+    double margin = 0,
+  }) {
+    final pad = math.max(width, height) * margin;
+    return setViewBox(
+      svg,
+      minX: x - pad,
+      minY: y - pad,
+      width: math.max(width + 2 * pad, 0.001),
+      height: math.max(height + 2 * pad, 0.001),
+    );
   }
 
   /// Sets the root `width`/`height`. A `viewBox` matching the previous size

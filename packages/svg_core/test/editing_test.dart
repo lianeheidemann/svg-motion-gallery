@@ -27,6 +27,16 @@ void main() {
       expect(SvgLayers.list(shown).first.visible, isTrue);
     });
 
+    test('renames a layer without touching its id, and clears the name', () {
+      final named = SvgLayers.rename(base, const ElementPath([1]), '  Fundo  ');
+      expect(named, contains('data-name="Fundo"'));
+      expect(named, contains('id="bg"'));
+      expect(SvgLayers.list(named).firstWhere((l) => l.id == 'bg').name, 'Fundo');
+      final cleared = SvgLayers.rename(named, const ElementPath([1]), '   ');
+      expect(cleared, isNot(contains('data-name')));
+      expect(SvgLayers.list(cleared).firstWhere((l) => l.id == 'bg').name, isNull);
+    });
+
     test('removes, duplicates and reorders', () {
       final removed = SvgLayers.remove(base, const ElementPath([1]));
       expect(removed.selection, isNull);
@@ -52,6 +62,23 @@ void main() {
   });
 
   group('SvgTransformEdit', () {
+    test('stretches only the width or only the height, and reads it back', () {
+      const values = SvgTransformValues(scale: 2, widthFactor: 0.5, heightFactor: 1.5);
+      final result = SvgTransformEdit.apply(base, const ElementPath([2]), values);
+      expect(result.svg, contains('scale(1 3)'), reason: 'scale 2 x (0.5, 1.5)');
+      final read = SvgTransformEdit.read(result.svg, result.selection);
+      expect(read.scale, closeTo(1, 1e-9));
+      expect(read.heightFactor, closeTo(3, 1e-9));
+      // Same drawing either way: the factors are only a different way to write it.
+      expect(read.scale * read.widthFactor, closeTo(1, 1e-9));
+      expect(read.scale * read.heightFactor, closeTo(3, 1e-9));
+      expect(const SvgTransformValues(widthFactor: 2).isIdentity, isFalse);
+      expect(
+        SvgTransformEdit.apply(base, const ElementPath([2]), const SvgTransformValues()).svg,
+        base,
+      );
+    });
+
     const values = SvgTransformValues(
       translateX: 5,
       translateY: -2.5,
@@ -252,6 +279,56 @@ void main() {
       final path = SvgLayers.list(still).first.path;
       final again = SvgAnimationEdit.addPreset(still, path, SvgAnimationPreset.fade);
       expect(again.svg, contains('@keyframes sm-fade'));
+    });
+  });
+
+  group('SvgDocumentEdit window', () {
+    const sized =
+        '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">'
+        '<rect x="100" y="50" width="200" height="100"/></svg>';
+
+    test('crops the viewBox and keeps one unit the same size on screen', () {
+      final cropped = SvgDocumentEdit.setViewBox(
+        sized,
+        minX: 100,
+        minY: 50,
+        width: 400,
+        height: 300,
+      );
+      expect(cropped, contains('viewBox="100 50 400 300"'));
+      expect(cropped, contains('width="400"'));
+      expect(cropped, contains('height="300"'));
+      final meta = SvgMetadata.parse(cropped);
+      expect(meta.canvas.minX, 100);
+      expect(meta.canvas.width, 400);
+    });
+
+    test('works without width/height and rejects empty windows', () {
+      const bare = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"/>';
+      final cropped = SvgDocumentEdit.setViewBox(bare, minX: 1, minY: 2, width: 5, height: 6);
+      expect(cropped, contains('viewBox="1 2 5 6"'));
+      expect(cropped, isNot(contains('width=')));
+      expect(SvgDocumentEdit.setViewBox(bare, minX: 0, minY: 0, width: 0, height: 5), bare);
+    });
+
+    test('uses width/height as the old window when there is no viewBox', () {
+      const noBox = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"/>';
+      final cropped = SvgDocumentEdit.setViewBox(noBox, minX: 0, minY: 0, width: 100, height: 100);
+      expect(cropped, contains('width="100"'));
+      expect(cropped, contains('height="100"'));
+    });
+
+    test('fits the window to a content box with a margin', () {
+      final fitted = SvgDocumentEdit.fitWindow(
+        sized,
+        x: 100,
+        y: 50,
+        width: 200,
+        height: 100,
+        margin: 0.1,
+      );
+      // 10 % of the larger side (200) = 20 on every side.
+      expect(fitted, contains('viewBox="80 30 240 140"'));
     });
   });
 

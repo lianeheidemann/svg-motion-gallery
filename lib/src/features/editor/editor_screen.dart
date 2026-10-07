@@ -2,11 +2,13 @@ import 'dart:math' as math;
 
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
+import 'package:svg_core/svg_core.dart';
 import 'package:svg_view/svg_view.dart';
 
 import '../../app_scope.dart';
 import '../../data/svg_document.dart';
 import '../../l10n/l10n.dart';
+import '../../widgets/app_bar_toggles.dart';
 import '../../widgets/svg_actions_menu.dart';
 import '../../widgets/svg_preview.dart';
 import 'editor_controller.dart';
@@ -15,9 +17,14 @@ import 'panels/code_panel.dart';
 import 'panels/colors_panel.dart';
 import 'panels/insert_panel.dart';
 import 'panels/layers_panel.dart';
+import 'panels/size_panel.dart';
 import 'panels/transform_panel.dart';
+import 'panels/window_panel.dart';
+import 'selection_highlight.dart';
+import 'stage_drag_layer.dart';
+import 'stage_geometry.dart';
 
-enum _EditorTab { transform, colors, animation, layers, insert, code }
+enum _EditorTab { layers, transform, size, window, colors, animation, insert, text, code }
 
 /// The single editor: live stage on top, one tab per kind of edit, a
 /// validation/status line at the bottom and one Save button.
@@ -34,8 +41,18 @@ class _EditorScreenState extends State<EditorScreen> {
   EditorController? _editor;
   SvgDocument? _document;
   final _playback = SvgPlaybackController();
-  var _tab = _EditorTab.transform;
+  var _tab = _EditorTab.layers;
+  bool get _isInsertTab => _tab == _EditorTab.insert || _tab == _EditorTab.text;
   var _saving = false;
+
+  /// What the preview sits on. Only a viewing aid: never saved.
+  var _background = StageBackground.current;
+
+  /// Selection last sent to the renderer, which then reports where it is.
+  ElementPath? _sentSelection;
+
+  /// The "valid SVG" banner only shows after a save, until the next edit.
+  var _justSaved = false;
 
   @override
   void didChangeDependencies() {
@@ -67,7 +84,10 @@ class _EditorScreenState extends State<EditorScreen> {
         backup: services.settings.value.autoBackup,
       );
       editor.markSaved();
-      messenger.showSnackBar(SnackBar(content: Text(l10n.saved)));
+      _justSaved = true;
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(l10n.saved)));
       return true;
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text(l10n.saveFailed)));
@@ -75,6 +95,18 @@ class _EditorScreenState extends State<EditorScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  Future<void> _confirmReset(EditorController editor) async {
+    final l10n = context.l10n;
+    final reset = await showConfirmDialog(
+      context,
+      title: l10n.resetTitle,
+      message: l10n.resetMessage,
+      confirm: l10n.resetConfirm,
+      destructive: true,
+    );
+    if (reset) editor.resetAll();
   }
 
   Future<void> _confirmLeave() async {
@@ -121,39 +153,68 @@ class _EditorScreenState extends State<EditorScreen> {
     }
     return ListenableBuilder(
       listenable: editor,
-      builder: (context, _) => PopScope(
-        canPop: !editor.hasUnsavedChanges,
-        onPopInvokedWithResult: (didPop, _) {
-          if (!didPop) _confirmLeave();
-        },
-        child: Scaffold(
-          appBar: _appBar(context, editor),
-          body: SafeArea(
-            top: false,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _stage(context, editor),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: PillTabs(
-                    labelSelectedOnly: true,
-                    selectedIndex: _tab.index,
-                    onChanged: (index) => setState(() => _tab = _EditorTab.values[index]),
-                    tabs: [
-                      PillTab(l10n.tabTransform, icon: Icons.open_with_rounded),
-                      PillTab(l10n.tabColors, icon: Icons.palette_outlined),
-                      PillTab(l10n.tabAnimation, icon: Icons.animation_rounded),
-                      PillTab(l10n.tabLayers, icon: Icons.layers_outlined),
-                      PillTab(l10n.tabInsert, icon: Icons.add_box_outlined),
-                      PillTab(l10n.tabCode, icon: Icons.code_rounded),
-                    ],
-                  ),
+      builder: (context, _) {
+        _syncSelection(editor);
+        return _scaffold(context, editor);
+      },
+    );
+  }
+
+  /// Tells the stage's renderer which element to outline. Deferred because
+  /// the renderer's controller notifies listeners that are building now.
+  void _syncSelection(EditorController editor) {
+    final selection = editor.selection;
+    if (selection == _sentSelection) return;
+    _sentSelection = selection;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _playback.selectElement(selection?.indices);
+    });
+  }
+
+  Widget _scaffold(BuildContext context, EditorController editor) {
+    final l10n = context.l10n;
+    return PopScope(
+      canPop: !editor.hasUnsavedChanges,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _confirmLeave();
+      },
+      child: Scaffold(
+        appBar: _appBar(context, editor),
+        body: SafeArea(
+          top: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _stage(context, editor),
+              Expanded(child: _panel(editor)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: PillTabs(
+                  labelSelectedOnly: true,
+                  selectedIndex: _tab.index,
+                  onChanged: (index) => setState(() => _tab = _EditorTab.values[index]),
+                  tabs: [
+                    // Always first and highlighted; another color while the
+                    // whole drawing (every layer) is the target.
+                    PillTab(
+                      l10n.tabLayers,
+                      icon: Icons.layers_outlined,
+                      emphasized: true,
+                      accent: editor.selection == null ? GalleryColors.of(context).success : null,
+                    ),
+                    PillTab(l10n.tabTransform, icon: Icons.open_with_rounded),
+                    PillTab(l10n.tabSize, icon: Icons.aspect_ratio_rounded),
+                    PillTab(l10n.tabWindow, icon: Icons.crop_rounded),
+                    PillTab(l10n.tabColors, icon: Icons.palette_outlined),
+                    PillTab(l10n.tabAnimation, icon: Icons.animation_rounded),
+                    PillTab(l10n.tabInsert, icon: Icons.add_box_outlined),
+                    PillTab(l10n.tabText, icon: Icons.text_fields_rounded),
+                    PillTab(l10n.tabCode, icon: Icons.code_rounded),
+                  ],
                 ),
-                Expanded(child: _panel(editor)),
-                _statusBar(context, editor),
-              ],
-            ),
+              ),
+              _statusBar(context, editor),
+            ],
           ),
         ),
       ),
@@ -176,6 +237,8 @@ class _EditorScreenState extends State<EditorScreen> {
         ],
       ),
       actions: [
+        // Always reachable while editing, whatever the tab.
+        const ThemeToggleButton(),
         IconButton(
           tooltip: l10n.undo,
           onPressed: editor.canUndo ? editor.undo : null,
@@ -198,6 +261,11 @@ class _EditorScreenState extends State<EditorScreen> {
     );
   }
 
+  bool _selectedIsShape(EditorController editor) {
+    final selection = editor.selection;
+    return selection != null && SvgHitTest.movables(editor.svg).any((m) => m.path == selection);
+  }
+
   Widget _stage(BuildContext context, EditorController editor) {
     final l10n = context.l10n;
     final height = MediaQuery.sizeOf(context).height;
@@ -212,12 +280,34 @@ class _EditorScreenState extends State<EditorScreen> {
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             height: stageHeight,
-            child: SvgPreview(
-              svg: editor.displaySvg,
-              controller: _playback,
-              showGrid: true,
-              padding: const EdgeInsets.all(16),
-              semanticLabel: l10n.previewOf(_document!.name),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: SvgPreview(
+                    svg: editor.displaySvg,
+                    controller: _playback,
+                    showGrid: true,
+                    background: _background,
+                    padding: const EdgeInsets.all(16),
+                    semanticLabel: l10n.previewOf(_document!.name),
+                  ),
+                ),
+                Positioned.fill(
+                  child: CanvasFrame(svg: editor.displaySvg, padding: const EdgeInsets.all(16)),
+                ),
+                // The Insert tab draws its own outline (with handles) for shapes.
+                if (!(_isInsertTab && _selectedIsShape(editor)))
+                  Positioned.fill(
+                    child: SelectionHighlight(
+                      controller: _playback,
+                      padding: const EdgeInsets.all(16),
+                    ),
+                  ),
+                if (_isInsertTab)
+                  Positioned.fill(
+                    child: StageDragLayer(editor: editor, padding: const EdgeInsets.all(16)),
+                  ),
+              ],
             ),
           ),
           SizedBox(
@@ -232,7 +322,9 @@ class _EditorScreenState extends State<EditorScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    layer == null ? l10n.selectionNone : l10n.selectionLayer(l10n.layer(layer)),
+                    layer == null
+                        ? l10n.selectionNone
+                        : l10n.selectionLayer(l10n.layerLabel(layer, editor.layers)),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -241,6 +333,28 @@ class _EditorScreenState extends State<EditorScreen> {
                     onPressed: () => editor.select(null),
                     child: Text(l10n.clearSelection),
                   ),
+                PopupMenuButton<StageBackground>(
+                  key: const Key('preview-bg'),
+                  tooltip: l10n.previewBackground,
+                  icon: const Icon(Icons.wallpaper_rounded),
+                  initialValue: _background,
+                  onSelected: (value) => setState(() => _background = value),
+                  itemBuilder: (context) => [
+                    for (final option in StageBackground.values)
+                      CheckedPopupMenuItem(
+                        key: Key('preview-bg-${option.name}'),
+                        value: option,
+                        checked: option == _background,
+                        child: Text(l10n.backgroundName(option)),
+                      ),
+                  ],
+                ),
+                IconButton(
+                  key: const Key('reset-all'),
+                  tooltip: l10n.resetAll,
+                  onPressed: editor.canReset ? () => _confirmReset(editor) : null,
+                  icon: const Icon(Icons.restart_alt_rounded),
+                ),
               ],
             ),
           ),
@@ -251,10 +365,13 @@ class _EditorScreenState extends State<EditorScreen> {
 
   Widget _panel(EditorController editor) => switch (_tab) {
     _EditorTab.transform => TransformPanel(editor: editor),
+    _EditorTab.size => SizePanel(editor: editor),
+    _EditorTab.window => WindowPanel(editor: editor, playback: _playback),
     _EditorTab.colors => ColorsPanel(editor: editor),
-    _EditorTab.animation => AnimationPanel(editor: editor),
+    _EditorTab.animation => AnimationPanel(editor: editor, playback: _playback),
     _EditorTab.layers => LayersPanel(editor: editor),
     _EditorTab.insert => InsertPanel(editor: editor),
+    _EditorTab.text => InsertPanel(key: const Key('text-panel'), editor: editor, text: true),
     _EditorTab.code => CodePanel(editor: editor),
   };
 
@@ -262,6 +379,20 @@ class _EditorScreenState extends State<EditorScreen> {
     final l10n = context.l10n;
     final issue = editor.validation.issue;
     final metadata = editor.metadata;
+    final warning = editor.validation.warning;
+    final showValid = _justSaved && !editor.hasUnsavedChanges;
+    if (issue == null && warning == null && !showValid) return const SizedBox.shrink();
+    if (issue == null && warning != null) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+        child: StatusBanner(
+          ok: false,
+          warning: true,
+          title: l10n.svgWarning,
+          message: l10n.issueMessage(warning),
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       child: StatusBanner(

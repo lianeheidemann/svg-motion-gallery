@@ -43,6 +43,7 @@ class SettingsController extends ChangeNotifier {
   void setHighQualityPreviews(bool enabled) =>
       _update(_value.copyWith(highQualityPreviews: enabled));
   void setAutoBackup(bool enabled) => _update(_value.copyWith(autoBackup: enabled));
+  void setAutoFormatCode(bool enabled) => _update(_value.copyWith(autoFormatCode: enabled));
   void setSlideshowSeconds(int seconds) => _update(_value.copyWith(slideshowSeconds: seconds));
 
   /// Interface size (1 = design size). Kept within the allowed range and to

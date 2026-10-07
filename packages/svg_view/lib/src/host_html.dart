@@ -8,7 +8,9 @@ import 'package:svg_core/svg_core.dart';
 /// make the host paint an opaque canvas.
 ///
 /// With [bridge] enabled the page exposes `window.__sm` (setSvg, play, pause,
-/// seek, restart) and reports `{t: seconds, p: paused}` every 200 ms through
+/// seek, restart, select) and reports `{t: seconds, p: paused, b: box}` every
+/// 200 ms (`b` is the selected element's box as fractions of the page, or
+/// null) through
 /// the `SmBridge` JavaScript channel (mobile) or `postMessage` (web, tagged
 /// with [viewId]).
 String buildHostHtml({
@@ -55,7 +57,51 @@ String _bridgeScript({required bool autoplay, required String viewId}) =>
     var a = anims()[0];
     return a && a.currentTime ? a.currentTime / 1000 : 0;
   }
-  function report(){ post({t: time(), p: paused}); }
+  var sel = null;
+  // Box of the selected element (child indices from the <svg>) as fractions
+  // of the page, so it does not depend on pixel density.
+  function boxOf(){
+    if (!sel) return null;
+    var el = root();
+    for (var i = 0; el && i < sel.length; i++) { el = el.children[sel[i]]; }
+    if (!el || !el.getBoundingClientRect) return null;
+    var r = el.getBoundingClientRect();
+    var w = document.documentElement.clientWidth || window.innerWidth;
+    var h = document.documentElement.clientHeight || window.innerHeight;
+    if (!w || !h || (r.width === 0 && r.height === 0)) return null;
+    return [r.left / w, r.top / h, r.right / w, r.bottom / h];
+  }
+  function report(){ post({t: time(), p: paused, b: boxOf()}); }
+  // Box of everything drawn right now, in the svg's user units: [x, y, w, h],
+  // or null when nothing is drawn. Strokes count; filters and glows do not.
+  function contentBox(){
+    var s = root();
+    var ctm = s && s.getScreenCTM && s.getScreenCTM();
+    if (!ctm) return null;
+    var inv = ctm.inverse();
+    var l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
+    var leaves = {rect: 1, circle: 1, ellipse: 1, line: 1, polyline: 1, polygon: 1, path: 1, text: 1, image: 1, use: 1};
+    var all = s.querySelectorAll('*');
+    for (var i = 0; i < all.length; i++) {
+      var el = all[i];
+      if (!leaves[el.tagName.toLowerCase()]) continue;
+      if (el.closest('defs,clipPath,mask,pattern,symbol,marker')) continue;
+      var cs = getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+      var rc = el.getBoundingClientRect();
+      if (!rc.width && !rc.height) continue;
+      var pad = cs.stroke !== 'none' ? (parseFloat(cs.strokeWidth) || 0) / 2 : 0;
+      var corners = [[rc.left, rc.top], [rc.right, rc.top], [rc.left, rc.bottom], [rc.right, rc.bottom]];
+      for (var k = 0; k < 4; k++) {
+        var p = new DOMPoint(corners[k][0], corners[k][1]).matrixTransform(inv);
+        if (p.x - pad < l) l = p.x - pad;
+        if (p.y - pad < t) t = p.y - pad;
+        if (p.x + pad > r) r = p.x + pad;
+        if (p.y + pad > b) b = p.y + pad;
+      }
+    }
+    return l === Infinity ? null : [l, t, r - l, b - t];
+  }
   function applyPause(){
     var s = root();
     if (s && s.pauseAnimations) { paused ? s.pauseAnimations() : s.unpauseAnimations(); }
@@ -70,6 +116,38 @@ String _bridgeScript({required bool autoplay, required String viewId}) =>
       if (s && s.setCurrentTime) s.setCurrentTime(t);
       anims().forEach(function(a){ try { a.currentTime = t * 1000; } catch (e) {} });
       report();
+    },
+    select: function(path){ sel = path; report(); },
+    // Union of contentBox() over one animation cycle, so what moves counts
+    // everywhere it goes. The playback position is put back afterwards.
+    measure: function(cycle, steps){
+      var s = root();
+      if (!s) { post({m: null}); return; }
+      var was = time();
+      var union = null;
+      var n = cycle > 0 && steps > 0 ? steps : 0;
+      for (var i = 0; i <= n; i++) {
+        if (n > 0) {
+          var at = cycle * i / n;
+          if (s.pauseAnimations) s.pauseAnimations();
+          if (s.setCurrentTime) s.setCurrentTime(at);
+          anims().forEach(function(a){ try { a.pause(); a.currentTime = at * 1000; } catch (e) {} });
+        }
+        var box = contentBox();
+        if (!box) continue;
+        union = union ? [
+          Math.min(union[0], box[0]),
+          Math.min(union[1], box[1]),
+          Math.max(union[0] + union[2], box[0] + box[2]) - Math.min(union[0], box[0]),
+          Math.max(union[1] + union[3], box[1] + box[3]) - Math.min(union[1], box[1])
+        ] : box;
+      }
+      if (n > 0) {
+        if (s.setCurrentTime) s.setCurrentTime(was);
+        anims().forEach(function(a){ try { a.currentTime = was * 1000; } catch (e) {} });
+        applyPause();
+      }
+      post({m: union});
     },
     restart: function(){ api.seek(0); api.play(); }
   };

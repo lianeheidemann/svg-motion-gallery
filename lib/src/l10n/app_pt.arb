@@ -2,6 +2,24 @@
   "@@locale": "pt",
   "appTitle": "SVG Gallery",
   "gallerySubtitle": "Visualize e edite suas animações SVG",
+  "resetAll": "Resetar alterações",
+  "resetTitle": "Resetar alterações?",
+  "resetMessage": "O arquivo volta ao estado de quando você abriu o editor. Você ainda pode desfazer depois.",
+  "resetConfirm": "Resetar",
+  "renameLayerTitle": "Renomear camada",
+  "renameLayerLabel": "Nome",
+  "renameConfirm": "Renomear",
+  "foldFolder": "Dobrar pasta",
+  "unfoldFolder": "Abrir pasta",
+  "previewBackground": "Fundo do preview",
+  "backgroundCurrent": "Atual",
+  "backgroundLight": "Claro",
+  "backgroundDark": "Escuro",
+  "backgroundChecker": "Quadriculado (transparência)",
+  "tabSize": "Tamanho",
+  "presetNone": "Nenhum",
+  "pauseAll": "Pausar animações",
+  "resumeAll": "Retomar animações",
   "search": "Buscar",
   "closeSearch": "Fechar busca",
   "searchHint": "Buscar por nome do arquivo",
@@ -193,6 +211,17 @@
   },
   "issueEmpty": "O documento está vazio.",
   "issueRootNotSvg": "O elemento raiz deve ser <svg>.",
+  "issueCss": "Há um trecho de CSS inválido. O navegador vai ignorá-lo.",
+  "issueCssAt": "Trecho de CSS inválido perto da linha {line}. O navegador vai ignorá-lo.",
+  "@issueCssAt": {
+    "placeholders": {
+      "line": {
+        "type": "int"
+      }
+    }
+  },
+  "svgWarning": "SVG válido, com um aviso",
+  "codeApplied": "Código aplicado",
   "issueMalformed": "XML malformado.",
   "issueMalformedAt": "XML malformado na linha {line}, coluna {column}.",
   "@issueMalformedAt": {
@@ -205,7 +234,7 @@
       }
     }
   },
-  "selectionNone": "Nenhuma camada selecionada · editando o desenho inteiro",
+  "selectionNone": "Selecionado: Todas",
   "selectionLayer": "Selecionado: {name}",
   "@selectionLayer": {
     "placeholders": {
@@ -242,6 +271,7 @@
   "paletteTitle": "Paleta do documento",
   "paletteHint": "Toque em uma cor do SVG e escolha a nova cor na paleta ou ajuste pelos controles.",
   "presetPalette": "Paleta de cores",
+  "eyedropper": "Conta-gotas",
   "customColor": "Cor personalizada",
   "paletteEmpty": "Nenhuma cor sólida encontrada.",
   "layerPaint": "Pintura de {name}",
@@ -282,7 +312,6 @@
     }
   },
   "speed": "Velocidade",
-  "speedHint": "A nova velocidade é aplicada ao soltar a barra.",
   "removeAnimations": "Remover todas as animações",
   "presetsTitle": "Adicionar movimento",
   "presetTarget": "Aplicar em: {name}",
@@ -310,6 +339,18 @@
     }
   },
   "layersEmpty": "Este SVG não tem elementos desenháveis.",
+  "deleteLayerTitle": "Excluir camada?",
+  "deleteLayerMessage": "\"{name}\" será removida do desenho. Você pode desfazer depois.",
+  "@deleteLayerMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteSelectedElement": "Excluir elemento selecionado",
+  "rotateHandle": "Girar",
+  "resizeHandle": "Redimensionar",
   "layerAnimated": "Animado",
   "layerEditorGroup": "Ajuste do editor",
   "hideLayer": "Ocultar camada",
@@ -322,7 +363,7 @@
   "tagPath": "Caminho",
   "tagImage": "Imagem",
   "tagUse": "Referência",
-  "insertTitle": "Inserir forma ou texto",
+  "insertTitle": "Inserir forma",
   "shapeRectangle": "Retângulo",
   "shapeCircle": "Círculo",
   "shapeEllipse": "Elipse",
@@ -332,30 +373,26 @@
   "shapeSize": "Tamanho",
   "color": "Cor",
   "defaultText": "Olá",
-  "insertAction": "Inserir",
+  "insertAction": "Adicionar",
+  "applyCode": "Aplicar",
+  "autoFormat": "Formatação automática",
   "formatCode": "Formatar",
   "wrapLines": "Quebrar linhas",
   "fontSize": "Fonte",
   "playbackSection": "Reprodução",
   "autoplayTitle": "Reprodução automática",
-  "autoplaySubtitle": "Inicia as animações sozinhas na galeria e ao abrir um SVG",
   "loopTitle": "Repetir animação",
-  "loopSubtitle": "Reinicia automaticamente ao final",
   "hqTitle": "Pré-visualização em alta qualidade",
-  "hqSubtitle": "Miniaturas com as animações reais (usa mais memória)",
   "slideshowInterval": "Intervalo da apresentação",
   "appearanceSection": "Aparência",
   "accentTitle": "Cor de destaque",
-  "accentSubtitle": "Personalize a cor principal do app",
   "accentBlue": "Azul",
   "accentPurple": "Roxo",
   "accentPink": "Rosa",
   "accentCyan": "Ciano",
   "accentOrange": "Laranja",
   "uiScaleTitle": "Tamanho da interface",
-  "uiScaleHint": "Aumenta ou diminui textos, botões, cards e janelas de todo o app. O padrão é 80%.",
   "uiScaleReset": "Restaurar padrão",
-  "themeOnHomeHint": "O modo claro/escuro e o idioma são trocados pelos botões da tela inicial.",
   "filesSection": "Arquivos e edição",
   "backupTitle": "Salvar cópia automaticamente",
   "backupSubtitle": "Mantém um backup da versão anterior ao salvar uma edição",
@@ -461,5 +498,23 @@
       }
     }
   },
-  "infoLocation": "Local"
+  "infoLocation": "Local",
+  "outline": "Contorno",
+  "windowTitle": "Janela",
+  "windowRestore": "Restaurar janela",
+  "windowRatio": "Proporção",
+  "windowX": "Posição X",
+  "windowY": "Posição Y",
+  "windowWidth": "Largura da janela",
+  "windowHeight": "Altura da janela",
+  "windowAdjust": "Ajuste automático",
+  "windowAdjustHint": "Enquadra a janela no que foi desenhado, sem as bordas vazias.",
+  "windowMargin": "Margem",
+  "windowMotion": "Considerar movimento",
+  "windowNoMotion": "Este desenho não tem animação.",
+  "windowFitFailed": "Não foi possível medir o desenho.",
+  "windowFit": "Ajustar ao conteúdo",
+  "tabWindow": "Janela",
+  "tabText": "Texto",
+  "insertTextTitle": "Inserir texto"
 }

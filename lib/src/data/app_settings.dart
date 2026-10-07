@@ -24,6 +24,7 @@ class AppSettings {
     this.loop = true,
     this.highQualityPreviews = true,
     this.autoBackup = true,
+    this.autoFormatCode = false,
     this.slideshowSeconds = 5,
     this.uiScale = defaultUiScale,
   });
@@ -53,6 +54,9 @@ class AppSettings {
   /// Keep a copy of the previous version when saving an edit.
   final bool autoBackup;
 
+  /// The code editor keeps the SVG source indented, one tag per line.
+  final bool autoFormatCode;
+
   /// Interval of the viewer's automatic slideshow.
   final int slideshowSeconds;
 
@@ -68,6 +72,7 @@ class AppSettings {
     bool? loop,
     bool? highQualityPreviews,
     bool? autoBackup,
+    bool? autoFormatCode,
     int? slideshowSeconds,
     double? uiScale,
   }) => AppSettings(
@@ -78,6 +83,7 @@ class AppSettings {
     loop: loop ?? this.loop,
     highQualityPreviews: highQualityPreviews ?? this.highQualityPreviews,
     autoBackup: autoBackup ?? this.autoBackup,
+    autoFormatCode: autoFormatCode ?? this.autoFormatCode,
     slideshowSeconds: slideshowSeconds ?? this.slideshowSeconds,
     uiScale: uiScale ?? this.uiScale,
   );
@@ -112,6 +118,7 @@ class SettingsStore {
         loop: pick('loop', defaults.loop),
         highQualityPreviews: pick('highQualityPreviews', defaults.highQualityPreviews),
         autoBackup: pick('autoBackup', defaults.autoBackup),
+        autoFormatCode: pick('autoFormatCode', defaults.autoFormatCode),
         slideshowSeconds: pick('slideshowSeconds', defaults.slideshowSeconds),
         uiScale: pick<int>('version', 1) < 2
             ? defaults.uiScale
@@ -136,6 +143,7 @@ class SettingsStore {
         prefs.setBool('${_prefix}loop', settings.loop),
         prefs.setBool('${_prefix}highQualityPreviews', settings.highQualityPreviews),
         prefs.setBool('${_prefix}autoBackup', settings.autoBackup),
+        prefs.setBool('${_prefix}autoFormatCode', settings.autoFormatCode),
         prefs.setInt('${_prefix}slideshowSeconds', settings.slideshowSeconds),
         prefs.setDouble('${_prefix}uiScale', settings.uiScale),
         prefs.setInt('${_prefix}version', _version),

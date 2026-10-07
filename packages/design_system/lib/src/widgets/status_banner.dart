@@ -8,12 +8,16 @@ class StatusBanner extends StatelessWidget {
   const StatusBanner({
     super.key,
     required this.ok,
+    this.warning = false,
     required this.title,
     this.message,
     this.trailing,
   });
 
   final bool ok;
+
+  /// Amber instead of red: something to look at, but nothing is blocked.
+  final bool warning;
   final String title;
   final String? message;
   final Widget? trailing;
@@ -22,7 +26,7 @@ class StatusBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = GalleryColors.of(context);
     final theme = Theme.of(context);
-    final tone = ok ? colors.success : colors.danger;
+    final tone = ok ? colors.success : (warning ? const Color(0xFFF5A524) : colors.danger);
     return Semantics(
       liveRegion: true,
       child: Container(
@@ -34,7 +38,12 @@ class StatusBanner extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(ok ? Icons.check_circle_rounded : Icons.error_rounded, color: tone),
+            Icon(
+              ok
+                  ? Icons.check_circle_rounded
+                  : (warning ? Icons.warning_amber_rounded : Icons.error_rounded),
+              color: tone,
+            ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(

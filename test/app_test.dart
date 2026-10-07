@@ -1,3 +1,4 @@
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:svg_motion_gallery/src/app_scope.dart';
@@ -130,6 +131,55 @@ void main() {
     expect(find.text('Editar SVG'), findsOneWidget, reason: 'a single edit button');
   });
 
+  testWidgets('editor crops the window and has a separate text tab', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+
+    await _tapTab(tester, 'Texto');
+    expect(find.text('Inserir texto'), findsOneWidget);
+    expect(find.text('Retângulo'), findsNothing);
+    await _tapTab(tester, 'Inserir');
+    expect(find.text('Retângulo'), findsOneWidget);
+
+    await _tapTab(tester, 'Janela');
+    expect(find.byKey(const Key('ratio-1:1')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('ratio-1:1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('ratio-9:16')));
+    await tester.pumpAndSettle();
+    final restore = tester.widget<IconButton>(find.byKey(const Key('window-restore')));
+    expect(restore.onPressed, isNotNull, reason: 'the window was cropped');
+    await tester.tap(find.byKey(const Key('window-restore')));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('wrapping lines in the code tab is not an unapplied edit', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Código');
+
+    String squash(String s) => s.replaceAll(RegExp(r'\s+'), ' ').trim();
+    String text() => tester.widget<TextField>(find.byKey(const Key('code-field'))).controller!.text;
+    final before = squash(text());
+    await tester.tap(find.text('Quebrar linhas'));
+    await tester.pumpAndSettle();
+    expect(squash(text()), before, reason: 'only whitespace changes');
+    expect(tester.widget<FilledButton>(find.byKey(const Key('apply-code'))).onPressed, isNull);
+    await tester.tap(find.text('Quebrar linhas'));
+    await tester.pumpAndSettle();
+    expect(squash(text()), before);
+  });
+
   testWidgets('editor inserts a shape, undoes, validates code and saves', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);
@@ -152,10 +202,54 @@ void main() {
     expect(save().onPressed, isNotNull);
     expect(find.textContaining('Selecionado: Retângulo'), findsOneWidget);
 
+    await tester.ensureVisible(find.byKey(const Key('delete-shape')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('delete-shape')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Selecionado: Retângulo'), findsNothing);
+    await tester.tap(find.byTooltip('Desfazer'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Selecionado: Retângulo'), findsOneWidget);
+
+    await tester.drag(find.byKey(const Key('resize-handle')), const Offset(30, 30));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Camadas');
+    expect(find.text('Ajuste do editor'), findsWidgets, reason: 'resizing adds a transform group');
+    await tester.tap(find.byTooltip('Desfazer'));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Inserir');
+
+    await tester.drag(find.byKey(const Key('rotate-handle')), const Offset(-40, 30));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Camadas');
+    expect(find.text('Ajuste do editor'), findsWidgets, reason: 'turning adds a transform group');
+    await tester.tap(find.byTooltip('Desfazer'));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Inserir');
+
     await tester.tap(find.byTooltip('Desfazer'));
     await tester.pumpAndSettle();
     expect(save().onPressed, isNull);
     await tester.tap(find.byTooltip('Refazer'));
+    await tester.pumpAndSettle();
+
+    await _tapTab(tester, 'Camadas');
+    await tester.ensureVisible(find.textContaining('Retângulo').last);
+    await tester.pumpAndSettle();
+    await tester.longPress(find.textContaining('Retângulo').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Excluir camada?'), findsOneWidget);
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Selecionado: Retângulo'), findsOneWidget);
+    await tester.ensureVisible(find.textContaining('Retângulo').last);
+    await tester.pumpAndSettle();
+    await tester.longPress(find.textContaining('Retângulo').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Excluir')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Selecionado: Retângulo'), findsNothing);
+    await tester.tap(find.byTooltip('Desfazer'));
     await tester.pumpAndSettle();
 
     await _tapTab(tester, 'Código');
@@ -166,18 +260,207 @@ void main() {
     );
     await tester.enterText(find.byKey(const Key('code-field')), '<svg><g></svg>');
     await tester.pump(const Duration(milliseconds: 600));
+    expect(find.text('SVG inválido'), findsNothing, reason: 'validated only on Apply');
+    await tester.tap(find.byKey(const Key('apply-code')));
+    await tester.pumpAndSettle();
     expect(find.text('SVG inválido'), findsOneWidget);
     expect(save().onPressed, isNull);
 
     await tester.enterText(find.byKey(const Key('code-field')), _valid);
-    await tester.pump(const Duration(milliseconds: 600));
-    expect(find.text('SVG válido'), findsOneWidget);
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('apply-code')));
+    await tester.pumpAndSettle();
+    expect(find.text('SVG inválido'), findsNothing);
+    expect(find.text('Código aplicado'), findsOneWidget, reason: 'a clean apply is confirmed');
+    expect(find.text('SVG válido'), findsNothing, reason: 'shown only after saving');
+
+    // Nonsense inside <style> is still XML: a warning, and saving stays possible.
+    await tester.enterText(
+      find.byKey(const Key('code-field')),
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+      '<style>.a { fill red; }</style><rect width="10" height="10"/></svg>',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('apply-code')));
+    await tester.pumpAndSettle();
+    expect(find.text('SVG válido, com um aviso'), findsOneWidget);
+    expect(save().onPressed, isNotNull);
+
+    await tester.enterText(find.byKey(const Key('code-field')), _valid);
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('apply-code')));
+    await tester.pumpAndSettle();
+    expect(find.text('SVG válido, com um aviso'), findsNothing);
 
     await tester.tap(find.byKey(const Key('save')));
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
     await tester.pumpAndSettle();
     expect(find.text('Alterações salvas'), findsOneWidget);
+    expect(find.text('SVG válido'), findsOneWidget);
     expect(services.library.contentOf(services.library.byId(wave.id)!), _valid);
+  });
+
+  testWidgets('layers: arrow folds a folder, double tap renames, header selects all', (
+    tester,
+  ) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+
+    await tester.tap(find.text('sun-moon.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Selecionado: Todas'), findsOneWidget);
+
+    // Same-named siblings are numbered, nested like the tree.
+    expect(find.textContaining(RegExp(r'^Grupo \d')), findsWidgets);
+
+    // The arrow on a folder hides what is inside, and opens it again.
+    final circles = find.textContaining('Círculo');
+    final before = circles.evaluate().length;
+    expect(before, greaterThan(0));
+    final fold = find.byTooltip('Dobrar pasta').first;
+    await tester.ensureVisible(fold);
+    await tester.pumpAndSettle();
+    await tester.tap(fold);
+    await tester.pumpAndSettle();
+    expect(circles.evaluate().length, lessThan(before), reason: 'the folder hides its layers');
+    await tester.tap(find.byTooltip('Abrir pasta').first);
+    await tester.pumpAndSettle();
+    expect(circles.evaluate().length, before, reason: 'the arrow opens it again');
+
+    // Two taps on a layer ask for a new name.
+    final rect = find.text('Retângulo').first;
+    await tester.ensureVisible(rect);
+    await tester.pumpAndSettle();
+    await tester.tap(rect);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(rect);
+    await tester.pumpAndSettle();
+    expect(find.text('Renomear camada'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).last, 'Fundo da lua');
+    await tester.tap(find.text('Renomear'));
+    await tester.pumpAndSettle();
+    expect(find.text('Fundo da lua'), findsWidgets);
+    expect(find.text('Selecionado: Fundo da lua'), findsOneWidget);
+
+    // Two taps on the "N camadas" header select every layer again.
+    final header = find.textContaining(RegExp(r'^\d+ camadas$'));
+    await tester.ensureVisible(header);
+    await tester.pumpAndSettle();
+    await tester.tap(header);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(header);
+    await tester.pumpAndSettle();
+    expect(find.text('Selecionado: Todas'), findsOneWidget);
+  });
+
+  testWidgets('transform: width and height can be changed on their own', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+
+    await _tapTab(tester, 'Transformar');
+    // The pair for the selection (%) sits right after Escala.
+    expect(find.text('Largura'), findsOneWidget);
+    expect(find.text('Altura'), findsOneWidget);
+    expect(find.text('Escala'), findsOneWidget);
+    expect(find.text('Tamanho do documento'), findsNothing, reason: 'it has its own tab');
+
+    FilledButton save() => tester.widget<FilledButton>(find.byKey(const Key('save')));
+    expect(save().onPressed, isNull);
+    await tester.drag(find.byType(Slider).at(3), const Offset(60, 0)); // Largura (%)
+    await tester.pumpAndSettle();
+    expect(save().onPressed, isNotNull, reason: 'stretching the width is an edit');
+
+    await tester.tap(find.byTooltip('Desfazer'));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Tamanho');
+    expect(find.text('Tamanho do documento'), findsOneWidget);
+    expect(find.text('Largura'), findsOneWidget);
+    expect(find.text('Altura'), findsOneWidget);
+    await tester.drag(find.byType(Slider).first, const Offset(40, 0));
+    await tester.pumpAndSettle();
+    expect(save().onPressed, isNotNull, reason: 'changing the document width is an edit');
+  });
+
+  testWidgets('animation: "None" is the starting motion and cannot be applied', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('sun-moon.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+
+    // A layer that has no motion yet.
+    await tester.tap(find.text('Retângulo').first);
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Animação');
+    await tester.ensureVisible(find.byKey(const Key('apply-preset')));
+    await tester.pumpAndSettle();
+
+    FilledButton apply() => tester.widget<FilledButton>(find.byKey(const Key('apply-preset')));
+    ChoiceChip none() => tester.widget<ChoiceChip>(find.byKey(const Key('preset-none')));
+    expect(none().selected, isTrue);
+    expect(apply().onPressed, isNull, reason: 'nothing to apply');
+
+    await tester.tap(find.text('Girar'));
+    await tester.pumpAndSettle();
+    expect(none().selected, isFalse);
+    expect(apply().onPressed, isNotNull);
+
+    await tester.tap(find.byKey(const Key('preset-none')));
+    await tester.pumpAndSettle();
+    expect(none().selected, isTrue);
+    expect(apply().onPressed, isNull);
+  });
+
+  testWidgets('editor: the preview background can be switched', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+
+    StageBackground shown() => tester.widget<Stage>(find.byType(Stage).first).background;
+    expect(shown(), StageBackground.current);
+
+    for (final (key, expected) in [
+      ('preview-bg-light', StageBackground.light),
+      ('preview-bg-dark', StageBackground.dark),
+      ('preview-bg-checkerboard', StageBackground.checkerboard),
+      ('preview-bg-current', StageBackground.current),
+    ]) {
+      await tester.tap(find.byKey(const Key('preview-bg')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(Key(key)));
+      await tester.pumpAndSettle();
+      expect(shown(), expected, reason: key);
+    }
+  });
+
+  testWidgets('pause-all stops the gallery for now without touching the settings', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+
+    expect(find.byTooltip('Pausar animações'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('pause-all')));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Retomar animações'), findsOneWidget);
+    expect(services.settings.value.autoplay, isTrue, reason: 'the setting stays as it was');
+
+    await tester.tap(find.byKey(const Key('pause-all')));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Pausar animações'), findsOneWidget);
   });
 
   testWidgets('settings change playback and appearance', (tester) async {

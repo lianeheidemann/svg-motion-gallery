@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:svg_core/svg_core.dart';
+import 'package:svg_view/src/playback_controller.dart' show SvgPlaybackTarget;
 import 'package:svg_view/svg_view.dart';
 
 const adaptive = '''
@@ -81,6 +82,55 @@ void main() {
       expect(controller.isPlaying, isTrue);
       expect(controller.progress, 0);
     });
+
+    test('tracks the box of the selected element reported by the renderer', () {
+      final controller = SvgPlaybackController(cycle: const Duration(seconds: 2));
+      controller.report(seconds: 0, paused: false, box: [0.1, 0.2, 0.5, 0.6]);
+      expect(controller.selectionBounds, isNull, reason: 'nothing selected, nothing to outline');
+
+      controller.selectElement([3, 0]);
+      expect(controller.selectionBounds, isNull, reason: 'waits for the renderer to answer');
+      controller.report(seconds: 0, paused: false, box: [0.1, 0.2, 0.5, 0.6]);
+      expect(controller.selectionBounds, const Rect.fromLTRB(0.1, 0.2, 0.5, 0.6));
+
+      controller.report(seconds: 0.2, paused: false); // element is hidden now
+      expect(controller.selectionBounds, isNull);
+
+      controller.report(seconds: 0.4, paused: false, box: [0, 0, 1, 1]);
+      controller.selectElement(null);
+      expect(controller.selectionBounds, isNull);
+    });
+
+    test('the host page can select an element and report its box', () {
+      final html = buildHostHtml(svg: '<svg/>', scheme: SvgColorScheme.dark, bridge: true);
+      expect(html, contains('select: function(path)'));
+      expect(html, contains('b: boxOf()'));
+      expect(html, contains('measure: function(cycle, steps)'));
+    });
+
+    test('measures the content through the renderer and reports null when it cannot', () async {
+      final controller = SvgPlaybackController(cycle: const Duration(seconds: 2));
+      expect(await controller.measureContent(), isNull, reason: 'no renderer attached');
+
+      final target = _FakeTarget();
+      controller.attach(target);
+      final pending = controller.measureContent(cycle: const Duration(seconds: 2), samples: 10);
+      expect(target.calls.last.$1, 'measure');
+      expect(target.calls.last.$2, [2.0, 10]);
+      controller.reportMeasure([1, 2, 30, 40]);
+      expect(await pending, const Rect.fromLTWH(1, 2, 30, 40));
+
+      final empty = controller.measureContent();
+      controller.reportMeasure(null);
+      expect(await empty, isNull, reason: 'nothing is drawn');
+    });
+
+    test('ignores the renderer report that arrives right after a seek', () {
+      final controller = SvgPlaybackController(cycle: const Duration(seconds: 2));
+      controller.seekFraction(0.5);
+      controller.report(seconds: 0.1, paused: false);
+      expect(controller.seconds, 1, reason: 'the stale time must not pull the slider back');
+    });
   });
 
   testWidgets('SvgView renders with flutter_svg where no live renderer exists', (tester) async {
@@ -93,4 +143,12 @@ void main() {
     expect(find.byType(SvgPicture), findsOneWidget);
     expect(find.bySemanticsLabel('Preview'), findsOneWidget);
   });
+}
+
+class _FakeTarget implements SvgPlaybackTarget {
+  final calls = <(String, List<Object?>)>[];
+
+  @override
+  void invoke(String method, [List<Object?> arguments = const []]) =>
+      calls.add((method, arguments));
 }
