@@ -262,7 +262,7 @@ class _CodePanelState extends State<CodePanel> {
           SliderField(
             label: l10n.fontSize,
             value: _fontSize,
-            min: 9,
+            min: 7,
             max: 24,
             unit: 'pt',
             onChanged: (v) => _relayout(() => _fontSize = v.roundToDouble()),
