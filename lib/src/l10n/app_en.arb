@@ -128,6 +128,7 @@
   "paletteTitle": "Document palette",
   "paletteHint": "Tap a color of the SVG, then pick the new color from the palette or fine-tune it with the controls.",
   "presetPalette": "Color palette",
+  "eyedropper": "Eyedropper",
   "customColor": "Custom color",
   "paletteEmpty": "No solid colors found.",
   "layerPaint": "Paint of {name}",

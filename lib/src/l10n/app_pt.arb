@@ -242,6 +242,7 @@
   "paletteTitle": "Paleta do documento",
   "paletteHint": "Toque em uma cor do SVG e escolha a nova cor na paleta ou ajuste pelos controles.",
   "presetPalette": "Paleta de cores",
+  "eyedropper": "Conta-gotas",
   "customColor": "Cor personalizada",
   "paletteEmpty": "Nenhuma cor sólida encontrada.",
   "layerPaint": "Pintura de {name}",
