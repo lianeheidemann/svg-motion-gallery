@@ -281,6 +281,19 @@ void main() {
     await tester.tap(find.text('Grupo').first);
     await tester.pumpAndSettle();
     expect(circles.evaluate().length, before, reason: 'a second double tap opens it again');
+
+    // Two taps on the "N camadas" header select every layer again.
+    await tester.tap(find.text('Retângulo').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Selecionado: Retângulo'), findsOneWidget);
+    final header = find.textContaining(RegExp(r'^\d+ camadas$'));
+    await tester.ensureVisible(header);
+    await tester.pumpAndSettle();
+    await tester.tap(header);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(header);
+    await tester.pumpAndSettle();
+    expect(find.text('Selecionado: Todas'), findsOneWidget);
   });
 
   testWidgets('editor: theme toggle is always there and reset-all brings the file back', (

@@ -83,6 +83,8 @@ class _LayersPanelState extends State<LayersPanel> {
         SectionCard(
           icon: Icons.layers_outlined,
           title: l10n.layersTitle(layers.length),
+          // Two taps on the header select every layer: the whole drawing.
+          onTitleDoubleTap: () => editor.select(null),
           spacing: 0,
           children: [
             if (layers.isEmpty) Text(l10n.layersEmpty),
