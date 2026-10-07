@@ -310,6 +310,15 @@
     }
   },
   "layersEmpty": "Este SVG não tem elementos desenháveis.",
+  "deleteLayerTitle": "Excluir camada?",
+  "deleteLayerMessage": "\"{name}\" será removida do desenho. Você pode desfazer depois.",
+  "@deleteLayerMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "layerAnimated": "Animado",
   "layerEditorGroup": "Ajuste do editor",
   "hideLayer": "Ocultar camada",

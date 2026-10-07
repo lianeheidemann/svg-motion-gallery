@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:svg_core/svg_core.dart';
 
 import '../../../l10n/l10n.dart';
+import '../../../widgets/svg_actions_menu.dart';
 import '../editor_controller.dart';
 
 /// Layer list (select, show/hide) and actions on the selected layer.
@@ -23,6 +24,20 @@ class LayersPanel extends StatelessWidget {
     'image' => Icons.image_outlined,
     _ => Icons.layers_outlined,
   };
+
+  /// Long press on a row: select it and ask before removing it.
+  Future<void> _confirmDelete(BuildContext context, SvgLayer layer) async {
+    final l10n = context.l10n;
+    if (editor.selection != layer.path) editor.select(layer.path);
+    final confirmed = await showConfirmDialog(
+      context,
+      title: l10n.deleteLayerTitle,
+      message: l10n.deleteLayerMessage(l10n.layer(layer)),
+      confirm: l10n.actionDelete,
+      destructive: true,
+    );
+    if (confirmed) editor.apply(SvgLayers.remove(editor.svg, layer.path));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +67,7 @@ class LayersPanel extends StatelessWidget {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(10),
                   onTap: () => editor.select(layer.path),
+                  onLongPress: () => _confirmDelete(context, layer),
                   child: Padding(
                     padding: EdgeInsets.only(left: 4.0 + layer.depth * 16),
                     child: Row(

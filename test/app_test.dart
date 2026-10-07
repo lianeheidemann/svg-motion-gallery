@@ -158,6 +158,25 @@ void main() {
     await tester.tap(find.byTooltip('Refazer'));
     await tester.pumpAndSettle();
 
+    await _tapTab(tester, 'Camadas');
+    await tester.ensureVisible(find.text('Retângulo').last);
+    await tester.pumpAndSettle();
+    await tester.longPress(find.text('Retângulo').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Excluir camada?'), findsOneWidget);
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Selecionado: Retângulo'), findsOneWidget);
+    await tester.ensureVisible(find.text('Retângulo').last);
+    await tester.pumpAndSettle();
+    await tester.longPress(find.text('Retângulo').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Excluir')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Selecionado: Retângulo'), findsNothing);
+    await tester.tap(find.byTooltip('Desfazer'));
+    await tester.pumpAndSettle();
+
     await _tapTab(tester, 'Código');
     expect(
       tester.widget<TextField>(find.byKey(const Key('code-field'))).style?.fontSize,

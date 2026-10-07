@@ -161,6 +161,15 @@
   "removePreset": "Remove motion",
   "layersTitle": "{count, plural, =0{Layers} =1{1 layer} other{{count} layers}}",
   "layersEmpty": "This SVG has no drawable elements.",
+  "deleteLayerTitle": "Delete layer?",
+  "deleteLayerMessage": "\"{name}\" will be removed from the drawing. You can undo it later.",
+  "@deleteLayerMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "layerAnimated": "Animated",
   "layerEditorGroup": "Editor adjustment",
   "hideLayer": "Hide layer",
