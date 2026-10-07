@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
+import 'package:svg_core/svg_core.dart';
 import 'package:svg_view/svg_view.dart';
 
 import '../../app_scope.dart';
@@ -16,6 +17,7 @@ import 'panels/colors_panel.dart';
 import 'panels/insert_panel.dart';
 import 'panels/layers_panel.dart';
 import 'panels/transform_panel.dart';
+import 'selection_highlight.dart';
 import 'stage_drag_layer.dart';
 import 'stage_geometry.dart';
 
@@ -38,6 +40,9 @@ class _EditorScreenState extends State<EditorScreen> {
   final _playback = SvgPlaybackController();
   var _tab = _EditorTab.layers;
   var _saving = false;
+
+  /// Selection last sent to the renderer, which then reports where it is.
+  ElementPath? _sentSelection;
 
   /// The "valid SVG" banner only shows after a save, until the next edit.
   var _justSaved = false;
@@ -129,46 +134,65 @@ class _EditorScreenState extends State<EditorScreen> {
     }
     return ListenableBuilder(
       listenable: editor,
-      builder: (context, _) => PopScope(
-        canPop: !editor.hasUnsavedChanges,
-        onPopInvokedWithResult: (didPop, _) {
-          if (!didPop) _confirmLeave();
-        },
-        child: Scaffold(
-          appBar: _appBar(context, editor),
-          body: SafeArea(
-            top: false,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _stage(context, editor),
-                Expanded(child: _panel(editor)),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: PillTabs(
-                    labelSelectedOnly: true,
-                    selectedIndex: _tab.index,
-                    onChanged: (index) => setState(() => _tab = _EditorTab.values[index]),
-                    tabs: [
-                      // Always first and highlighted; another color while the
-                      // whole drawing (every layer) is the target.
-                      PillTab(
-                        l10n.tabLayers,
-                        icon: Icons.layers_outlined,
-                        emphasized: true,
-                        accent: editor.selection == null ? GalleryColors.of(context).success : null,
-                      ),
-                      PillTab(l10n.tabTransform, icon: Icons.open_with_rounded),
-                      PillTab(l10n.tabColors, icon: Icons.palette_outlined),
-                      PillTab(l10n.tabAnimation, icon: Icons.animation_rounded),
-                      PillTab(l10n.tabInsert, icon: Icons.add_box_outlined),
-                      PillTab(l10n.tabCode, icon: Icons.code_rounded),
-                    ],
-                  ),
+      builder: (context, _) {
+        _syncSelection(editor);
+        return _scaffold(context, editor);
+      },
+    );
+  }
+
+  /// Tells the stage's renderer which element to outline. Deferred because
+  /// the renderer's controller notifies listeners that are building now.
+  void _syncSelection(EditorController editor) {
+    final selection = editor.selection;
+    if (selection == _sentSelection) return;
+    _sentSelection = selection;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _playback.selectElement(selection?.indices);
+    });
+  }
+
+  Widget _scaffold(BuildContext context, EditorController editor) {
+    final l10n = context.l10n;
+    return PopScope(
+      canPop: !editor.hasUnsavedChanges,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _confirmLeave();
+      },
+      child: Scaffold(
+        appBar: _appBar(context, editor),
+        body: SafeArea(
+          top: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _stage(context, editor),
+              Expanded(child: _panel(editor)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: PillTabs(
+                  labelSelectedOnly: true,
+                  selectedIndex: _tab.index,
+                  onChanged: (index) => setState(() => _tab = _EditorTab.values[index]),
+                  tabs: [
+                    // Always first and highlighted; another color while the
+                    // whole drawing (every layer) is the target.
+                    PillTab(
+                      l10n.tabLayers,
+                      icon: Icons.layers_outlined,
+                      emphasized: true,
+                      accent: editor.selection == null ? GalleryColors.of(context).success : null,
+                    ),
+                    PillTab(l10n.tabTransform, icon: Icons.open_with_rounded),
+                    PillTab(l10n.tabColors, icon: Icons.palette_outlined),
+                    PillTab(l10n.tabAnimation, icon: Icons.animation_rounded),
+                    PillTab(l10n.tabInsert, icon: Icons.add_box_outlined),
+                    PillTab(l10n.tabCode, icon: Icons.code_rounded),
+                  ],
                 ),
-                _statusBar(context, editor),
-              ],
-            ),
+              ),
+              _statusBar(context, editor),
+            ],
           ),
         ),
       ),
@@ -213,6 +237,11 @@ class _EditorScreenState extends State<EditorScreen> {
     );
   }
 
+  bool _selectedIsShape(EditorController editor) {
+    final selection = editor.selection;
+    return selection != null && SvgHitTest.movables(editor.svg).any((m) => m.path == selection);
+  }
+
   Widget _stage(BuildContext context, EditorController editor) {
     final l10n = context.l10n;
     final height = MediaQuery.sizeOf(context).height;
@@ -241,6 +270,14 @@ class _EditorScreenState extends State<EditorScreen> {
                 Positioned.fill(
                   child: CanvasFrame(svg: editor.displaySvg, padding: const EdgeInsets.all(16)),
                 ),
+                // The Insert tab draws its own outline (with handles) for shapes.
+                if (!(_tab == _EditorTab.insert && _selectedIsShape(editor)))
+                  Positioned.fill(
+                    child: SelectionHighlight(
+                      controller: _playback,
+                      padding: const EdgeInsets.all(16),
+                    ),
+                  ),
                 if (_tab == _EditorTab.insert)
                   Positioned.fill(
                     child: StageDragLayer(editor: editor, padding: const EdgeInsets.all(16)),

@@ -1,3 +1,5 @@
+import 'dart:ui' show Rect;
+
 import 'package:flutter/foundation.dart';
 
 /// Implemented by renderers that can execute playback commands.
@@ -28,6 +30,24 @@ class SvgPlaybackController extends ChangeNotifier {
   /// is not pulled back by them.
   static const _seekSettle = Duration(milliseconds: 400);
   final _sinceSeek = Stopwatch();
+
+  List<int>? _selection;
+  Rect? _selectionBounds;
+
+  /// Where the selected element is drawn, as fractions (0..1) of the rendered
+  /// view, or null when nothing is selected or the renderer cannot tell
+  /// (renderers without scripting never report it).
+  Rect? get selectionBounds => _selectionBounds;
+
+  /// Asks the renderer to track the element at [indices] (child indices from
+  /// the `<svg>` root); null clears it.
+  void selectElement(List<int>? indices) {
+    if (listEquals(indices, _selection)) return;
+    _selection = indices == null ? null : List.unmodifiable(indices);
+    _selectionBounds = null;
+    _target?.invoke('select', [_selection]);
+    notifyListeners();
+  }
 
   bool get isAttached => _target != null;
   bool get isPlaying => _playing;
@@ -92,6 +112,7 @@ class SvgPlaybackController extends ChangeNotifier {
   void attach(SvgPlaybackTarget target) {
     _target = target;
     target.invoke(_playing ? 'play' : 'pause');
+    if (_selection != null) target.invoke('select', [_selection]);
   }
 
   @internal
@@ -101,10 +122,15 @@ class SvgPlaybackController extends ChangeNotifier {
 
   /// Called by renderers with the timeline state.
   @internal
-  void report({required double seconds, required bool paused}) {
+  void report({required double seconds, required bool paused, List<double>? box}) {
     final settling = _sinceSeek.isRunning && _sinceSeek.elapsed < _seekSettle;
     final next = settling ? _seconds : seconds;
-    final changed = (next - _seconds).abs() > 0.001 || paused == _playing;
+    final bounds = _selection == null || box == null || box.length != 4
+        ? null
+        : Rect.fromLTRB(box[0], box[1], box[2], box[3]);
+    final boundsChanged = bounds != _selectionBounds;
+    _selectionBounds = bounds;
+    final changed = (next - _seconds).abs() > 0.001 || paused == _playing || boundsChanged;
     _seconds = next;
     if (!settling) _sinceReport.reset();
     _playing = !paused;

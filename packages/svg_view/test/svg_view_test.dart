@@ -82,6 +82,30 @@ void main() {
       expect(controller.progress, 0);
     });
 
+    test('tracks the box of the selected element reported by the renderer', () {
+      final controller = SvgPlaybackController(cycle: const Duration(seconds: 2));
+      controller.report(seconds: 0, paused: false, box: [0.1, 0.2, 0.5, 0.6]);
+      expect(controller.selectionBounds, isNull, reason: 'nothing selected, nothing to outline');
+
+      controller.selectElement([3, 0]);
+      expect(controller.selectionBounds, isNull, reason: 'waits for the renderer to answer');
+      controller.report(seconds: 0, paused: false, box: [0.1, 0.2, 0.5, 0.6]);
+      expect(controller.selectionBounds, const Rect.fromLTRB(0.1, 0.2, 0.5, 0.6));
+
+      controller.report(seconds: 0.2, paused: false); // element is hidden now
+      expect(controller.selectionBounds, isNull);
+
+      controller.report(seconds: 0.4, paused: false, box: [0, 0, 1, 1]);
+      controller.selectElement(null);
+      expect(controller.selectionBounds, isNull);
+    });
+
+    test('the host page can select an element and report its box', () {
+      final html = buildHostHtml(svg: '<svg/>', scheme: SvgColorScheme.dark, bridge: true);
+      expect(html, contains('select: function(path)'));
+      expect(html, contains('b: boxOf()'));
+    });
+
     test('ignores the renderer report that arrives right after a seek', () {
       final controller = SvgPlaybackController(cycle: const Duration(seconds: 2));
       controller.seekFraction(0.5);

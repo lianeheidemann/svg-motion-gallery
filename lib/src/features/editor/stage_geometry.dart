@@ -42,8 +42,8 @@ class StageGeometry {
   );
 }
 
-/// A frame around the canvas, so it is clear which area is being edited and
-/// what will be saved. Draws only; touches go through it.
+/// A thin continuous line around the canvas, so it is clear which area is
+/// being edited and what will be saved. Draws only; touches go through it.
 class CanvasFrame extends StatelessWidget {
   const CanvasFrame({super.key, required this.svg, required this.padding});
 
@@ -79,34 +79,14 @@ class _FramePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final rect = this.rect;
     if (rect == null) return;
-    // Dashed outline just outside the canvas, plus solid corner marks.
-    final dash = Paint()
-      ..color = color.withValues(alpha: .75)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-    final outer = rect.inflate(1);
-    final path = Path()..addRect(outer);
-    for (final metric in path.computeMetrics()) {
-      for (var d = 0.0; d < metric.length; d += 12) {
-        canvas.drawPath(metric.extractPath(d, math.min(d + 7, metric.length)), dash);
-      }
-    }
-    final corner = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-    const len = 14.0;
-    for (final p in [
-      [outer.topLeft, const Offset(len, 0), const Offset(0, len)],
-      [outer.topRight, const Offset(-len, 0), const Offset(0, len)],
-      [outer.bottomLeft, const Offset(len, 0), const Offset(0, -len)],
-      [outer.bottomRight, const Offset(-len, 0), const Offset(0, -len)],
-    ]) {
-      final origin = p[0];
-      canvas.drawLine(origin, origin + p[1], corner);
-      canvas.drawLine(origin, origin + p[2], corner);
-    }
+    // One thin, continuous line just outside the canvas.
+    canvas.drawRect(
+      rect.inflate(1),
+      Paint()
+        ..color = color.withValues(alpha: .8)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
   }
 
   @override

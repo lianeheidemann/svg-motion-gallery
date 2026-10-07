@@ -8,7 +8,9 @@ import 'package:svg_core/svg_core.dart';
 /// make the host paint an opaque canvas.
 ///
 /// With [bridge] enabled the page exposes `window.__sm` (setSvg, play, pause,
-/// seek, restart) and reports `{t: seconds, p: paused}` every 200 ms through
+/// seek, restart, select) and reports `{t: seconds, p: paused, b: box}` every
+/// 200 ms (`b` is the selected element's box as fractions of the page, or
+/// null) through
 /// the `SmBridge` JavaScript channel (mobile) or `postMessage` (web, tagged
 /// with [viewId]).
 String buildHostHtml({
@@ -55,7 +57,21 @@ String _bridgeScript({required bool autoplay, required String viewId}) =>
     var a = anims()[0];
     return a && a.currentTime ? a.currentTime / 1000 : 0;
   }
-  function report(){ post({t: time(), p: paused}); }
+  var sel = null;
+  // Box of the selected element (child indices from the <svg>) as fractions
+  // of the page, so it does not depend on pixel density.
+  function boxOf(){
+    if (!sel) return null;
+    var el = root();
+    for (var i = 0; el && i < sel.length; i++) { el = el.children[sel[i]]; }
+    if (!el || !el.getBoundingClientRect) return null;
+    var r = el.getBoundingClientRect();
+    var w = document.documentElement.clientWidth || window.innerWidth;
+    var h = document.documentElement.clientHeight || window.innerHeight;
+    if (!w || !h || (r.width === 0 && r.height === 0)) return null;
+    return [r.left / w, r.top / h, r.right / w, r.bottom / h];
+  }
+  function report(){ post({t: time(), p: paused, b: boxOf()}); }
   function applyPause(){
     var s = root();
     if (s && s.pauseAnimations) { paused ? s.pauseAnimations() : s.unpauseAnimations(); }
@@ -71,6 +87,7 @@ String _bridgeScript({required bool autoplay, required String viewId}) =>
       anims().forEach(function(a){ try { a.currentTime = t * 1000; } catch (e) {} });
       report();
     },
+    select: function(path){ sel = path; report(); },
     restart: function(){ api.seek(0); api.play(); }
   };
   window.__sm = api;
