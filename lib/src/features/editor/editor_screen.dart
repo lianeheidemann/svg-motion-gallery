@@ -267,7 +267,7 @@ class _EditorScreenState extends State<EditorScreen> {
   Widget _panel(EditorController editor) => switch (_tab) {
     _EditorTab.transform => TransformPanel(editor: editor),
     _EditorTab.colors => ColorsPanel(editor: editor),
-    _EditorTab.animation => AnimationPanel(editor: editor),
+    _EditorTab.animation => AnimationPanel(editor: editor, playback: _playback),
     _EditorTab.layers => LayersPanel(editor: editor),
     _EditorTab.insert => InsertPanel(editor: editor),
     _EditorTab.code => CodePanel(editor: editor),

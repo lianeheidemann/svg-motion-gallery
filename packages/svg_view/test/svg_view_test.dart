@@ -81,6 +81,13 @@ void main() {
       expect(controller.isPlaying, isTrue);
       expect(controller.progress, 0);
     });
+
+    test('ignores the renderer report that arrives right after a seek', () {
+      final controller = SvgPlaybackController(cycle: const Duration(seconds: 2));
+      controller.seekFraction(0.5);
+      controller.report(seconds: 0.1, paused: false);
+      expect(controller.seconds, 1, reason: 'the stale time must not pull the slider back');
+    });
   });
 
   testWidgets('SvgView renders with flutter_svg where no live renderer exists', (tester) async {

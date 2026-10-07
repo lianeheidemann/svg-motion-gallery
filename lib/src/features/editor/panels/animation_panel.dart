@@ -1,6 +1,7 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:svg_core/svg_core.dart';
+import 'package:svg_view/svg_view.dart';
 
 import '../../../l10n/l10n.dart';
 import '../editor_controller.dart';
@@ -8,9 +9,13 @@ import '../editor_controller.dart';
 /// Speed and removal of existing animations, and ready-made motions for the
 /// selected layer.
 class AnimationPanel extends StatefulWidget {
-  const AnimationPanel({super.key, required this.editor});
+  const AnimationPanel({super.key, required this.editor, this.playback});
 
   final EditorController editor;
+
+  /// Stage playback; paused while the speed bar is dragged so the moving
+  /// animation does not compete with the slider for frames.
+  final SvgPlaybackController? playback;
 
   @override
   State<AnimationPanel> createState() => _AnimationPanelState();
@@ -18,6 +23,7 @@ class AnimationPanel extends StatefulWidget {
 
 class _AnimationPanelState extends State<AnimationPanel> {
   var _speed = 1.0;
+  var _resumeAfterDrag = false;
   var _preset = SvgAnimationPreset.spin;
   var _seconds = 2.0;
 
@@ -54,10 +60,16 @@ class _AnimationPanelState extends State<AnimationPanel> {
                 max: 4,
                 fractionDigits: 2,
                 unit: '×',
+                onChangeStart: (_) {
+                  final playback = widget.playback;
+                  _resumeAfterDrag = playback?.isPlaying ?? false;
+                  playback?.pause();
+                },
                 onChanged: (v) => setState(() => _speed = v),
                 onChangeEnd: (v) {
                   _editor.commit(SvgAnimationEdit.changeSpeed(_editor.svg, v));
                   setState(() => _speed = 1);
+                  if (_resumeAfterDrag) widget.playback?.play();
                 },
               ),
               Align(

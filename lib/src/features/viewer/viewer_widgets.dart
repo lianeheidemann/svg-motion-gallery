@@ -37,6 +37,15 @@ class PlaybackBar extends StatefulWidget {
 class _PlaybackBarState extends State<PlaybackBar> with SingleTickerProviderStateMixin {
   var _resumeAfterSeek = false;
 
+  /// Position under the finger while scrubbing; null otherwise. The slider
+  /// shows this instead of the renderer's reports so it follows the finger.
+  double? _scrub;
+
+  /// Seeks are sent at most every [_seekEvery] while dragging: one per touch
+  /// event would flood the web view and make the preview lag behind.
+  static const _seekEvery = Duration(milliseconds: 40);
+  final _sinceSeek = Stopwatch()..start();
+
   /// Repaints every frame while playing so the position slider glides.
   late final Ticker _ticker = createTicker((_) => setState(() {}));
 
@@ -93,15 +102,24 @@ class _PlaybackBarState extends State<PlaybackBar> with SingleTickerProviderStat
                 ),
                 Expanded(
                   child: Slider(
-                    value: controller.smoothProgress,
+                    value: _scrub ?? controller.smoothProgress,
                     semanticFormatterCallback: (value) =>
                         l10n.positionPercent((value * 100).round()),
-                    onChangeStart: (_) {
+                    onChangeStart: (value) {
                       _resumeAfterSeek = controller.isPlaying;
                       controller.pause();
+                      setState(() => _scrub = value);
                     },
-                    onChanged: controller.seekFraction,
-                    onChangeEnd: (_) {
+                    onChanged: (value) {
+                      setState(() => _scrub = value);
+                      if (_sinceSeek.elapsed >= _seekEvery) {
+                        _sinceSeek.reset();
+                        controller.seekFraction(value);
+                      }
+                    },
+                    onChangeEnd: (value) {
+                      controller.seekFraction(value);
+                      setState(() => _scrub = null);
                       if (_resumeAfterSeek) controller.play();
                     },
                   ),

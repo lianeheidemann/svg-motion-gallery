@@ -17,6 +17,7 @@ class SliderField extends StatefulWidget {
     required this.max,
     this.onChanged,
     this.onChangeEnd,
+    this.onChangeStart,
     this.divisions,
     this.fractionDigits = 0,
     this.unit = '',
@@ -35,6 +36,9 @@ class SliderField extends StatefulWidget {
   final double labelWidth;
   final ValueChanged<double>? onChanged;
   final ValueChanged<double>? onChangeEnd;
+
+  /// Called once when a drag on the bar begins.
+  final ValueChanged<double>? onChangeStart;
 
   @override
   State<SliderField> createState() => _SliderFieldState();
@@ -134,6 +138,7 @@ class _SliderFieldState extends State<SliderField> {
                 widget.onChanged?.call(v);
               }
             : null,
+        onChangeStart: widget.onChangeStart,
         onChangeEnd: widget.onChangeEnd,
       ),
     );

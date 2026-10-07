@@ -23,6 +23,12 @@ class SvgPlaybackController extends ChangeNotifier {
   /// 200 ms, so the UI extrapolates from it to move smoothly in between.
   final _sinceReport = Stopwatch()..start();
 
+  /// The renderer's next report after a seek may still carry the time from
+  /// before it; reports in this window are ignored so a slider being dragged
+  /// is not pulled back by them.
+  static const _seekSettle = Duration(milliseconds: 400);
+  final _sinceSeek = Stopwatch();
+
   bool get isAttached => _target != null;
   bool get isPlaying => _playing;
 
@@ -66,6 +72,9 @@ class SvgPlaybackController extends ChangeNotifier {
     final seconds = fraction.clamp(0, 1) * length;
     _seconds = seconds.toDouble();
     _sinceReport.reset();
+    _sinceSeek
+      ..reset()
+      ..start();
     _target?.invoke('seek', [seconds]);
     notifyListeners();
   }
@@ -93,9 +102,11 @@ class SvgPlaybackController extends ChangeNotifier {
   /// Called by renderers with the timeline state.
   @internal
   void report({required double seconds, required bool paused}) {
-    final changed = (seconds - _seconds).abs() > 0.001 || paused == _playing;
-    _seconds = seconds;
-    _sinceReport.reset();
+    final settling = _sinceSeek.isRunning && _sinceSeek.elapsed < _seekSettle;
+    final next = settling ? _seconds : seconds;
+    final changed = (next - _seconds).abs() > 0.001 || paused == _playing;
+    _seconds = next;
+    if (!settling) _sinceReport.reset();
     _playing = !paused;
     if (changed) notifyListeners();
   }
