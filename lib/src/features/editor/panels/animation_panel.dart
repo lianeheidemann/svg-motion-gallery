@@ -22,15 +22,32 @@ class AnimationPanel extends StatefulWidget {
 }
 
 class _AnimationPanelState extends State<AnimationPanel> {
+  /// Speed shown by the bar, relative to [_base].
   var _speed = 1.0;
   var _resumeAfterDrag = false;
+
+  /// The document at speed 1. Every speed is computed from it, so changing
+  /// the speed twice never compounds (and rounding never drifts to zero).
+  String? _base;
+
+  /// What the last speed change produced. When the document is anything else
+  /// (undo, another edit) the bar starts over from that document.
+  String? _applied;
   var _preset = SvgAnimationPreset.spin;
   var _seconds = 2.0;
 
   EditorController get _editor => widget.editor;
 
+  void _syncBase() {
+    if (_editor.svg == (_applied ?? _base)) return;
+    _base = _editor.svg;
+    _applied = null;
+    _speed = 1;
+  }
+
   @override
   Widget build(BuildContext context) {
+    _syncBase();
     final l10n = context.l10n;
     final muted = TextStyle(color: GalleryColors.of(context).muted);
     final metadata = _editor.metadata;
@@ -67,8 +84,10 @@ class _AnimationPanelState extends State<AnimationPanel> {
                 },
                 onChanged: (v) => setState(() => _speed = v),
                 onChangeEnd: (v) {
-                  _editor.commit(SvgAnimationEdit.changeSpeed(_editor.svg, v));
-                  setState(() => _speed = 1);
+                  final result = SvgAnimationEdit.changeSpeed(_base ?? _editor.svg, v);
+                  _applied = result;
+                  if (result != _editor.svg) _editor.commit(result);
+                  setState(() => _speed = v);
                   if (_resumeAfterDrag) widget.playback?.play();
                 },
               ),
