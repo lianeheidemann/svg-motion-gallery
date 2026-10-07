@@ -341,6 +341,38 @@ void main() {
     expect(save().onPressed, isNotNull, reason: 'changing the document width is an edit');
   });
 
+  testWidgets('animation: "None" is the starting motion and cannot be applied', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('sun-moon.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+
+    // A layer that has no motion yet.
+    await tester.tap(find.text('Retângulo').first);
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Animação');
+    await tester.ensureVisible(find.byKey(const Key('apply-preset')));
+    await tester.pumpAndSettle();
+
+    FilledButton apply() => tester.widget<FilledButton>(find.byKey(const Key('apply-preset')));
+    ChoiceChip none() => tester.widget<ChoiceChip>(find.byKey(const Key('preset-none')));
+    expect(none().selected, isTrue);
+    expect(apply().onPressed, isNull, reason: 'nothing to apply');
+
+    await tester.tap(find.text('Girar'));
+    await tester.pumpAndSettle();
+    expect(none().selected, isFalse);
+    expect(apply().onPressed, isNotNull);
+
+    await tester.tap(find.byKey(const Key('preset-none')));
+    await tester.pumpAndSettle();
+    expect(none().selected, isTrue);
+    expect(apply().onPressed, isNull);
+  });
+
   testWidgets('editor: the preview background can be switched', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);

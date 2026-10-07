@@ -17,6 +17,7 @@
   "backgroundDark": "Dark",
   "backgroundChecker": "Checkerboard (transparency)",
   "tabSize": "Size",
+  "presetNone": "None",
   "pauseAll": "Pause animations",
   "resumeAll": "Resume animations",
   "search": "Search",

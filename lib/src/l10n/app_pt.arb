@@ -17,6 +17,7 @@
   "backgroundDark": "Escuro",
   "backgroundChecker": "Quadriculado (transparência)",
   "tabSize": "Tamanho",
+  "presetNone": "Nenhum",
   "pauseAll": "Pausar animações",
   "resumeAll": "Retomar animações",
   "search": "Buscar",
