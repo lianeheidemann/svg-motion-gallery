@@ -56,16 +56,39 @@ class _WindowPanelState extends State<WindowPanel> {
     setState(() {});
   }
 
-  /// Largest window with [ratio] that fits inside the current one, centered.
-  SvgViewBox _withRatio(double ratio) {
-    final w = _window;
-    var width = w.width;
-    var height = width / ratio;
-    if (height > w.height) {
-      height = w.height;
+  /// Smallest window with [ratio] that holds all of [around], same center.
+  SvgViewBox _containing(SvgViewBox around, double ratio) {
+    var width = around.width;
+    var height = around.height;
+    if (width / height < ratio) {
       width = height * ratio;
+    } else {
+      height = width / ratio;
     }
-    return SvgViewBox(w.centerX - width / 2, w.centerY - height / 2, width, height);
+    return SvgViewBox(around.centerX - width / 2, around.centerY - height / 2, width, height);
+  }
+
+  /// What is drawn (with the margin), measured by the renderer; null when it
+  /// cannot tell or nothing is drawn.
+  Future<SvgViewBox?> _measureContent() async {
+    final playback = widget.playback;
+    if (playback == null) return null;
+    final metadata = _editor.metadata;
+    final moving = (_withMotion ?? metadata.isAnimated) && metadata.isAnimated;
+    final box = await playback.measureContent(cycle: moving ? metadata.cycleDuration : null);
+    if (box == null || box.width <= 0 || box.height <= 0) return null;
+    final pad = math.max(box.width, box.height) * _margin / 100;
+    return SvgViewBox(box.left - pad, box.top - pad, box.width + 2 * pad, box.height + 2 * pad);
+  }
+
+  /// A new proportion refits the drawing: the window becomes the smallest one
+  /// of that proportion that shows everything drawn. Where the renderer cannot
+  /// measure, it grows around the current window instead (nothing is cut).
+  Future<void> _setRatio(double ratio) async {
+    setState(() => _failed = false);
+    final content = await _measureContent();
+    if (!mounted) return;
+    _commit(_containing(content ?? _window, ratio));
   }
 
   Future<void> _fit() async {
@@ -150,37 +173,23 @@ class _WindowPanelState extends State<WindowPanel> {
                   ActionChip(
                     key: Key('ratio-$label'),
                     label: Text(label),
-                    onPressed: () => _commit(_withRatio(ratio)),
+                    onPressed: () => _setRatio(ratio),
                   ),
               ],
-            ),
-            slider(
-              l10n.windowX,
-              w.minX,
-              _base.minX - span,
-              _base.minX + span,
-              (v) => SvgViewBox(v, w.minY, w.width, w.height),
-            ),
-            slider(
-              l10n.windowY,
-              w.minY,
-              _base.minY - span,
-              _base.minY + span,
-              (v) => SvgViewBox(w.minX, v, w.width, w.height),
             ),
             slider(
               l10n.windowWidth,
               w.width,
               span * .02,
               span * 3,
-              (v) => SvgViewBox(w.minX, w.minY, v, w.height),
+              (v) => SvgViewBox(w.centerX - v / 2, w.minY, v, w.height),
             ),
             slider(
               l10n.windowHeight,
               w.height,
               span * .02,
               span * 3,
-              (v) => SvgViewBox(w.minX, w.minY, w.width, v),
+              (v) => SvgViewBox(w.minX, w.centerY - v / 2, w.width, v),
             ),
           ],
         ),

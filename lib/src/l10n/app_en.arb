@@ -282,8 +282,6 @@
   "windowTitle": "Window",
   "windowRestore": "Restore window",
   "windowRatio": "Proportion",
-  "windowX": "Position X",
-  "windowY": "Position Y",
   "windowWidth": "Window width",
   "windowHeight": "Window height",
   "windowAdjust": "Automatic fit",
