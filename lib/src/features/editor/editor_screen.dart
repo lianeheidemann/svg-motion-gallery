@@ -17,12 +17,13 @@ import 'panels/code_panel.dart';
 import 'panels/colors_panel.dart';
 import 'panels/insert_panel.dart';
 import 'panels/layers_panel.dart';
+import 'panels/size_panel.dart';
 import 'panels/transform_panel.dart';
 import 'selection_highlight.dart';
 import 'stage_drag_layer.dart';
 import 'stage_geometry.dart';
 
-enum _EditorTab { layers, transform, colors, animation, insert, code }
+enum _EditorTab { layers, transform, size, colors, animation, insert, code }
 
 /// The single editor: live stage on top, one tab per kind of edit, a
 /// validation/status line at the bottom and one Save button.
@@ -200,6 +201,7 @@ class _EditorScreenState extends State<EditorScreen> {
                       accent: editor.selection == null ? GalleryColors.of(context).success : null,
                     ),
                     PillTab(l10n.tabTransform, icon: Icons.open_with_rounded),
+                    PillTab(l10n.tabSize, icon: Icons.aspect_ratio_rounded),
                     PillTab(l10n.tabColors, icon: Icons.palette_outlined),
                     PillTab(l10n.tabAnimation, icon: Icons.animation_rounded),
                     PillTab(l10n.tabInsert, icon: Icons.add_box_outlined),
@@ -359,6 +361,7 @@ class _EditorScreenState extends State<EditorScreen> {
 
   Widget _panel(EditorController editor) => switch (_tab) {
     _EditorTab.transform => TransformPanel(editor: editor),
+    _EditorTab.size => SizePanel(editor: editor),
     _EditorTab.colors => ColorsPanel(editor: editor),
     _EditorTab.animation => AnimationPanel(editor: editor, playback: _playback),
     _EditorTab.layers => LayersPanel(editor: editor),

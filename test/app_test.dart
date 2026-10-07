@@ -319,15 +319,26 @@ void main() {
 
     await _tapTab(tester, 'Transformar');
     // The pair for the selection (%) sits right after Escala.
-    expect(find.text('Largura'), findsWidgets);
-    expect(find.text('Altura'), findsWidgets);
+    expect(find.text('Largura'), findsOneWidget);
+    expect(find.text('Altura'), findsOneWidget);
     expect(find.text('Escala'), findsOneWidget);
+    expect(find.text('Tamanho do documento'), findsNothing, reason: 'it has its own tab');
 
     FilledButton save() => tester.widget<FilledButton>(find.byKey(const Key('save')));
     expect(save().onPressed, isNull);
     await tester.drag(find.byType(Slider).at(3), const Offset(60, 0)); // Largura (%)
     await tester.pumpAndSettle();
     expect(save().onPressed, isNotNull, reason: 'stretching the width is an edit');
+
+    await tester.tap(find.byTooltip('Desfazer'));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Tamanho');
+    expect(find.text('Tamanho do documento'), findsOneWidget);
+    expect(find.text('Largura'), findsOneWidget);
+    expect(find.text('Altura'), findsOneWidget);
+    await tester.drag(find.byType(Slider).first, const Offset(40, 0));
+    await tester.pumpAndSettle();
+    expect(save().onPressed, isNotNull, reason: 'changing the document width is an edit');
   });
 
   testWidgets('editor: the preview background can be switched', (tester) async {
