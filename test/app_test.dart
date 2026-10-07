@@ -1,3 +1,4 @@
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:svg_motion_gallery/src/app_scope.dart';
@@ -305,6 +306,54 @@ void main() {
     await tester.tap(header);
     await tester.pumpAndSettle();
     expect(find.text('Selecionado: Todas'), findsOneWidget);
+  });
+
+  testWidgets('transform: width and height can be changed on their own', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+
+    await _tapTab(tester, 'Transformar');
+    // The pair for the selection (%) sits right after Escala.
+    expect(find.text('Largura'), findsWidgets);
+    expect(find.text('Altura'), findsWidgets);
+    expect(find.text('Escala'), findsOneWidget);
+
+    FilledButton save() => tester.widget<FilledButton>(find.byKey(const Key('save')));
+    expect(save().onPressed, isNull);
+    await tester.drag(find.byType(Slider).at(3), const Offset(60, 0)); // Largura (%)
+    await tester.pumpAndSettle();
+    expect(save().onPressed, isNotNull, reason: 'stretching the width is an edit');
+  });
+
+  testWidgets('editor: the preview background can be switched', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+
+    StageBackground shown() => tester.widget<Stage>(find.byType(Stage).first).background;
+    expect(shown(), StageBackground.current);
+
+    for (final (key, expected) in [
+      ('preview-bg-light', StageBackground.light),
+      ('preview-bg-dark', StageBackground.dark),
+      ('preview-bg-checkerboard', StageBackground.checkerboard),
+      ('preview-bg-current', StageBackground.current),
+    ]) {
+      await tester.tap(find.byKey(const Key('preview-bg')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(Key(key)));
+      await tester.pumpAndSettle();
+      expect(shown(), expected, reason: key);
+    }
   });
 
   testWidgets('pause-all stops the gallery for now without touching the settings', (tester) async {

@@ -37,6 +37,17 @@ void main() {
       expect(SvgHitTest.at(moved.svg, 60, 20), isNotNull);
     });
 
+    test('follows a width-only stretch of a shape', () {
+      final wide = SvgTransformEdit.apply(
+        _svg,
+        const ElementPath([1]),
+        const SvgTransformValues(widthFactor: 3),
+      );
+      // The 20 wide square at x 10..30 now spans x -10..50 (centered on 20).
+      expect(SvgHitTest.at(wide.svg, 45, 20), isNotNull);
+      expect(SvgHitTest.at(wide.svg, 20, 45), isNull, reason: 'the height did not change');
+    });
+
     test('follows the rotation of a shape', () {
       // A wide bar 80 x 10 centered at (50, 50), turned a quarter: it is now tall.
       const bar =

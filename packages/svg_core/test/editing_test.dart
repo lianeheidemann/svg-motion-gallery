@@ -62,6 +62,23 @@ void main() {
   });
 
   group('SvgTransformEdit', () {
+    test('stretches only the width or only the height, and reads it back', () {
+      const values = SvgTransformValues(scale: 2, widthFactor: 0.5, heightFactor: 1.5);
+      final result = SvgTransformEdit.apply(base, const ElementPath([2]), values);
+      expect(result.svg, contains('scale(1 3)'), reason: 'scale 2 x (0.5, 1.5)');
+      final read = SvgTransformEdit.read(result.svg, result.selection);
+      expect(read.scale, closeTo(1, 1e-9));
+      expect(read.heightFactor, closeTo(3, 1e-9));
+      // Same drawing either way: the factors are only a different way to write it.
+      expect(read.scale * read.widthFactor, closeTo(1, 1e-9));
+      expect(read.scale * read.heightFactor, closeTo(3, 1e-9));
+      expect(const SvgTransformValues(widthFactor: 2).isIdentity, isFalse);
+      expect(
+        SvgTransformEdit.apply(base, const ElementPath([2]), const SvgTransformValues()).svg,
+        base,
+      );
+    });
+
     const values = SvgTransformValues(
       translateX: 5,
       translateY: -2.5,

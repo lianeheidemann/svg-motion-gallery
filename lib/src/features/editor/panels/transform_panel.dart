@@ -7,7 +7,7 @@ import 'package:svg_core/svg_core.dart';
 import '../../../l10n/l10n.dart';
 import '../editor_controller.dart';
 
-/// Position, scale, rotation and opacity of the selection (or of the whole
+/// Position, scale, width and height alone, rotation and opacity of the selection (or of the whole
 /// drawing), plus the document size. Every value has a slider.
 class TransformPanel extends StatefulWidget {
   const TransformPanel({super.key, required this.editor});
@@ -97,6 +97,24 @@ class _TransformPanelState extends State<TransformPanel> {
               max: 400,
               unit: '%',
               onChanged: (v) => _preview(values.copyWith(scale: v.roundToDouble() / 100)),
+              onChangeEnd: (_) => _commit(),
+            ),
+            SliderField(
+              label: l10n.width,
+              value: (values.widthFactor * 100).clamp(10, 400),
+              min: 10,
+              max: 400,
+              unit: '%',
+              onChanged: (v) => _preview(values.copyWith(widthFactor: v.roundToDouble() / 100)),
+              onChangeEnd: (_) => _commit(),
+            ),
+            SliderField(
+              label: l10n.height,
+              value: (values.heightFactor * 100).clamp(10, 400),
+              min: 10,
+              max: 400,
+              unit: '%',
+              onChanged: (v) => _preview(values.copyWith(heightFactor: v.roundToDouble() / 100)),
               onChangeEnd: (_) => _commit(),
             ),
             SliderField(

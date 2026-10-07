@@ -10,6 +10,8 @@ class SvgTransformValues {
     this.translateY = 0,
     this.rotation = 0,
     this.scale = 1,
+    this.widthFactor = 1,
+    this.heightFactor = 1,
     this.opacity = 1,
   });
 
@@ -25,29 +27,48 @@ class SvgTransformValues {
   /// Uniform scale factor around the center of the target (1 = 100 %).
   final double scale;
 
+  /// Extra stretch of the width and of the height alone (1 = none), on top of
+  /// [scale]. The element's own axes are stretched, before it is rotated.
+  final double widthFactor;
+  final double heightFactor;
+
   /// 0..1.
   final double opacity;
 
   bool get isIdentity =>
-      translateX == 0 && translateY == 0 && rotation == 0 && scale == 1 && opacity == 1;
+      translateX == 0 &&
+      translateY == 0 &&
+      rotation == 0 &&
+      scale == 1 &&
+      widthFactor == 1 &&
+      heightFactor == 1 &&
+      opacity == 1;
 
   SvgTransformValues copyWith({
     double? translateX,
     double? translateY,
     double? rotation,
     double? scale,
+    double? widthFactor,
+    double? heightFactor,
     double? opacity,
   }) => SvgTransformValues(
     translateX: translateX ?? this.translateX,
     translateY: translateY ?? this.translateY,
     rotation: rotation ?? this.rotation,
     scale: scale ?? this.scale,
+    widthFactor: widthFactor ?? this.widthFactor,
+    heightFactor: heightFactor ?? this.heightFactor,
     opacity: opacity ?? this.opacity,
   );
 
+  String get _scaleArguments => widthFactor == 1 && heightFactor == 1
+      ? formatNumber(scale)
+      : '${formatNumber(scale * widthFactor)} ${formatNumber(scale * heightFactor)}';
+
   String get _transformAttribute =>
       'translate(${formatNumber(translateX)} ${formatNumber(translateY)}) '
-      'rotate(${formatNumber(rotation)}) scale(${formatNumber(scale)})';
+      'rotate(${formatNumber(rotation)}) scale($_scaleArguments)';
 
   @override
   bool operator ==(Object other) =>
@@ -56,10 +77,13 @@ class SvgTransformValues {
       other.translateY == translateY &&
       other.rotation == rotation &&
       other.scale == scale &&
+      other.widthFactor == widthFactor &&
+      other.heightFactor == heightFactor &&
       other.opacity == opacity;
 
   @override
-  int get hashCode => Object.hash(translateX, translateY, rotation, scale, opacity);
+  int get hashCode =>
+      Object.hash(translateX, translateY, rotation, scale, widthFactor, heightFactor, opacity);
 }
 
 /// Applies [SvgTransformValues] through an editor-owned `<g>` wrapper, so the
@@ -177,7 +201,11 @@ class SvgTransformEdit {
           translateY: numbers.length > 1 ? numbers[1] : 0,
         ),
         'rotate' => values.copyWith(rotation: numbers[0]),
-        _ => values.copyWith(scale: numbers[0]),
+        _ => values.copyWith(
+          scale: numbers[0],
+          // scale(sx sy): the height is stretched relative to the width.
+          heightFactor: numbers.length > 1 && numbers[0] != 0 ? numbers[1] / numbers[0] : 1,
+        ),
       };
     }
     return values;

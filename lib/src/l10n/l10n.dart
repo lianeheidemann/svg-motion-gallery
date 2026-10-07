@@ -1,3 +1,4 @@
+import 'package:design_system/design_system.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:svg_core/svg_core.dart';
@@ -82,6 +83,13 @@ extension AppLocalizationsFormat on AppLocalizations {
     SvgShapeKind.line => shapeLine,
     SvgShapeKind.star => shapeStar,
     SvgShapeKind.text => shapeText,
+  };
+
+  String backgroundName(StageBackground background) => switch (background) {
+    StageBackground.current => backgroundCurrent,
+    StageBackground.light => backgroundLight,
+    StageBackground.dark => backgroundDark,
+    StageBackground.checkerboard => backgroundChecker,
   };
 
   /// Labels for a whole layer list: [layer] names, with a number added to

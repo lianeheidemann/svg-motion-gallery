@@ -24,9 +24,15 @@ class SvgBounds {
       x >= left - slop && x <= right + slop && y >= top - slop && y <= bottom + slop;
 
   /// This box scaled by [scale] around its center, then moved by ([dx], [dy]).
-  SvgBounds transformed({double scale = 1, double dx = 0, double dy = 0}) {
-    final halfW = width / 2 * scale;
-    final halfH = height / 2 * scale;
+  SvgBounds transformed({
+    double scale = 1,
+    double stretchX = 1,
+    double stretchY = 1,
+    double dx = 0,
+    double dy = 0,
+  }) {
+    final halfW = width / 2 * scale * stretchX;
+    final halfH = height / 2 * scale * stretchY;
     return SvgBounds(
       centerX + dx - halfW,
       centerY + dy - halfH,
@@ -90,6 +96,8 @@ class SvgHitTest {
           path: path,
           bounds: base.transformed(
             scale: values.scale,
+            stretchX: values.widthFactor,
+            stretchY: values.heightFactor,
             dx: values.translateX,
             dy: values.translateY,
           ),

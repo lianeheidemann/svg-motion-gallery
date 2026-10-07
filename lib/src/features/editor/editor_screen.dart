@@ -42,6 +42,9 @@ class _EditorScreenState extends State<EditorScreen> {
   var _tab = _EditorTab.layers;
   var _saving = false;
 
+  /// What the preview sits on. Only a viewing aid: never saved.
+  var _background = StageBackground.current;
+
   /// Selection last sent to the renderer, which then reports where it is.
   ElementPath? _sentSelection;
 
@@ -278,6 +281,7 @@ class _EditorScreenState extends State<EditorScreen> {
                     svg: editor.displaySvg,
                     controller: _playback,
                     showGrid: true,
+                    background: _background,
                     padding: const EdgeInsets.all(16),
                     semanticLabel: l10n.previewOf(_document!.name),
                   ),
@@ -323,6 +327,22 @@ class _EditorScreenState extends State<EditorScreen> {
                     onPressed: () => editor.select(null),
                     child: Text(l10n.clearSelection),
                   ),
+                PopupMenuButton<StageBackground>(
+                  key: const Key('preview-bg'),
+                  tooltip: l10n.previewBackground,
+                  icon: const Icon(Icons.wallpaper_rounded),
+                  initialValue: _background,
+                  onSelected: (value) => setState(() => _background = value),
+                  itemBuilder: (context) => [
+                    for (final option in StageBackground.values)
+                      CheckedPopupMenuItem(
+                        key: Key('preview-bg-${option.name}'),
+                        value: option,
+                        checked: option == _background,
+                        child: Text(l10n.backgroundName(option)),
+                      ),
+                  ],
+                ),
                 IconButton(
                   key: const Key('reset-all'),
                   tooltip: l10n.resetAll,
