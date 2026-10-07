@@ -184,6 +184,7 @@
     }
   },
   "deleteSelectedElement": "Delete selected element",
+  "rotateHandle": "Rotate",
   "resizeHandle": "Resize",
   "layerAnimated": "Animated",
   "layerEditorGroup": "Editor adjustment",

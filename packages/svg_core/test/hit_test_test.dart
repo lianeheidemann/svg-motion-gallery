@@ -37,6 +37,20 @@ void main() {
       expect(SvgHitTest.at(moved.svg, 60, 20), isNotNull);
     });
 
+    test('follows the rotation of a shape', () {
+      // A wide bar 80 x 10 centered at (50, 50), turned a quarter: it is now tall.
+      const bar =
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'
+          '<rect x="10" y="45" width="80" height="10"/></svg>';
+      final turned = SvgTransformEdit.apply(
+        bar,
+        const ElementPath([0]),
+        const SvgTransformValues(rotation: 90),
+      );
+      expect(SvgHitTest.at(turned.svg, 50, 15), isNotNull, reason: 'the top end of the bar');
+      expect(SvgHitTest.at(turned.svg, 15, 50), isNull, reason: 'where its left end used to be');
+    });
+
     test('measures text by anchor', () {
       final inserted = SvgInsertEdit.insert(_svg, SvgShapeKind.text, color: '#FFFFFF', text: 'Oi');
       final hit = SvgHitTest.at(inserted.svg, 50, 50);

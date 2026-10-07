@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:xml/xml.dart';
 
 import '../xml_support.dart';
@@ -36,13 +38,29 @@ class SvgBounds {
 
 /// A top-level shape the user can grab and drag on the stage.
 class SvgMovable {
-  const SvgMovable({required this.path, required this.bounds});
+  const SvgMovable({required this.path, required this.bounds, this.rotation = 0});
 
   /// Address of the root child to pass to [SvgTransformEdit].
   final ElementPath path;
 
-  /// Where the shape currently is, including its editor transform.
+  /// Where the shape currently is, including its editor transform. The box is
+  /// the unrotated one: it turns by [rotation] around its center.
   final SvgBounds bounds;
+
+  /// Degrees, clockwise, around the center of [bounds].
+  final double rotation;
+
+  /// Whether the point ([x], [y]) is on the (rotated) shape, with [slop] units
+  /// of tolerance.
+  bool containsPoint(double x, double y, {double slop = 0}) {
+    if (rotation == 0) return bounds.contains(x, y, slop: slop);
+    final angle = -rotation * math.pi / 180;
+    final dx = x - bounds.centerX;
+    final dy = y - bounds.centerY;
+    final localX = bounds.centerX + dx * math.cos(angle) - dy * math.sin(angle);
+    final localY = bounds.centerY + dx * math.sin(angle) + dy * math.cos(angle);
+    return bounds.contains(localX, localY, slop: slop);
+  }
 }
 
 /// Finds the shapes drawn directly on the canvas (the ones the Insert tab
@@ -75,6 +93,7 @@ class SvgHitTest {
             dx: values.translateX,
             dy: values.translateY,
           ),
+          rotation: values.rotation,
         ),
       );
     }
@@ -84,7 +103,7 @@ class SvgHitTest {
   /// The topmost movable shape at ([x], [y]), with [slop] units of tolerance.
   static SvgMovable? at(String svg, double x, double y, {double slop = 0}) {
     for (final movable in movables(svg).reversed) {
-      if (movable.bounds.contains(x, y, slop: slop)) return movable;
+      if (movable.containsPoint(x, y, slop: slop)) return movable;
     }
     return null;
   }

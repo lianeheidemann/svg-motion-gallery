@@ -169,6 +169,14 @@ void main() {
     await tester.pumpAndSettle();
     await _tapTab(tester, 'Inserir');
 
+    await tester.drag(find.byKey(const Key('rotate-handle')), const Offset(-40, 30));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Camadas');
+    expect(find.text('Ajuste do editor'), findsWidgets, reason: 'turning adds a transform group');
+    await tester.tap(find.byTooltip('Desfazer'));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Inserir');
+
     await tester.tap(find.byTooltip('Desfazer'));
     await tester.pumpAndSettle();
     expect(save().onPressed, isNull);
