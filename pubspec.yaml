@@ -22,7 +22,7 @@ dependencies:
   file_picker: ^13.1.0
   intl: any
   path_provider: ^2.1.6
-  share_plus: ^13.3.0
+  share_plus: ^13.3.1
   shared_preferences: ^2.5.5
   svg_core:
     path: packages/svg_core
