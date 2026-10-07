@@ -516,5 +516,6 @@
   "windowFit": "Ajustar ao conteúdo",
   "tabWindow": "Janela",
   "tabText": "Texto",
-  "insertTextTitle": "Inserir texto"
+  "insertTextTitle": "Inserir texto",
+  "autoFormatSubtitle": "Organiza o código do editor sozinho (uma tag por linha). O botão Formatar faz isso na hora, quando está desligada."
 }

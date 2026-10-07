@@ -157,6 +157,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       value: value.autoBackup,
                       onChanged: settings.setAutoBackup,
                     ),
+                    SettingSwitchTile(
+                      key: const Key('setting-auto-format'),
+                      title: l10n.autoFormat,
+                      subtitle: l10n.autoFormatSubtitle,
+                      value: value.autoFormatCode,
+                      onChanged: settings.setAutoFormatCode,
+                    ),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.md),

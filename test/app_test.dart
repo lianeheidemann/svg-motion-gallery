@@ -1,6 +1,7 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:svg_core/svg_core.dart';
 import 'package:svg_motion_gallery/src/app_scope.dart';
 
 import 'helpers.dart';
@@ -297,7 +298,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Alterações salvas'), findsOneWidget);
     expect(find.text('SVG válido'), findsOneWidget);
-    expect(services.library.contentOf(services.library.byId(wave.id)!), _valid);
+    expect(services.library.contentOf(services.library.byId(wave.id)!), formatSvg(_valid));
   });
 
   testWidgets('layers: arrow folds a folder, double tap renames, header selects all', (

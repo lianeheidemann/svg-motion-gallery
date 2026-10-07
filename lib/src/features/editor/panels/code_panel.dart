@@ -88,7 +88,7 @@ class _CodePanelState extends State<CodePanel> {
   late final _code = SvgCodeController(text: widget.editor.code);
   final _vertical = ScrollController();
   final _horizontal = ScrollController();
-  late int _revision = widget.editor.revision;
+  late int _revision;
   var _wrap = false;
   var _fontSize = 11.0;
   var _checkedAuto = false;
@@ -109,6 +109,12 @@ class _CodePanelState extends State<CodePanel> {
   }
 
   bool get _auto => AppScope.of(context).settings.value.autoFormatCode;
+
+  @override
+  void initState() {
+    super.initState();
+    _revision = widget.editor.revision;
+  }
 
   @override
   void didChangeDependencies() {
@@ -138,11 +144,6 @@ class _CodePanelState extends State<CodePanel> {
       final formatted = formatSvg(widget.editor.code);
       if (formatted != null && formatted != widget.editor.code) widget.editor.formatCode();
     });
-  }
-
-  void _toggleAuto(bool value) {
-    AppScope.of(context).settings.setAutoFormatCode(value);
-    if (value) _autoFormat();
   }
 
   @override
@@ -244,21 +245,6 @@ class _CodePanelState extends State<CodePanel> {
                       onPressed: _format,
                       icon: const Icon(Icons.format_align_left_rounded, size: 18),
                       label: Text(l10n.formatCode),
-                    ),
-                    FilterChip(
-                      key: const Key('auto-format'),
-                      avatar: Icon(
-                        Icons.auto_fix_high_rounded,
-                        size: 18,
-                        color: _auto ? Colors.white : null,
-                      ),
-                      label: Text(
-                        l10n.autoFormat,
-                        style: TextStyle(color: _auto ? Colors.white : null),
-                      ),
-                      selected: _auto,
-                      side: BorderSide(color: Theme.of(context).colorScheme.outline),
-                      onSelected: _toggleAuto,
                     ),
                     FilterChip(
                       avatar: Icon(

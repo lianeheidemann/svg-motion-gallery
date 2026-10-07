@@ -24,7 +24,7 @@ class AppSettings {
     this.loop = true,
     this.highQualityPreviews = true,
     this.autoBackup = true,
-    this.autoFormatCode = false,
+    this.autoFormatCode = true,
     this.slideshowSeconds = 5,
     this.uiScale = defaultUiScale,
   });

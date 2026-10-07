@@ -298,5 +298,6 @@
   "windowFit": "Fit to content",
   "tabWindow": "Window",
   "tabText": "Text",
-  "insertTextTitle": "Insert text"
+  "insertTextTitle": "Insert text",
+  "autoFormatSubtitle": "Keeps the editor code tidy by itself (one tag per line). The Format button does it on demand when this is off."
 }
