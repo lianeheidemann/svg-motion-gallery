@@ -76,8 +76,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     SettingSwitchTile(
                       title: l10n.loopTitle,
-                      value: value.loop,
-                      onChanged: settings.setLoop,
+                      value: value.loop && value.autoplay,
+                      onChanged: value.autoplay ? settings.setLoop : null,
                     ),
                     SettingSwitchTile(
                       title: l10n.hqTitle,

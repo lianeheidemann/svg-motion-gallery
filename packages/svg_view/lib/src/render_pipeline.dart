@@ -1,7 +1,7 @@
 import 'package:svg_core/svg_core.dart';
 
 /// Turns stored SVG text into what is actually rendered:
-/// sanitized → resolved for [scheme] → (optionally) looped → viewBox ensured
+/// sanitized → resolved for [scheme] → looped or played once → viewBox ensured
 /// → (for renderers without CSS support, [inlineCss]) styles inlined.
 ///
 /// Results are memoized (LRU) because gallery cards rebuild often.
@@ -20,7 +20,7 @@ String prepareSvgForDisplay(
   }
   var output = sanitizeSvg(svg);
   output = SvgThemeResolver.resolve(output, scheme, currentColor: currentColor);
-  if (loop) output = forceLoop(output);
+  output = loop ? forceLoop(output) : forcePlayOnce(output);
   output = SvgDocumentEdit.ensureViewBox(output);
   if (inlineCss) output = SvgCssInliner.inline(output);
   _cache[key] = output;

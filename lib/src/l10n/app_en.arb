@@ -11,6 +11,9 @@
   "renameConfirm": "Rename",
   "foldFolder": "Fold folder",
   "unfoldFolder": "Open folder",
+  "compareBefore": "Before",
+  "compareAfter": "After",
+  "compareHandle": "Drag to compare before and after",
   "previewBackground": "Preview background",
   "backgroundCurrent": "Current",
   "backgroundLight": "Light",
@@ -136,6 +139,25 @@
   "issueMalformed": "Malformed XML.",
   "issueMalformedAt": "Malformed XML at line {line}, column {column}.",
   "issueValue": "Invalid value “{value}” in {attribute}, at line {line}.",
+  "issueArgb": "Color “{value}”: in an SVG the last 2 digits are the transparency (#RRGGBBAA). If it is #AARRGGBB (Android), tap Convert. As written it is {percent}% opaque.",
+  "@issueArgb": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "codeConvertArgb": "Convert",
+  "eyedropper": "Eyedropper",
+  "eyedropperHint": "Tap the drawing to pick a color",
+  "eyedropperNoColor": "No solid color here",
+  "editingLight": "Editing the light version — tap for dark",
+  "editingDark": "Editing the dark version — tap for light",
+  "keepProportion": "Keep proportion",
+  "selectAllLayers": "Select all",
   "codeProblemGo": "Go to the problem",
   "codeMoreProblems": "+{count}",
   "selectionNone": "Selected: All",
@@ -159,13 +181,12 @@
   "paletteEmpty": "No solid colors found.",
   "layerPaint": "Paint of {name}",
   "fill": "Fill",
-  "removeFill": "Remove fill",
   "hue": "Hue",
   "saturation": "Saturation",
   "lightness": "Lightness",
   "hex": "Hex",
   "animationsTitle": "File animations",
-  "cycleSeconds": "{seconds} s cycle",
+  "durationSeconds": "Duration: {seconds} s",
   "speed": "Speed",
   "removeAnimations": "Remove all animations",
   "presetsTitle": "Add motion",
@@ -174,6 +195,7 @@
   "presetFloat": "Float",
   "presetSway": "Sway",
   "presetFade": "Fade",
+  "intensity": "Intensity",
   "duration": "Duration",
   "layersTitle": "{count, plural, =0{Layers} =1{1 layer} other{{count} layers}}",
   "multiSelect": "Select several layers",

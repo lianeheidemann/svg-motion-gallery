@@ -96,6 +96,7 @@ class SvgTransformValues {
 class SvgTransformEdit {
   const SvgTransformEdit._();
 
+  static const _factorsAttribute = 'data-sm-wh';
   static const _wrapperStyle = 'transform-box:fill-box;transform-origin:center';
 
   /// Current values of [target]; null or root means the whole drawing.
@@ -132,6 +133,14 @@ class SvgTransformEdit {
     wrapper
       ..setAttribute('transform', values._transformAttribute)
       ..setAttribute('opacity', values.opacity == 1 ? null : formatNumber(values.opacity))
+      // The transform only keeps the products (scale x width, scale x height);
+      // the factors are noted so the bars show what the user set.
+      ..setAttribute(
+        _factorsAttribute,
+        values.widthFactor == 1
+            ? null
+            : '${formatNumber(values.widthFactor)} ${formatNumber(values.heightFactor)}',
+      )
       ..setAttribute('style', _wrapperStyle);
     return SvgEditResult(
       document.toXmlString(),
@@ -210,6 +219,20 @@ class SvgTransformEdit {
           heightFactor: numbers.length > 1 && numbers[0] != 0 ? numbers[1] / numbers[0] : 1,
         ),
       };
+    }
+    // The width/height the user set, when they still match the transform.
+    final noted = (wrapper.getAttribute(_factorsAttribute) ?? '')
+        .trim()
+        .split(RegExp(r'\s+'))
+        .map(double.tryParse)
+        .toList();
+    if (noted.length == 2 && noted[0] != null && noted[1] != null && noted[0]! > 0) {
+      final w = noted[0]!;
+      final h = noted[1]!;
+      final shownRatio = values.heightFactor;
+      if ((shownRatio - h / w).abs() < 0.01) {
+        values = values.copyWith(scale: values.scale / w, widthFactor: w, heightFactor: h);
+      }
     }
     return values;
   }

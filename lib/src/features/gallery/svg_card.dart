@@ -154,8 +154,8 @@ class _SvgCardState extends State<SvgCard> {
                               Expanded(
                                 child: Text(
                                   [
-                                    if (folder != null && folder.isNotEmpty) folder,
                                     l10n.bytes(document.sizeBytes),
+                                    if (folder != null && folder.isNotEmpty) folder,
                                   ].join(' · '),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,

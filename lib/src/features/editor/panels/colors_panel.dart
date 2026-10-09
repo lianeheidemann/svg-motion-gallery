@@ -10,9 +10,13 @@ import '../editor_controller.dart';
 /// Colors are picked from a palette of ready-made colors and fine-tuned with
 /// hue/saturation/lightness sliders.
 class ColorsPanel extends StatefulWidget {
-  const ColorsPanel({super.key, required this.editor});
+  const ColorsPanel({super.key, required this.editor, this.scheme});
 
   final EditorController editor;
+
+  /// The light/dark version being edited (the change goes to that version
+  /// only); null for a file without such versions.
+  final SvgColorScheme? scheme;
 
   @override
   State<ColorsPanel> createState() => _ColorsPanelState();
@@ -22,6 +26,45 @@ class _ColorsPanelState extends State<ColorsPanel> {
   var _custom = false;
 
   EditorController get _editor => widget.editor;
+
+  @override
+  void initState() {
+    super.initState();
+    _editor.onColorPicked = _picked;
+  }
+
+  @override
+  void dispose() {
+    _editor
+      ..onColorPicked = null
+      ..eyedropper = false;
+    super.dispose();
+  }
+
+  /// The eyedropper found [hex] on the stage: it becomes the paint.
+  void _picked(String hex) {
+    _editor
+      ..eyedropper = false
+      ..commit(_paint(_editor.svg, hex));
+  }
+
+  /// Paints every target. Outline-only shapes (fill none) stay that way when
+  /// several are painted.
+  String _paint(String svg, String? color) {
+    final targets = _editor.paintTargets;
+    var out = svg;
+    final scheme = widget.scheme;
+    for (final target in targets) {
+      final current = scheme == null
+          ? SvgPaintEdit.read(out, target).fill
+          : SvgThemeEdit.fillFor(out, target, scheme);
+      if (targets.length > 1 && current == 'none') continue;
+      out = scheme == null || color == null
+          ? SvgPaintEdit.setFill(out, target, color)
+          : SvgThemeEdit.setFill(out, target, color, scheme);
+    }
+    return out;
+  }
 
   HslLabels _labels(AppLocalizations l10n) => HslLabels(
     hue: l10n.hue,
@@ -33,7 +76,7 @@ class _ColorsPanelState extends State<ColorsPanel> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final hasSelection = _editor.targets.isNotEmpty;
+    final hasSelection = _editor.paintTargets.isNotEmpty;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
@@ -90,6 +133,12 @@ class _ColorsPanelState extends State<ColorsPanel> {
               ),
               onTap: () => setState(() => _custom = !_custom),
             ),
+            _EyedropperButton(
+              key: const Key('eyedropper'),
+              active: _editor.eyedropper,
+              label: l10n.eyedropper,
+              onTap: () => _editor.eyedropper = !_editor.eyedropper,
+            ),
           ],
         ),
         if (_custom) ...[
@@ -107,18 +156,13 @@ class _ColorsPanelState extends State<ColorsPanel> {
 
   Widget _layerColors(AppLocalizations l10n) {
     // Every ticked layer takes the change; the card shows the first one's paint.
-    final targets = _editor.targets;
+    final targets = _editor.paintTargets;
     final path = targets.first;
+    final scheme = widget.scheme;
     final paint = SvgPaintEdit.read(_editor.svg, path);
-    final raw = paint.fill;
-    final hex = paint.fillColor;
-    String apply(String svg, String? color) {
-      var out = svg;
-      for (final target in targets) {
-        out = SvgPaintEdit.setFill(out, target, color);
-      }
-      return out;
-    }
+    final shown = scheme == null ? null : SvgThemeEdit.fillFor(_editor.svg, path, scheme);
+    final hex = scheme == null ? paint.fillColor : (shown?.startsWith('#') ?? false ? shown : null);
+    String apply(String svg, String? color) => _paint(svg, color);
 
     return SectionCard(
       icon: Icons.format_color_fill_rounded,
@@ -139,15 +183,52 @@ class _ColorsPanelState extends State<ColorsPanel> {
           onChanged: (color) => _editor.preview(apply(_editor.svg, colorToHex(color))),
           onChangeEnd: (color) => _editor.commit(apply(_editor.svg, colorToHex(color))),
         ),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton.icon(
-            onPressed: raw == 'none' ? null : () => _editor.commit(apply(_editor.svg, null)),
-            icon: const Icon(Icons.format_color_reset_rounded),
-            label: Text(l10n.removeFill),
+      ],
+    );
+  }
+}
+
+/// The pipette next to the palette: tap it, then tap the drawing.
+class _EyedropperButton extends StatelessWidget {
+  const _EyedropperButton({
+    super.key,
+    required this.active,
+    required this.label,
+    required this.onTap,
+  });
+
+  final bool active;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      selected: active,
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: InkResponse(
+          onTap: onTap,
+          radius: 18,
+          child: Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: active ? scheme.primary : null,
+              border: Border.all(color: active ? scheme.primary : scheme.outline, width: 1.5),
+            ),
+            child: Icon(
+              Icons.colorize_rounded,
+              size: 14,
+              color: active ? scheme.onPrimary : scheme.onSurface,
+            ),
           ),
         ),
-      ],
+      ),
     );
   }
 }

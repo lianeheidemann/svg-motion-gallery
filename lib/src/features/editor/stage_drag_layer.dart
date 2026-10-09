@@ -13,12 +13,25 @@ import 'stage_geometry.dart';
 /// rotates). The SVG is re-rendered only on release; while touching, an
 /// outline follows the finger.
 class StageDragLayer extends StatefulWidget {
-  const StageDragLayer({super.key, required this.editor, required this.padding});
+  const StageDragLayer({
+    super.key,
+    required this.editor,
+    required this.padding,
+    this.canMove = true,
+    this.showHandles = true,
+  });
 
   final EditorController editor;
 
   /// Padding between the stage edge and the drawing.
   final EdgeInsets padding;
+
+  /// Whether dragging (or pinching) the shape itself moves it. Taps still
+  /// select, and the corner handles still work.
+  final bool canMove;
+
+  /// Whether the resize and rotate handles are shown.
+  final bool showHandles;
 
   @override
   State<StageDragLayer> createState() => _StageDragLayerState();
@@ -254,9 +267,9 @@ class _StageDragLayerState extends State<StageDragLayer> {
                   key: const Key('stage-drag'),
                   behavior: HitTestBehavior.opaque,
                   onTapUp: (d) => _tap(d.localPosition, size),
-                  onScaleStart: (d) => _bodyStart(d, size),
-                  onScaleUpdate: _bodyUpdate,
-                  onScaleEnd: (_) => _end(size),
+                  onScaleStart: widget.canMove ? (d) => _bodyStart(d, size) : null,
+                  onScaleUpdate: widget.canMove ? _bodyUpdate : null,
+                  onScaleEnd: widget.canMove ? (_) => _end(size) : null,
                   child: CustomPaint(
                     size: size,
                     painter: _OutlinePainter(outline, turn, color, active: _target != null),
@@ -264,7 +277,7 @@ class _StageDragLayerState extends State<StageDragLayer> {
                 ),
               ),
             ),
-            if (outline != null) ...[
+            if (outline != null && widget.showHandles) ...[
               _handle(
                 key: const Key('rotate-handle'),
                 at: corner(outline.topRight),

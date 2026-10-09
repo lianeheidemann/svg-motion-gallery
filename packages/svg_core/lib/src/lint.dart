@@ -63,6 +63,16 @@ final _number = RegExp(
   caseSensitive: false,
 );
 
+final _argbLike = RegExp(r'^#[fF]{2}[0-9a-fA-F]{4}(?!(?:[fF]{2})$)[0-9a-fA-F]{2}$');
+
+/// Turns an Android-style `#AARRGGBB` color into the SVG `#RRGGBBAA`, or null
+/// when [value] is not an 8-digit hex color.
+String? svgArgbToRgba(String value) {
+  final v = value.trim();
+  if (!RegExp(r'^#[0-9a-fA-F]{8}$').hasMatch(v)) return null;
+  return '#${v.substring(3)}${v.substring(1, 3)}';
+}
+
 /// Whether [value] is a color the browser understands. Anything written as a
 /// function (`rgb(...)`, `url(...)`, `var(...)`) is trusted.
 bool _isColor(String value) {
@@ -125,12 +135,13 @@ List<SvgIssue> lintSvgValues(String source, {int limit = 50}) {
     // An unterminated value is the XML error's business.
     if (raw.length < 2 || raw[raw.length - 1] != quote) continue;
     final value = raw.substring(1, raw.length - 1);
-    if (isColor ? _isColor(value) : _isNumeric(value)) continue;
+    final argb = isColor && _argbLike.hasMatch(value.trim());
+    if (!argb && (isColor ? _isColor(value) : _isNumeric(value))) continue;
 
     advance(token.start);
     issues.add(
       SvgIssue(
-        SvgIssueCode.invalidValue,
+        argb ? SvgIssueCode.argbColor : SvgIssueCode.invalidValue,
         detail: value.trim(),
         attribute: name,
         line: line,

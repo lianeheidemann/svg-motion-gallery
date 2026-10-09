@@ -67,6 +67,20 @@ class EditorController extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool _eyedropper = false;
+
+  /// Whether the next tap on the stage picks a color from the drawing.
+  bool get eyedropper => _eyedropper;
+
+  set eyedropper(bool value) {
+    if (_disposed || value == _eyedropper) return;
+    _eyedropper = value;
+    notifyListeners();
+  }
+
+  /// Set by the Colors tab: receives the `#RRGGBB` picked from the stage.
+  void Function(String hex)? onColorPicked;
+
   SvgValidation get validation => _validation;
   bool get canUndo => _history.canUndo;
   bool get canRedo => _history.canRedo;
@@ -123,6 +137,47 @@ class EditorController extends ChangeNotifier {
     return paths..sort(_compare);
   }
 
+  /// What an edit covers: the [targets], or every drawn layer (not the
+  /// groups around them) when nothing is selected ("Todas").
+  List<ElementPath> get editTargets {
+    final chosen = targets;
+    if (chosen.isNotEmpty) return chosen;
+    return [
+      for (final layer in layers)
+        if (layer.tag != 'g') layer.path,
+    ];
+  }
+
+  /// The shapes a paint edit covers: [editTargets] with every group replaced
+  /// by the shapes inside it (a group's own fill would be hidden by the fills
+  /// its children set). In document order, each shape once.
+  List<ElementPath> get paintTargets {
+    final out = <ElementPath>[];
+    void add(ElementPath path) {
+      if (!out.contains(path)) out.add(path);
+    }
+
+    for (final target in editTargets) {
+      final layer = layers.where((l) => l.path == target).firstOrNull;
+      if (layer == null || layer.tag != 'g') {
+        add(target);
+        continue;
+      }
+      for (final inner in layers) {
+        if (inner.tag != 'g' && _isInside(inner.path, target)) add(inner.path);
+      }
+    }
+    return out..sort(_compare);
+  }
+
+  static bool _isInside(ElementPath path, ElementPath ancestor) {
+    if (path.indices.length <= ancestor.indices.length) return false;
+    for (var i = 0; i < ancestor.indices.length; i++) {
+      if (path.indices[i] != ancestor.indices[i]) return false;
+    }
+    return true;
+  }
+
   static int _compare(ElementPath a, ElementPath b) {
     for (var i = 0; i < a.indices.length && i < b.indices.length; i++) {
       if (a.indices[i] != b.indices[i]) return a.indices[i].compareTo(b.indices[i]);
@@ -140,6 +195,28 @@ class EditorController extends ChangeNotifier {
     } else {
       _selection = _multi.lastOrNull;
       _multi = [];
+    }
+    notifyListeners();
+  }
+
+  /// Ticks every top-level layer (folders count as one), for [multiMode].
+  void selectAllLayers() {
+    if (!_multiMode) return;
+    _multi = [
+      for (final layer in layers)
+        if (layer.depth == 0) layer.path,
+    ];
+    _selection = _multi.lastOrNull;
+    notifyListeners();
+  }
+
+  /// Replaces the selection with [paths] (several only in [multiMode]).
+  void replaceSelection(List<ElementPath> paths) {
+    if (_multiMode) {
+      _multi = [...paths];
+      _selection = _multi.lastOrNull;
+    } else {
+      _selection = paths.firstOrNull;
     }
     notifyListeners();
   }
@@ -162,9 +239,12 @@ class EditorController extends ChangeNotifier {
   /// an edit that wraps a layer never moves the path of one still to come.
   /// Only for edits that leave other layers at the same path (colors,
   /// transform, animation, visibility...).
-  void applyToTargets(String Function(String svg, ElementPath path) edit) {
+  void applyToTargets(
+    String Function(String svg, ElementPath path) edit, {
+    List<ElementPath>? paths,
+  }) {
     var next = svg;
-    for (final path in targets.reversed) {
+    for (final path in (paths ?? targets).reversed) {
       next = edit(next, path);
     }
     if (next != svg) commit(next);

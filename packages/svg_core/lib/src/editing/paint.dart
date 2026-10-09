@@ -36,6 +36,20 @@ class SvgPaintEdit {
     );
   }
 
+  /// The `#RRGGBB` fill the element at [path] shows: its own, else the nearest
+  /// ancestor's. Null when that is not a plain color (`none`, a gradient...)
+  /// or nothing sets one.
+  static String? sampleFill(String svg, ElementPath path) {
+    final document = tryParseSvg(svg);
+    var element = _target(document, path);
+    while (element != null) {
+      final value = _get(element, 'fill');
+      if (value != null) return SvgColorValue.normalize(value);
+      element = element.parentElement;
+    }
+    return null;
+  }
+
   /// Sets the fill color; null removes the fill (`none`).
   static String setFill(String svg, ElementPath path, String? color) =>
       _set(svg, path, 'fill', color ?? 'none');
@@ -70,11 +84,15 @@ class SvgPaintEdit {
     final element = _target(document, path);
     if (element == null) return svg;
     element.setAttribute(property, value);
-    final style = element.getAttribute('style');
-    if (style != null) {
-      final cleaned = mapDeclarations(style, (name, old) => name == property ? null : old);
-      element.setAttribute('style', cleaned.trim().isEmpty ? null : cleaned);
+    var style = element.getAttribute('style') ?? '';
+    style = mapDeclarations(style, (name, old) => name == property ? null : old);
+    // A stylesheet rule (`.bg{fill:...}`) beats the attribute, so an element
+    // with a class also gets the value inline, which beats the rule.
+    if (element.getAttribute('class') != null) {
+      final glue = style.trim().isEmpty || style.trim().endsWith(';') ? '' : ';';
+      style = '${style.trim()}$glue$property:$value';
     }
+    element.setAttribute('style', style.trim().isEmpty ? null : style);
     return document!.toXmlString();
   }
 }

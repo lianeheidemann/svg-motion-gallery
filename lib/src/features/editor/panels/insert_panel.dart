@@ -448,25 +448,25 @@ class _InsertPanelState extends State<InsertPanel> {
                 unit: '%',
                 onChanged: (v) => setState(() => _size = v.roundToDouble()),
               ),
-              if (!widget.text) ...[
-                SliderField(
-                  key: const Key('new-width'),
-                  label: l10n.width,
-                  value: _width,
-                  min: 10,
-                  max: 400,
-                  unit: '%',
-                  onChanged: (v) => setState(() => _width = v.roundToDouble()),
-                ),
-                SliderField(
-                  key: const Key('new-height'),
-                  label: l10n.height,
-                  value: _height,
-                  min: 10,
-                  max: 400,
-                  unit: '%',
-                  onChanged: (v) => setState(() => _height = v.roundToDouble()),
-                ),
+              SliderField(
+                key: const Key('new-width'),
+                label: l10n.width,
+                value: _width,
+                min: 10,
+                max: 400,
+                unit: '%',
+                onChanged: (v) => setState(() => _width = v.roundToDouble()),
+              ),
+              SliderField(
+                key: const Key('new-height'),
+                label: l10n.height,
+                value: _height,
+                min: 10,
+                max: 400,
+                unit: '%',
+                onChanged: (v) => setState(() => _height = v.roundToDouble()),
+              ),
+              if (!widget.text)
                 SliderField(
                   key: const Key('new-stroke'),
                   label: l10n.outline,
@@ -477,7 +477,6 @@ class _InsertPanelState extends State<InsertPanel> {
                   unit: '%',
                   onChanged: (v) => setState(() => _stroke = v),
                 ),
-              ],
             ] else ...[
               SliderField(
                 key: const Key('selected-size'),
@@ -495,39 +494,39 @@ class _InsertPanelState extends State<InsertPanel> {
                   editor.apply(_scaled(selectedShape, v.roundToDouble() / 100));
                 },
               ),
-              if (!widget.text) ...[
-                SliderField(
-                  key: const Key('selected-width'),
-                  label: l10n.width,
-                  value: (_liveWidth ?? _factors(selectedShape).width * 100).clamp(10, 400),
-                  min: 10,
-                  max: 400,
-                  unit: '%',
-                  onChanged: (v) {
-                    setState(() => _liveWidth = v.roundToDouble());
-                    editor.preview(_stretched(selectedShape, width: v.roundToDouble()).svg);
-                  },
-                  onChangeEnd: (v) {
-                    _liveWidth = null;
-                    editor.apply(_stretched(selectedShape, width: v.roundToDouble()));
-                  },
-                ),
-                SliderField(
-                  key: const Key('selected-height'),
-                  label: l10n.height,
-                  value: (_liveHeight ?? _factors(selectedShape).height * 100).clamp(10, 400),
-                  min: 10,
-                  max: 400,
-                  unit: '%',
-                  onChanged: (v) {
-                    setState(() => _liveHeight = v.roundToDouble());
-                    editor.preview(_stretched(selectedShape, height: v.roundToDouble()).svg);
-                  },
-                  onChangeEnd: (v) {
-                    _liveHeight = null;
-                    editor.apply(_stretched(selectedShape, height: v.roundToDouble()));
-                  },
-                ),
+              SliderField(
+                key: const Key('selected-width'),
+                label: l10n.width,
+                value: (_liveWidth ?? _factors(selectedShape).width * 100).clamp(10, 400),
+                min: 10,
+                max: 400,
+                unit: '%',
+                onChanged: (v) {
+                  setState(() => _liveWidth = v.roundToDouble());
+                  editor.preview(_stretched(selectedShape, width: v.roundToDouble()).svg);
+                },
+                onChangeEnd: (v) {
+                  _liveWidth = null;
+                  editor.apply(_stretched(selectedShape, width: v.roundToDouble()));
+                },
+              ),
+              SliderField(
+                key: const Key('selected-height'),
+                label: l10n.height,
+                value: (_liveHeight ?? _factors(selectedShape).height * 100).clamp(10, 400),
+                min: 10,
+                max: 400,
+                unit: '%',
+                onChanged: (v) {
+                  setState(() => _liveHeight = v.roundToDouble());
+                  editor.preview(_stretched(selectedShape, height: v.roundToDouble()).svg);
+                },
+                onChangeEnd: (v) {
+                  _liveHeight = null;
+                  editor.apply(_stretched(selectedShape, height: v.roundToDouble()));
+                },
+              ),
+              if (!widget.text)
                 SliderField(
                   key: const Key('selected-stroke'),
                   label: l10n.outline,
@@ -550,7 +549,6 @@ class _InsertPanelState extends State<InsertPanel> {
                     editor.commit(_outlined(selectedShape, v, color));
                   },
                 ),
-              ],
             ],
             if (widget.text)
               TextField(

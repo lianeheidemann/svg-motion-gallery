@@ -400,6 +400,19 @@ class _CodePanelState extends State<CodePanel> {
     }
   }
 
+  /// Rewrites the color in the bar from `#AARRGGBB` to the SVG `#RRGGBBAA`.
+  void _convertColor() {
+    final issue = _shown;
+    final range = issue == null ? null : svgIssueRange(_code.text, issue);
+    if (range == null) return;
+    final text = _code.text;
+    final converted = svgArgbToRgba(text.substring(range.$1, range.$2));
+    if (converted == null) return;
+    _code.text = text.replaceRange(range.$1, range.$2, converted);
+    _typed();
+    setState(_check);
+  }
+
   void _toggleSearch() {
     setState(() {
       _searching = !_searching;
@@ -664,6 +677,13 @@ class _CodePanelState extends State<CodePanel> {
                   l10n.codeMoreProblems(more),
                   style: const TextStyle(color: color, fontWeight: FontWeight.w700),
                 ),
+              ),
+            if (issue.code == SvgIssueCode.argbColor)
+              TextButton(
+                key: const Key('code-convert-argb'),
+                style: _compact,
+                onPressed: _convertColor,
+                child: Text(l10n.codeConvertArgb),
               ),
             IconButton(
               key: const Key('code-problem-go'),

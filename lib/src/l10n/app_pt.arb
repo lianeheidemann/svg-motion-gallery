@@ -11,6 +11,9 @@
   "renameConfirm": "Renomear",
   "foldFolder": "Dobrar pasta",
   "unfoldFolder": "Abrir pasta",
+  "compareBefore": "Antes",
+  "compareAfter": "Depois",
+  "compareHandle": "Arrastar para comparar antes e depois",
   "previewBackground": "Fundo do preview",
   "backgroundCurrent": "Atual",
   "backgroundLight": "Claro",
@@ -256,6 +259,25 @@
       }
     }
   },
+  "issueArgb": "Cor “{value}”: no SVG os 2 últimos dígitos são a transparência (#RRGGBBAA). Se for #AARRGGBB (Android), toque em Converter. Assim fica {percent}% opaca.",
+  "@issueArgb": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "codeConvertArgb": "Converter",
+  "eyedropper": "Conta-gotas",
+  "eyedropperHint": "Toque no desenho para pegar uma cor",
+  "eyedropperNoColor": "Não há uma cor sólida aqui",
+  "editingLight": "Editando a versão clara — toque para a escura",
+  "editingDark": "Editando a versão escura — toque para a clara",
+  "keepProportion": "Manter proporção",
+  "selectAllLayers": "Selecionar tudo",
   "codeProblemGo": "Ir para o problema",
   "codeMoreProblems": "+{count}",
   "@codeMoreProblems": {
@@ -300,14 +322,13 @@
     }
   },
   "fill": "Preenchimento",
-  "removeFill": "Remover preenchimento",
   "hue": "Matiz",
   "saturation": "Saturação",
   "lightness": "Luminosidade",
   "hex": "Hexadecimal",
   "animationsTitle": "Animações do arquivo",
-  "cycleSeconds": "ciclo de {seconds} s",
-  "@cycleSeconds": {
+  "durationSeconds": "Duração: {seconds} s",
+  "@durationSeconds": {
     "placeholders": {
       "seconds": {
         "type": "String"
@@ -322,6 +343,7 @@
   "presetFloat": "Flutuar",
   "presetSway": "Balançar",
   "presetFade": "Esmaecer",
+  "intensity": "Intensidade",
   "duration": "Duração",
   "layersTitle": "{count, plural, =0{Camadas} =1{1 camada} other{{count} camadas}}",
   "@layersTitle": {

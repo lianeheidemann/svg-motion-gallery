@@ -184,6 +184,98 @@ void main() {
     expect(squash(text()), before);
   });
 
+  testWidgets('code tab: an #AARRGGBB color is flagged and can be converted', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Código');
+
+    final field = find.byKey(const Key('code-field'));
+    String text() => tester.widget<TextField>(field).controller!.text;
+    await tester.enterText(
+      field,
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+      '<rect width="4" height="4" fill="#FFFF0000"/></svg>',
+    );
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+    expect(find.byKey(const Key('code-hint')), findsOneWidget);
+    expect(find.textContaining('0% opaca'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('code-convert-argb')));
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+    expect(text(), contains('fill="#FF0000FF"'));
+    expect(find.byKey(const Key('code-hint')), findsNothing);
+  });
+
+  testWidgets('transform: width and height keep the proportion until it is unlocked', (
+    tester,
+  ) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Transformar');
+
+    double width() => tester.widget<Slider>(find.byType(Slider).at(3)).value;
+    double height() => tester.widget<Slider>(find.byType(Slider).at(4)).value;
+
+    await tester.drag(find.byType(Slider).at(3), const Offset(60, 0));
+    await tester.pumpAndSettle();
+    expect(width(), greaterThan(100));
+    expect(height(), closeTo(width(), 1), reason: 'locked: the height follows');
+
+    await tester.tap(find.byKey(const Key('keep-proportion')));
+    await tester.pumpAndSettle();
+    final heightBefore = height();
+    await tester.drag(find.byType(Slider).at(3), const Offset(-30, 0));
+    await tester.pumpAndSettle();
+    expect(height(), closeTo(heightBefore, 0.5), reason: 'unlocked: only the width moves');
+  });
+
+  testWidgets('dragging a shape moves it in every tab except Insert and Text', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+
+    await _tapTab(tester, 'Inserir');
+    await tester.ensureVisible(find.byKey(const Key('insert-rectangle')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('insert-rectangle')));
+    await tester.pumpAndSettle();
+
+    Future<void> dragShape() async {
+      final stage = find.byKey(const Key('stage-drag'));
+      await tester.dragFrom(tester.getCenter(stage), const Offset(40, 0));
+      await tester.pumpAndSettle();
+    }
+
+    for (final tab in ['Inserir', 'Texto']) {
+      await _tapTab(tester, tab);
+      await dragShape();
+      await _tapTab(tester, 'Camadas');
+      expect(find.text('Ajuste do editor'), findsNothing, reason: 'no move from $tab');
+      await tester.tap(find.byTooltip('Desfazer').first);
+      await tester.pumpAndSettle();
+    }
+
+    // Layers: the same drag moves it (inside an editor transform group).
+    await dragShape();
+    expect(find.text('Ajuste do editor'), findsWidgets, reason: 'moved in Layers');
+  });
+
   testWidgets('editor inserts a shape, undoes, validates code and saves', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);
@@ -705,6 +797,56 @@ void main() {
     expect(find.text('Alterações não salvas'), findsOneWidget);
   });
 
+  testWidgets('text: width and height bars stretch the text, without an outline bar', (
+    tester,
+  ) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Texto');
+
+    // Before the text is added, the bars set how the next one is born.
+    expect(find.byKey(const Key('new-width')), findsOneWidget);
+    expect(find.byKey(const Key('new-height')), findsOneWidget);
+    expect(find.text('Contorno'), findsNothing, reason: 'text has no outline');
+
+    await tester.ensureVisible(find.byKey(const Key('insert-shape')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('insert-shape')));
+    await tester.pumpAndSettle();
+
+    final width = find.byKey(const Key('selected-width'));
+    final height = find.byKey(const Key('selected-height'));
+    await tester.ensureVisible(width);
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: width, matching: find.text('Largura')), findsOneWidget);
+    expect(find.descendant(of: height, matching: find.text('Altura')), findsOneWidget);
+    expect(find.text('Contorno'), findsNothing);
+
+    // Each bar stretches on its own axis.
+    await tester.drag(
+      find.descendant(of: width, matching: find.byType(Slider)),
+      const Offset(80, 0),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(height);
+    await tester.pumpAndSettle();
+    await tester.drag(
+      find.descendant(of: height, matching: find.byType(Slider)),
+      const Offset(-60, 0),
+    );
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Código');
+    final code = tester.widget<TextField>(find.byKey(const Key('code-field'))).controller!.text;
+    final scale = RegExp(r'scale\(([-\d.]+) ([-\d.]+)\)').firstMatch(code);
+    expect(scale, isNotNull, reason: 'width and height give the text two different scales');
+    expect(double.parse(scale!.group(1)!), greaterThan(double.parse(scale.group(2)!)));
+  });
+
   testWidgets('insert: width and height stretch the selected shape', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);
@@ -739,6 +881,68 @@ void main() {
     expect(code, isNot(contains('data-sm-edit="element"')));
   });
 
+  testWidgets('animation: only the duration is shown, and it follows the speed bar', (
+    tester,
+  ) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('sun-moon.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Animação');
+
+    expect(find.textContaining('Sim ('), findsNothing, reason: 'no CSS / SMIL jargon');
+    final duration = find.textContaining('Duração:');
+    expect(duration, findsOneWidget);
+    double seconds() => double.parse(
+      tester.widget<Text>(duration).data!.replaceAll(RegExp(r'[^0-9,]'), '').replaceAll(',', '.'),
+    );
+    final before = seconds();
+
+    // Faster: the cycle gets shorter while the bar is still moving.
+    final bar = find.byType(Slider).first;
+    final gesture = await tester.startGesture(tester.getCenter(bar));
+    await gesture.moveBy(const Offset(60, 0));
+    await tester.pump();
+    expect(seconds(), lessThan(before));
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(seconds(), lessThan(before), reason: 'and it stays after the speed is applied');
+  });
+
+  testWidgets('animation: with nothing selected a motion applies to all and the chip follows', (
+    tester,
+  ) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('sun-moon.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Animação');
+
+    bool chosen(String label) => tester
+        .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, label, skipOffstage: false))
+        .selected;
+    Future<void> tap(String label) async {
+      final chip = find.widgetWithText(ChoiceChip, label, skipOffstage: false);
+      await tester.ensureVisible(chip);
+      await tester.tap(chip);
+      await tester.pumpAndSettle();
+    }
+
+    await tap('Girar');
+    expect(chosen('Girar'), isTrue);
+    await tap('Pulsar');
+    expect(chosen('Pulsar'), isTrue);
+    expect(chosen('Girar'), isFalse);
+    await tap('Nenhum');
+    expect(chosen('Nenhum'), isTrue);
+  });
+
   testWidgets('animation: a motion applies as soon as it is tapped and "None" removes it', (
     tester,
   ) async {
@@ -770,6 +974,51 @@ void main() {
     await tester.tap(find.byKey(const Key('preset-none')));
     await tester.pumpAndSettle();
     expect(none().selected, isTrue, reason: '"None" took the motion off');
+  });
+
+  testWidgets('animation: the intensity bar changes how strong the chosen motion is', (
+    tester,
+  ) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('sun-moon.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Retângulo').first);
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Animação');
+
+    final bar = find.byKey(const Key('preset-intensity'));
+    Slider slider() =>
+        tester.widget<Slider>(find.descendant(of: bar, matching: find.byType(Slider)));
+    await tester.ensureVisible(bar);
+    await tester.pumpAndSettle();
+    expect(find.text('Intensidade'), findsOneWidget);
+    expect(slider().onChanged, isNull, reason: 'no motion chosen yet');
+
+    // A spin is a full turn whatever the strength: nothing to adjust.
+    await tester.tap(find.text('Girar'));
+    await tester.pumpAndSettle();
+    expect(slider().onChanged, isNull);
+
+    await tester.ensureVisible(find.text('Pulsar'));
+    await tester.tap(find.text('Pulsar'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(bar);
+    await tester.pumpAndSettle();
+    expect(slider().onChanged, isNotNull);
+    expect(slider().value, 100, reason: 'starts at the original strength');
+
+    await tester.drag(find.descendant(of: bar, matching: find.byType(Slider)), const Offset(80, 0));
+    await tester.pumpAndSettle();
+    expect(slider().value, greaterThan(100));
+
+    await _tapTab(tester, 'Código');
+    final code = tester.widget<TextField>(find.byKey(const Key('code-field'))).controller!.text;
+    expect(code, contains('--sm-i:'));
+    expect(code, isNot(contains('--sm-i:1;')), reason: 'the new strength was written');
   });
 
   testWidgets('editor: the preview background can be switched', (tester) async {
@@ -822,6 +1071,19 @@ void main() {
     await tester.tap(find.text('Repetir animação'));
     await tester.pumpAndSettle();
     expect(services.settings.value.loop, isFalse);
+
+    // Repeating needs autoplay: switching it off turns repeat off and locks it.
+    await tester.tap(find.text('Repetir animação'));
+    await tester.pumpAndSettle();
+    expect(services.settings.value.loop, isTrue);
+    await tester.tap(find.text('Reprodução automática'));
+    await tester.pumpAndSettle();
+    expect(services.settings.value.loop, isFalse);
+    await tester.tap(find.text('Repetir animação'));
+    await tester.pumpAndSettle();
+    expect(services.settings.value.loop, isFalse, reason: 'disabled while autoplay is off');
+    await tester.tap(find.text('Reprodução automática'));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.bySemanticsLabel('Rosa'));
     await tester.pumpAndSettle();

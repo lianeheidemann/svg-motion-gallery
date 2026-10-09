@@ -12,6 +12,7 @@ import '../../l10n/l10n.dart';
 import '../../widgets/app_bar_toggles.dart';
 import '../../widgets/svg_actions_menu.dart';
 import '../../widgets/svg_preview.dart';
+import 'before_after.dart';
 import 'editor_controller.dart';
 import 'panels/align_panel.dart';
 import 'panels/animation_panel.dart';
@@ -42,7 +43,38 @@ class _EditorScreenState extends State<EditorScreen> {
   EditorController? _editor;
   SvgDocument? _document;
   final _playback = SvgPlaybackController();
+
+  /// The variant (light/dark) chosen with the Layers tab icon; null follows
+  /// the app's theme.
+  SvgColorScheme? _variant;
+
+  /// The variant being viewed and edited, or null when the file has no
+  /// light/dark versions in its code.
+  SvgColorScheme? _editScheme(BuildContext context, EditorController editor) =>
+      SvgThemeEdit.canEdit(editor.svg) ? (_variant ?? schemeOf(context)) : null;
+
+  /// Switches between the light and the dark version. What is selected moves
+  /// to its twin in the other version (the "night" group to the "day" one),
+  /// since the selected one may not be drawn there.
+  void _toggleVariant(BuildContext context, EditorController editor) {
+    final from = _editScheme(context, editor);
+    if (from == null) return;
+    final to = from.opposite;
+    final chosen = editor.multiMode ? editor.multiSelection : [?editor.selection];
+    final mapped = [
+      for (final path in chosen) SvgThemeEdit.counterpart(editor.svg, path, from, to),
+    ];
+    setState(() => _variant = to);
+    if (chosen.isNotEmpty) editor.replaceSelection(mapped);
+  }
+
+  /// Whether the stage was playing before the Colors tab froze it.
+  var _resumeAfterColors = false;
   var _tab = _EditorTab.layers;
+
+  /// Colors compares two previews with a divider that is dragged.
+  bool get _showsDragLayer => _tab != _EditorTab.colors;
+
   bool get _isInsertTab => _tab == _EditorTab.insert || _tab == _EditorTab.text;
   var _saving = false;
 
@@ -205,7 +237,7 @@ class _EditorScreenState extends State<EditorScreen> {
                 child: PillTabs(
                   labelSelectedOnly: true,
                   selectedIndex: _tab.index,
-                  onChanged: (index) => setState(() => _tab = _EditorTab.values[index]),
+                  onChanged: (index) => setState(() => _switchTab(_EditorTab.values[index])),
                   tabs: [
                     // Always first and highlighted; another color while the
                     // whole drawing (every layer) is the target.
@@ -216,7 +248,7 @@ class _EditorScreenState extends State<EditorScreen> {
                       accent: editor.selection == null ? GalleryColors.of(context).success : null,
                     ),
                     PillTab(l10n.tabTransform, icon: Icons.open_with_rounded),
-                    PillTab(l10n.tabWindow, icon: Icons.crop_rounded),
+                    PillTab(l10n.tabWindow, icon: Icons.aspect_ratio_rounded),
                     PillTab(l10n.tabAlign, icon: Icons.align_horizontal_center_rounded),
                     PillTab(l10n.tabColors, icon: Icons.palette_outlined),
                     PillTab(l10n.tabAnimation, icon: Icons.animation_rounded),
@@ -308,6 +340,92 @@ class _EditorScreenState extends State<EditorScreen> {
     return selection != null && SvgHitTest.movables(editor.svg).any((m) => m.path == selection);
   }
 
+  /// Switches tab. Colors compares two previews, so both sit still at the
+  /// start (two live animations would never show the same frame).
+  void _switchTab(_EditorTab next) {
+    final was = _tab;
+    _tab = next;
+    if (was == next) return;
+    if (was == _EditorTab.colors) _editor?.eyedropper = false;
+    if (next == _EditorTab.colors) {
+      _resumeAfterColors = _playback.isPlaying;
+      _playback
+        ..pause()
+        ..seekFraction(0);
+    } else if (was == _EditorTab.colors && _resumeAfterColors) {
+      _resumeAfterColors = false;
+      _playback.play();
+    }
+  }
+
+  /// While the eyedropper is on, a tap on the drawing picks the color of the
+  /// shape under the finger (read from the document, so it is exact).
+  Widget _eyedropperLayer(BuildContext context, EditorController editor) {
+    final l10n = context.l10n;
+    const padding = EdgeInsets.all(16);
+    return LayoutBuilder(
+      builder: (context, constraints) => Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              key: const Key('eyedropper-layer'),
+              behavior: HitTestBehavior.opaque,
+              onTapUp: (d) {
+                final map = StageGeometry.of(editor.svg, constraints.biggest, padding);
+                final hit = map.isUsable
+                    ? SvgHitTest.at(
+                        editor.svg,
+                        (d.localPosition.dx - map.originX) / map.scale,
+                        (d.localPosition.dy - map.originY) / map.scale,
+                      )
+                    : null;
+                final scheme = _editScheme(context, editor);
+                final picked = hit == null || scheme == null
+                    ? null
+                    : SvgThemeEdit.fillFor(editor.svg, hit.path, scheme);
+                final hex = hit == null
+                    ? null
+                    : scheme == null
+                    ? SvgPaintEdit.sampleFill(editor.svg, hit.path)
+                    : (picked != null && picked.startsWith('#') ? picked : null);
+                if (hex == null) {
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(SnackBar(content: Text(l10n.eyedropperNoColor)));
+                } else {
+                  editor.onColorPicked?.call(hex);
+                }
+              },
+              child: const MouseRegion(cursor: SystemMouseCursors.precise),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 8,
+            child: IgnorePointer(
+              child: Center(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: .65),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    child: Text(
+                      l10n.eyedropperHint,
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _stage(BuildContext context, EditorController editor) {
     final l10n = context.l10n;
     final height = MediaQuery.sizeOf(context).height;
@@ -326,29 +444,64 @@ class _EditorScreenState extends State<EditorScreen> {
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: SvgPreview(
-                    svg: editor.displaySvg,
-                    controller: _playback,
-                    showGrid: true,
-                    background: _background,
-                    padding: const EdgeInsets.all(16),
-                    semanticLabel: l10n.previewOf(_document!.name),
-                  ),
+                  child: _tab == _EditorTab.colors
+                      // Colors: the original on the left, the edit on the right.
+                      ? BeforeAfter(
+                          beforeLabel: l10n.compareBefore,
+                          afterLabel: l10n.compareAfter,
+                          handleLabel: l10n.compareHandle,
+                          before: SvgPreview(
+                            svg: editor.initialSvg,
+                            scheme: _editScheme(context, editor),
+                            autoplay: false,
+                            showGrid: true,
+                            background: _background,
+                            padding: const EdgeInsets.all(16),
+                            semanticLabel: l10n.compareBefore,
+                          ),
+                          after: SvgPreview(
+                            svg: editor.displaySvg,
+                            scheme: _editScheme(context, editor),
+                            controller: _playback,
+                            showGrid: true,
+                            background: _background,
+                            padding: const EdgeInsets.all(16),
+                            semanticLabel: l10n.previewOf(_document!.name),
+                          ),
+                        )
+                      : SvgPreview(
+                          svg: editor.displaySvg,
+                          scheme: _editScheme(context, editor),
+                          controller: _playback,
+                          showGrid: true,
+                          background: _background,
+                          padding: const EdgeInsets.all(16),
+                          semanticLabel: l10n.previewOf(_document!.name),
+                        ),
                 ),
                 Positioned.fill(
                   child: CanvasFrame(svg: editor.displaySvg, padding: const EdgeInsets.all(16)),
                 ),
                 // The Insert tab draws its own outline (with handles) for shapes.
-                if (!(_isInsertTab && _selectedIsShape(editor)))
+                if (!(_showsDragLayer && _selectedIsShape(editor)))
                   Positioned.fill(
                     child: SelectionHighlight(
                       controller: _playback,
                       padding: const EdgeInsets.all(16),
                     ),
                   ),
-                if (_isInsertTab)
+                if (_tab == _EditorTab.colors && editor.eyedropper)
+                  Positioned.fill(child: _eyedropperLayer(context, editor)),
+                if (_showsDragLayer)
                   Positioned.fill(
-                    child: StageDragLayer(editor: editor, padding: const EdgeInsets.all(16)),
+                    child: StageDragLayer(
+                      editor: editor,
+                      padding: const EdgeInsets.all(16),
+                      // Insert and Text only place things with their own controls;
+                      // dragging the shape moves it in the other tabs.
+                      canMove: !_isInsertTab,
+                      showHandles: _isInsertTab,
+                    ),
                   ),
               ],
             ),
@@ -366,7 +519,7 @@ class _EditorScreenState extends State<EditorScreen> {
                   size: 18,
                   color: Theme.of(context).colorScheme.primary,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     ticked > 1
@@ -377,14 +530,39 @@ class _EditorScreenState extends State<EditorScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                ListenableBuilder(
+                  listenable: _playback,
+                  builder: (context, _) => IconButton(
+                    key: const Key('stage-play'),
+                    style: IconButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      fixedSize: const Size(28, 40),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    tooltip: _playback.isPlaying ? l10n.pause : l10n.play,
+                    // Colors compares two still previews.
+                    onPressed: _tab == _EditorTab.colors ? null : _playback.toggle,
+                    icon: Icon(
+                      _playback.isPlaying ? Icons.pause_circle_rounded : Icons.play_circle_rounded,
+                    ),
+                  ),
+                ),
                 if (layer != null)
-                  TextButton(
+                  IconButton(
+                    key: const Key('clear-selection'),
+                    tooltip: l10n.clearSelection,
+                    style: IconButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      fixedSize: const Size(32, 40),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                     onPressed: () => editor.select(null),
-                    child: Text(l10n.clearSelection),
+                    icon: const Icon(Icons.deselect_rounded),
                   ),
                 PopupMenuButton<StageBackground>(
                   key: const Key('preview-bg'),
                   tooltip: l10n.previewBackground,
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
                   icon: const Icon(Icons.wallpaper_rounded),
                   initialValue: _background,
                   onSelected: (value) => setState(() => _background = value),
@@ -400,6 +578,7 @@ class _EditorScreenState extends State<EditorScreen> {
                 ),
                 IconButton(
                   key: const Key('reset-all'),
+                  visualDensity: VisualDensity.compact,
                   tooltip: l10n.resetAll,
                   onPressed: editor.canReset ? () => _confirmReset(editor) : null,
                   icon: const Icon(Icons.restart_alt_rounded),
@@ -416,9 +595,13 @@ class _EditorScreenState extends State<EditorScreen> {
     _EditorTab.transform => TransformPanel(editor: editor),
     _EditorTab.window => WindowPanel(editor: editor, playback: _playback),
     _EditorTab.align => AlignPanel(editor: editor, playback: _playback),
-    _EditorTab.colors => ColorsPanel(editor: editor),
+    _EditorTab.colors => ColorsPanel(editor: editor, scheme: _editScheme(context, editor)),
     _EditorTab.animation => AnimationPanel(editor: editor, playback: _playback),
-    _EditorTab.layers => LayersPanel(editor: editor),
+    _EditorTab.layers => LayersPanel(
+      editor: editor,
+      themeScheme: _editScheme(context, editor),
+      onToggleTheme: () => _toggleVariant(context, editor),
+    ),
     _EditorTab.insert => InsertPanel(editor: editor),
     _EditorTab.text => InsertPanel(key: const Key('text-panel'), editor: editor, text: true),
     _EditorTab.code => CodePanel(editor: editor),

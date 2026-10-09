@@ -67,11 +67,25 @@ void main() {
       final result = SvgTransformEdit.apply(base, const ElementPath([2]), values);
       expect(result.svg, contains('scale(1 3)'), reason: 'scale 2 x (0.5, 1.5)');
       final read = SvgTransformEdit.read(result.svg, result.selection);
-      expect(read.scale, closeTo(1, 1e-9));
-      expect(read.heightFactor, closeTo(3, 1e-9));
-      // Same drawing either way: the factors are only a different way to write it.
-      expect(read.scale * read.widthFactor, closeTo(1, 1e-9));
-      expect(read.scale * read.heightFactor, closeTo(3, 1e-9));
+      // The bars read back exactly what was set.
+      expect(read.scale, closeTo(2, 1e-9));
+      expect(read.widthFactor, closeTo(0.5, 1e-9));
+      expect(read.heightFactor, closeTo(1.5, 1e-9));
+      // Without the note (e.g. code edited by hand) the products still read.
+      final bare = result.svg.replaceAll(RegExp(r' data-sm-wh="[^"]*"'), '');
+      final plain = SvgTransformEdit.read(bare, result.selection);
+      expect(plain.scale * plain.widthFactor, closeTo(1, 1e-9));
+      expect(plain.scale * plain.heightFactor, closeTo(3, 1e-9));
+      // Equal factors (a locked pair) are kept apart from the scale too.
+      final locked = SvgTransformEdit.apply(
+        base,
+        const ElementPath([2]),
+        const SvgTransformValues(widthFactor: 1.5, heightFactor: 1.5),
+      );
+      final back = SvgTransformEdit.read(locked.svg, locked.selection);
+      expect(back.scale, closeTo(1, 1e-9));
+      expect(back.widthFactor, closeTo(1.5, 1e-9));
+      expect(back.heightFactor, closeTo(1.5, 1e-9));
       expect(const SvgTransformValues(widthFactor: 2).isIdentity, isFalse);
       expect(
         SvgTransformEdit.apply(base, const ElementPath([2]), const SvgTransformValues()).svg,
@@ -231,6 +245,44 @@ void main() {
       expect(SvgMetadata.parse(faster).cycleDuration, const Duration(seconds: 2));
     });
 
+    test('changes the speed of only the chosen elements', () {
+      const doc =
+          '<svg><style>.a{animation: spin 2s linear infinite}</style>'
+          '<rect class="a"/><rect class="a"/>'
+          '<circle style="animation: pulse 1.5s"/></svg>';
+      final out = SvgAnimationEdit.changeSpeed(
+        doc,
+        2,
+        only: [
+          const ElementPath([1]),
+        ],
+      );
+      // Shared rule untouched; only the first rect gets its own faster time.
+      expect(out, contains('.a{animation: spin 2s linear infinite}'));
+      expect(out, contains('class="a" style="animation:spin 1s linear infinite"'));
+      expect(out, contains('<circle style="animation: pulse 1.5s"/>'));
+      final inline = SvgAnimationEdit.changeSpeed(
+        doc,
+        2,
+        only: [
+          const ElementPath([3]),
+        ],
+      );
+      expect(inline, contains('animation: pulse 0.75s'));
+      expect(inline, isNot(contains('spin 1s')));
+    });
+
+    test('adding motions never shifts the paths of the other layers', () {
+      const doc = '<svg><style>.a{fill:red}</style><rect/><circle/><path/></svg>';
+      var out = doc;
+      for (final i in [3, 2, 1]) {
+        out = SvgAnimationEdit.addPreset(out, ElementPath([i]), SvgAnimationPreset.pulse).svg;
+      }
+      for (final i in [1, 2, 3]) {
+        expect(SvgAnimationEdit.presetAt(out, ElementPath([i])), SvgAnimationPreset.pulse);
+      }
+    });
+
     test('removes every animation', () {
       final still = SvgAnimationEdit.removeAll(
         animated.replaceFirst('</style>', '@keyframes spin{to{transform:rotate(1turn)}}</style>'),
@@ -267,6 +319,55 @@ void main() {
       final removed = SvgAnimationEdit.removePreset(pulsed.svg, pulsed.selection!);
       expect(removed.svg, isNot(contains('animation:sm-')));
       expect(SvgLayers.list(removed.svg).first.id, 'bg');
+    });
+
+    test('intensity is kept per layer and read back, and the keyframes use it', () {
+      final soft = SvgAnimationEdit.addPreset(
+        base,
+        const ElementPath([1]),
+        SvgAnimationPreset.sway,
+        intensity: 0.5,
+      );
+      expect(soft.svg, contains('--sm-i:0.5'));
+      expect(SvgAnimationEdit.intensityAt(soft.svg, soft.selection!), 0.5);
+      // Every preset reads the strength, with 1 when it is missing.
+      expect(soft.svg, contains('var(--sm-i,1)'));
+      expect(RegExp(r'var\(--sm-i,1\)').allMatches(soft.svg).length, greaterThanOrEqualTo(4));
+
+      // Another layer keeps its own; changing one does not touch the other.
+      // (The keyframes style went in first, so the group is the 4th child.)
+      final second = SvgAnimationEdit.addPreset(
+        soft.svg,
+        const ElementPath([3]),
+        SvgAnimationPreset.pulse,
+        intensity: 2,
+      );
+      expect(SvgAnimationEdit.intensityAt(second.svg, second.selection!), 2);
+      expect(SvgAnimationEdit.intensityAt(second.svg, soft.selection!), 0.5);
+
+      // Without a preset, or with an old wrapper that has no value: 1.
+      expect(SvgAnimationEdit.intensityAt(base, const ElementPath([1])), 1);
+      final plain = SvgAnimationEdit.addPreset(
+        base,
+        const ElementPath([1]),
+        SvgAnimationPreset.fade,
+      );
+      expect(SvgAnimationEdit.intensityAt(plain.svg, plain.selection!), 1);
+      final old = plain.svg.replaceAll('--sm-i:1;', '');
+      expect(SvgAnimationEdit.intensityAt(old, plain.selection!), 1);
+    });
+
+    test('changing the speed does not scale the intensity', () {
+      final pulsed = SvgAnimationEdit.addPreset(
+        base,
+        const ElementPath([1]),
+        SvgAnimationPreset.pulse,
+        seconds: 2,
+        intensity: 1.5,
+      );
+      final faster = SvgAnimationEdit.changeSpeed(pulsed.svg, 2);
+      expect(faster, contains('animation:sm-pulse 1s'));
+      expect(SvgAnimationEdit.intensityAt(faster, pulsed.selection!), 1.5);
     });
 
     test('keyframes come back after removing all animation', () {
