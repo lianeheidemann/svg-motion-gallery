@@ -9,8 +9,9 @@ import '../../../l10n/l10n.dart';
 import '../editor_controller.dart';
 
 /// The window: the part of the drawing that is shown. It can be cropped by
-/// hand (position, size, proportion) or fitted to the content, ignoring empty
-/// borders. When the drawing moves, every position it reaches is counted.
+/// hand (position, size, proportion) or fitted to the content with a margin,
+/// ignoring empty borders. When the drawing moves, every position it reaches
+/// is counted.
 class WindowPanel extends StatefulWidget {
   const WindowPanel({super.key, required this.editor, this.playback});
 
@@ -33,7 +34,6 @@ class _WindowPanelState extends State<WindowPanel> {
   late final SvgViewBox _base = widget.editor.metadata.canvas;
   SvgViewBox? _live;
   var _margin = 4.0;
-  bool? _withMotion;
   var _failed = false;
 
   /// What is drawn, measured when the margin bar is first touched, and
@@ -78,8 +78,9 @@ class _WindowPanelState extends State<WindowPanel> {
     final playback = widget.playback;
     if (playback == null) return null;
     final metadata = _editor.metadata;
-    final moving = (_withMotion ?? metadata.isAnimated) && metadata.isAnimated;
-    final box = await playback.measureContent(cycle: moving ? metadata.cycleDuration : null);
+    final box = await playback.measureContent(
+      cycle: metadata.isAnimated ? metadata.cycleDuration : null,
+    );
     return box == null || box.width <= 0 || box.height <= 0 ? null : box;
   }
 
@@ -139,11 +140,8 @@ class _WindowPanelState extends State<WindowPanel> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final metadata = _editor.metadata;
     final w = _window;
     final span = math.max(_base.width, _base.height);
-    final animated = metadata.isAnimated;
-    final withMotion = _withMotion ?? animated;
     final original = SvgMetadata.parse(_editor.initialSvg).canvas;
     final changed =
         original.minX != w.minX ||
@@ -208,15 +206,6 @@ class _WindowPanelState extends State<WindowPanel> {
               span * 3,
               (v) => SvgViewBox(w.minX, w.centerY - v / 2, w.width, v),
             ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.md),
-        SectionCard(
-          icon: Icons.fit_screen_rounded,
-          title: l10n.windowAdjust,
-          spacing: 6,
-          children: [
-            Text(l10n.windowAdjustHint, style: TextStyle(color: GalleryColors.of(context).muted)),
             SliderField(
               key: const Key('window-margin'),
               label: l10n.windowMargin,
@@ -227,14 +216,6 @@ class _WindowPanelState extends State<WindowPanel> {
               onChangeStart: (_) => _startMargin(),
               onChanged: (v) => _moveMargin(v.roundToDouble()),
               onChangeEnd: (_) => _endMargin(),
-            ),
-            SwitchListTile(
-              key: const Key('window-motion'),
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.windowMotion),
-              subtitle: animated ? null : Text(l10n.windowNoMotion),
-              value: withMotion,
-              onChanged: animated ? (v) => setState(() => _withMotion = v) : null,
             ),
             if (_failed)
               Text(l10n.windowFitFailed, style: const TextStyle(color: Colors.redAccent)),
