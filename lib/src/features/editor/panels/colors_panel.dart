@@ -241,7 +241,6 @@ class _ColorsPanelState extends State<ColorsPanel> {
           onChanged: (color) => _editor.preview(apply(_editor.svg, colorToHex(color))),
           onChangeEnd: (color) => _editor.commit(apply(_editor.svg, colorToHex(color))),
         ),
-        const SizedBox(height: AppSpacing.sm),
         ColorAdjuster(
           onPreview: (kind, amount) => _editor.preview(_adjust(_editor.svg, kind, amount)),
           onCommit: (kind, amount) {

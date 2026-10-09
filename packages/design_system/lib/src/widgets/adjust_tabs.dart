@@ -53,7 +53,7 @@ class _AdjustTabsState<T> extends State<AdjustTabs<T>> {
         controller: _scroll,
         scrollDirection: Axis.horizontal,
         itemCount: tabs.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 14),
+        separatorBuilder: (context, index) => const SizedBox(width: 6),
         itemBuilder: (context, index) {
           final tab = tabs[index];
           final on = tab.id == widget.selected;
@@ -64,27 +64,27 @@ class _AdjustTabsState<T> extends State<AdjustTabs<T>> {
             child: InkResponse(
               key: Key('adjust-${tab.id}'),
               onTap: () => widget.onSelected(tab.id),
-              radius: 40,
+              radius: 32,
               child: SizedBox(
-                width: 72,
+                width: 64,
                 child: Column(
                   children: [
                     Container(
-                      width: 52,
-                      height: 52,
+                      width: 38,
+                      height: 38,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: on ? scheme.primary : scheme.surfaceContainerHighest,
                       ),
                       child: Icon(tab.icon, color: on ? scheme.onPrimary : scheme.onSurfaceVariant),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 3),
                     Text(
                       tab.label,
                       maxLines: 1,
                       overflow: TextOverflow.fade,
                       softWrap: false,
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: on ? scheme.primary : scheme.onSurfaceVariant,
                         fontWeight: on ? FontWeight.w700 : FontWeight.w500,
                       ),
@@ -98,7 +98,7 @@ class _AdjustTabsState<T> extends State<AdjustTabs<T>> {
       ),
     );
     return SizedBox(
-      height: 86,
+      height: 66,
       child: widget.trailing == null
           ? row
           : Row(

@@ -58,7 +58,7 @@ class _ColorAdjusterState extends State<ColorAdjuster> {
             _amount = 0;
           }),
         ),
-        const SizedBox(height: AppSpacing.sm),
+        const SizedBox(height: 2),
         RulerSlider(
           value: _amount,
           min: -_kind.limit,
@@ -94,7 +94,7 @@ class _ResetButton extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(left: 6),
       child: SizedBox(
-        width: 72,
+        width: 64,
         child: Column(
           children: [
             IconButton.filled(
@@ -102,19 +102,22 @@ class _ResetButton extends StatelessWidget {
               tooltip: label,
               onPressed: onPressed,
               style: IconButton.styleFrom(
-                fixedSize: const Size(52, 52),
+                fixedSize: const Size(38, 38),
+                iconSize: 20,
+                padding: EdgeInsets.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 backgroundColor: on ? scheme.tertiary : scheme.surfaceContainerHighest,
                 foregroundColor: on ? scheme.onTertiary : scheme.outline,
               ),
               icon: const Icon(Icons.restart_alt_rounded),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 3),
             Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.fade,
               softWrap: false,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: on ? scheme.tertiary : scheme.outline,
                 fontWeight: FontWeight.w700,
               ),
