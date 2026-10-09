@@ -293,6 +293,9 @@ class _InsertPanelState extends State<InsertPanel> {
         ? selection
         : null;
     final enabled = selectedShape != null;
+    final strokeNow = selectedShape == null
+        ? 0.0
+        : (SvgPaintEdit.read(editor.svg, selectedShape).strokeWidth ?? 0) / _side * 100;
     final primary = Theme.of(context).colorScheme.primary;
     // With a shape selected the rows show (and change) that shape's colors.
     final shown = selectedShape != null && !_picking;
@@ -369,99 +372,93 @@ class _InsertPanelState extends State<InsertPanel> {
               ),
             ),
             SliderField(
-                key: const Key('selected-size'),
-                label: l10n.shapeSize,
-                value: selectedShape == null
-                    ? 100
-                    : (_liveScale ?? _factors(selectedShape).size * 100).clamp(5, 400),
-                min: 5,
-                max: 400,
-                unit: '%',
-                onChanged: selectedShape == null
-                    ? null
-                    : (v) {
-                        setState(() => _liveScale = v.roundToDouble());
-                        editor.preview(_scaled(selectedShape, v / 100).svg);
-                      },
-                onChangeEnd: selectedShape == null
-                    ? null
-                    : (v) {
-                        _liveScale = null;
-                        editor.apply(_scaled(selectedShape, v.roundToDouble() / 100));
-                      },
-              ),
+              key: const Key('selected-size'),
+              label: l10n.shapeSize,
+              value: selectedShape == null
+                  ? 100
+                  : (_liveScale ?? _factors(selectedShape).size * 100).clamp(5, 400),
+              min: 5,
+              max: 400,
+              unit: '%',
+              onChanged: selectedShape == null
+                  ? null
+                  : (v) {
+                      setState(() => _liveScale = v.roundToDouble());
+                      editor.preview(_scaled(selectedShape, v / 100).svg);
+                    },
+              onChangeEnd: selectedShape == null
+                  ? null
+                  : (v) {
+                      _liveScale = null;
+                      editor.apply(_scaled(selectedShape, v.roundToDouble() / 100));
+                    },
+            ),
+            SliderField(
+              key: const Key('selected-width'),
+              label: l10n.width,
+              value: selectedShape == null
+                  ? 100
+                  : (_liveWidth ?? _factors(selectedShape).width * 100).clamp(10, 400),
+              min: 10,
+              max: 400,
+              unit: '%',
+              onChanged: selectedShape == null
+                  ? null
+                  : (v) {
+                      setState(() => _liveWidth = v.roundToDouble());
+                      editor.preview(_stretched(selectedShape, width: v.roundToDouble()).svg);
+                    },
+              onChangeEnd: selectedShape == null
+                  ? null
+                  : (v) {
+                      _liveWidth = null;
+                      editor.apply(_stretched(selectedShape, width: v.roundToDouble()));
+                    },
+            ),
+            SliderField(
+              key: const Key('selected-height'),
+              label: l10n.height,
+              value: selectedShape == null
+                  ? 100
+                  : (_liveHeight ?? _factors(selectedShape).height * 100).clamp(10, 400),
+              min: 10,
+              max: 400,
+              unit: '%',
+              onChanged: selectedShape == null
+                  ? null
+                  : (v) {
+                      setState(() => _liveHeight = v.roundToDouble());
+                      editor.preview(_stretched(selectedShape, height: v.roundToDouble()).svg);
+                    },
+              onChangeEnd: selectedShape == null
+                  ? null
+                  : (v) {
+                      _liveHeight = null;
+                      editor.apply(_stretched(selectedShape, height: v.roundToDouble()));
+                    },
+            ),
+            if (!widget.text)
               SliderField(
-                key: const Key('selected-width'),
-                label: l10n.width,
-                value: selectedShape == null
-                    ? 100
-                    : (_liveWidth ?? _factors(selectedShape).width * 100).clamp(10, 400),
-                min: 10,
-                max: 400,
+                key: const Key('selected-stroke'),
+                label: l10n.outline,
+                value: (_liveStroke ?? strokeNow).clamp(0, 10),
+                min: 0,
+                max: 10,
+                fractionDigits: 1,
                 unit: '%',
                 onChanged: selectedShape == null
                     ? null
                     : (v) {
-                        setState(() => _liveWidth = v.roundToDouble());
-                        editor.preview(_stretched(selectedShape, width: v.roundToDouble()).svg);
+                        setState(() => _liveStroke = v);
+                        editor.preview(_outlined(selectedShape, v, color));
                       },
                 onChangeEnd: selectedShape == null
                     ? null
                     : (v) {
-                        _liveWidth = null;
-                        editor.apply(_stretched(selectedShape, width: v.roundToDouble()));
+                        _liveStroke = null;
+                        editor.commit(_outlined(selectedShape, v, color));
                       },
               ),
-              SliderField(
-                key: const Key('selected-height'),
-                label: l10n.height,
-                value: selectedShape == null
-                    ? 100
-                    : (_liveHeight ?? _factors(selectedShape).height * 100).clamp(10, 400),
-                min: 10,
-                max: 400,
-                unit: '%',
-                onChanged: selectedShape == null
-                    ? null
-                    : (v) {
-                        setState(() => _liveHeight = v.roundToDouble());
-                        editor.preview(_stretched(selectedShape, height: v.roundToDouble()).svg);
-                      },
-                onChangeEnd: selectedShape == null
-                    ? null
-                    : (v) {
-                        _liveHeight = null;
-                        editor.apply(_stretched(selectedShape, height: v.roundToDouble()));
-                      },
-              ),
-              if (!widget.text)
-                SliderField(
-                  key: const Key('selected-stroke'),
-                  label: l10n.outline,
-                  value: selectedShape == null
-                      ? 0
-                      : (_liveStroke ??
-                                (SvgPaintEdit.read(editor.svg, selectedShape).strokeWidth ?? 0) /
-                                    _side *
-                                    100)
-                            .clamp(0, 10),
-                  min: 0,
-                  max: 10,
-                  fractionDigits: 1,
-                  unit: '%',
-                  onChanged: selectedShape == null
-                      ? null
-                      : (v) {
-                          setState(() => _liveStroke = v);
-                          editor.preview(_outlined(selectedShape, v, color));
-                        },
-                  onChangeEnd: selectedShape == null
-                      ? null
-                      : (v) {
-                          _liveStroke = null;
-                          editor.commit(_outlined(selectedShape, v, color));
-                        },
-                ),
             if (widget.text)
               TextField(
                 controller: _text,
