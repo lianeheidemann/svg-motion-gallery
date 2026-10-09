@@ -30,6 +30,8 @@ String wrapSvgLines(String content, int maxColumns) {
   final out = <String>[];
   var inTag = false;
   String? quote;
+  // Whether the quoted value being read may be broken at its spaces.
+  var quotedBreaks = false;
   for (final line in content.split('\n')) {
     // Where a break is allowed, found with the state at each position.
     final breakable = List<bool>.filled(line.length, false);
@@ -37,12 +39,17 @@ String wrapSvgLines(String content, int maxColumns) {
     for (var i = 0; i < line.length; i++) {
       final c = line[i];
       if (quote != null) {
-        if (c == quote) quote = null;
+        if (c == quote) {
+          quote = null;
+        } else if (c == ' ' && quotedBreaks) {
+          breakable[i] = true;
+        }
         continue;
       }
       if (inTag) {
         if (c == '"' || c == "'") {
           quote = c;
+          quotedBreaks = _spaceFreeAttributes.contains(_attributeBefore(line, i));
         } else if (c == '>') {
           inTag = false;
         } else if (c == ' ') {
@@ -59,7 +66,8 @@ String wrapSvgLines(String content, int maxColumns) {
       continue;
     }
     final indent = line.length - line.trimLeft().length;
-    final prefix = ' ' * (indent + 2);
+    // Broken lines keep the indent of the line they come from.
+    final prefix = ' ' * indent;
     var start = 0;
     while (true) {
       final room = start == 0 ? maxColumns : maxColumns - prefix.length;
@@ -91,4 +99,38 @@ String wrapSvgLines(String content, int maxColumns) {
     }
   }
   return out.join('\n');
+}
+
+/// Attributes whose value reads the same with any run of spaces, so a long one
+/// can be broken (the next line starts with the line's indent).
+const _spaceFreeAttributes = {
+  'style',
+  'd',
+  'points',
+  'transform',
+  'viewbox',
+  'values',
+  'keytimes',
+  'keysplines',
+  'begin',
+  'end',
+};
+
+/// The lower-cased name of the attribute whose value opens at [quote] in
+/// [line] (the word before the `=`), or '' when there is none.
+String _attributeBefore(String line, int quote) {
+  var i = quote - 1;
+  while (i >= 0 && line[i] == ' ') {
+    i--;
+  }
+  if (i < 0 || line[i] != '=') return '';
+  i--;
+  while (i >= 0 && line[i] == ' ') {
+    i--;
+  }
+  final end = i + 1;
+  while (i >= 0 && RegExp(r'[A-Za-z0-9:_-]').hasMatch(line[i])) {
+    i--;
+  }
+  return line.substring(i + 1, end).toLowerCase();
 }

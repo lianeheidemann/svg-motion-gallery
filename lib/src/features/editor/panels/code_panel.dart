@@ -28,6 +28,12 @@ class CodePanel extends StatefulWidget {
 
 class _CodePanelState extends State<CodePanel> {
   late final _code = SvgCodeController(text: widget.editor.code);
+
+  /// The text the field held when it was last loaded from the editor or
+  /// applied to it. Typing moves the field away from it; that is "pending".
+  /// (Comparing with the wrapped document instead would flag an edit whenever
+  /// the line width changes, and wrapping again can move a break.)
+  late String _loaded = widget.editor.code;
   final _vertical = ScrollController();
   final _horizontal = ScrollController();
   late int _revision;
@@ -73,7 +79,7 @@ class _CodePanelState extends State<CodePanel> {
     final pending = _hasPending;
     setState(change);
     if (!pending) {
-      _code.text = _view(widget.editor.code);
+      _load(_view(widget.editor.code));
       _check();
     }
   }
@@ -93,7 +99,10 @@ class _CodePanelState extends State<CodePanel> {
   void _flush() {
     if (!_hasPending) return;
     final text = _code.text;
-    if (validateSvg(text).isValid) widget.editor.updateCode(text);
+    if (validateSvg(text).isValid) {
+      widget.editor.updateCode(text);
+      _loaded = text;
+    }
     _check();
     if (mounted) setState(() {});
   }
@@ -112,7 +121,7 @@ class _CodePanelState extends State<CodePanel> {
     super.didUpdateWidget(oldWidget);
     if (widget.editor.revision != _revision) {
       _revision = widget.editor.revision;
-      _code.text = _view(widget.editor.code);
+      _load(_view(widget.editor.code));
       _check();
       _autoFormat();
     }
@@ -154,7 +163,13 @@ class _CodePanelState extends State<CodePanel> {
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
   );
 
-  bool get _hasPending => _code.text != _view(widget.editor.code);
+  bool get _hasPending => _code.text != _loaded;
+
+  /// Puts [text] in the field as the state the editor has.
+  void _load(String text) {
+    _code.text = text;
+    _loaded = text;
+  }
 
   /// Every place the search text appears in the code (any letter case).
   List<TextRange> _findMatches() {
@@ -330,6 +345,7 @@ class _CodePanelState extends State<CodePanel> {
       if (formatted != null) _code.text = _view(formatted);
     }
     widget.editor.updateCode(_code.text);
+    _loaded = _code.text;
     _checkTimer?.cancel();
     setState(_check);
     // Problems are told under the code; a clean apply shows in the button.

@@ -8,16 +8,37 @@ void main() {
       '  <style>.a{animation:x 2s linear infinite,y 2s linear infinite;animation-delay:.2s}</style>\n'
       '</svg>';
 
-  test('broken lines continue two spaces deeper than their line', () {
+  test('broken lines keep the indent of the line they come from', () {
     final wrapped = wrapSvgLines(svg, 40).split('\n');
     expect(
       wrapped.where((l) => l.contains('rect') || l.contains('height')).every((l) => l.length <= 40),
       isTrue,
     );
     final rectAt = wrapped.indexWhere((l) => l.startsWith('  <rect'));
-    expect(wrapped[rectAt + 1], startsWith('    '));
-    expect(wrapped[rectAt + 1], isNot(startsWith('     ')));
+    expect(wrapped[rectAt + 1], startsWith('  '));
+    expect(wrapped[rectAt + 1], isNot(startsWith('   ')));
   });
+
+  test(
+    'a long style value is broken too, with the same indent, and wrapping twice changes nothing',
+    () {
+      const long =
+          '<svg xmlns="http://www.w3.org/2000/svg">\n'
+          '  <g>\n'
+          '    <rect style="fill:#93C5FD;animation:spinner_5QiW 2.602s linear infinite,spinner_tDji 2.602s linear infinite;animation-delay:0.434s"/>\n'
+          '  </g>\n'
+          '</svg>';
+      final once = wrapSvgLines(long, 50);
+      for (final line in once.split('\n')) {
+        expect(line.length, lessThanOrEqualTo(50), reason: line);
+      }
+      final rect = once.split('\n').indexWhere((l) => l.contains('<rect'));
+      expect(once.split('\n')[rect + 1], startsWith('    '), reason: 'indent of the rect line');
+      expect(validateSvg(once).isValid, isTrue);
+      expect(wrapSvgLines(once, 50), once, reason: 'idempotent');
+      expect(wrapSvgLines(wrapSvgLines(svg, 40), 40), wrapSvgLines(svg, 40));
+    },
+  );
 
   test('wrapping only changes whitespace and the result is still valid', () {
     final wrapped = wrapSvgLines(svg, 40);

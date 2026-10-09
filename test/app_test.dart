@@ -328,6 +328,36 @@ void main() {
     expect(find.text('Ajuste do editor'), findsWidgets, reason: 'moved in Layers');
   });
 
+  testWidgets('code tab: with wrapping on, an applied edit is no longer pending and saves', (
+    tester,
+  ) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('sun-moon.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Código');
+    await tester.tap(find.text('Quebrar linhas'));
+    await tester.pumpAndSettle();
+
+    final field = find.byKey(const Key('code-field'));
+    final text = tester.widget<TextField>(field).controller!.text;
+    await tester.enterText(field, text.replaceFirst('#0B1533', '#112233'));
+    await tester.pump(const Duration(seconds: 1));
+    FilledButton apply() => tester.widget<FilledButton>(find.byKey(const Key('apply-code')));
+    expect(apply().onPressed, isNotNull, reason: 'typed, not applied yet');
+
+    await tester.tap(find.byKey(const Key('apply-code')));
+    await tester.pump(const Duration(seconds: 1));
+    expect(apply().onPressed, isNull, reason: 'applied: nothing pending any more');
+
+    await tester.tap(find.byKey(const Key('save')));
+    await tester.pumpAndSettle();
+    expect(find.text('Alterações salvas'), findsOneWidget);
+  });
+
   testWidgets('editor inserts a shape, undoes, validates code and saves', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);
