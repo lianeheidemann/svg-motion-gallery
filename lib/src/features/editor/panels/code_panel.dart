@@ -225,7 +225,18 @@ class _CodePanelState extends State<CodePanel> {
   void initState() {
     super.initState();
     _revision = widget.editor.revision;
+    widget.editor.flushCode = _flush;
     _check();
+  }
+
+  /// Applies the typed text when it is valid (nothing happens when it is
+  /// broken: it is never applied). Used before saving and when leaving.
+  void _flush() {
+    if (!_hasPending) return;
+    final text = _code.text;
+    if (validateSvg(text).isValid) widget.editor.updateCode(text);
+    _check();
+    if (mounted) setState(() {});
   }
 
   @override
@@ -265,6 +276,7 @@ class _CodePanelState extends State<CodePanel> {
     // tabs). Deferred because listeners must not rebuild during disposal.
     final pending = _code.text;
     final editor = widget.editor;
+    if (editor.flushCode == _flush) editor.flushCode = null;
     if (_hasPending) Future.microtask(() => editor.updateCode(pending));
     _code.dispose();
     _vertical.dispose();
@@ -361,15 +373,7 @@ class _CodePanelState extends State<CodePanel> {
     _justApplied = false;
     _checkTimer?.cancel();
     _checkTimer = Timer(_checkDelay, () {
-      if (!mounted) return;
-      setState(_check);
-      // Typing paused on text that works: it goes to the preview by itself.
-      // Not formatted here (that would move the text under the cursor); the
-      // Apply button still does the formatting.
-      if (_error == null && _hasPending) {
-        widget.editor.updateCode(_code.text);
-        _flashApplied();
-      }
+      if (mounted) setState(_check);
     });
   }
 

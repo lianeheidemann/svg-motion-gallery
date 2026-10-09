@@ -6,9 +6,7 @@ import '../../../l10n/l10n.dart';
 import '../color_presets.dart';
 import '../editor_controller.dart';
 
-enum _ColorScope { document, layer }
-
-/// Recolors the whole document (palette) or paints the selected layer.
+/// Paints the selected layers (all of them at once when several are ticked).
 /// Colors are picked from a palette of ready-made colors and fine-tuned with
 /// hue/saturation/lightness sliders.
 class ColorsPanel extends StatefulWidget {
@@ -21,8 +19,6 @@ class ColorsPanel extends StatefulWidget {
 }
 
 class _ColorsPanelState extends State<ColorsPanel> {
-  _ColorScope? _scope;
-  String? _from;
   var _custom = false;
 
   EditorController get _editor => widget.editor;
@@ -37,84 +33,19 @@ class _ColorsPanelState extends State<ColorsPanel> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final hasSelection = _editor.selectedLayer != null;
-    final scope = hasSelection ? (_scope ?? _ColorScope.layer) : _ColorScope.document;
+    final hasSelection = _editor.targets.isNotEmpty;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
-        SegmentedButton<_ColorScope>(
-          showSelectedIcon: false,
-          segments: [
-            ButtonSegment(
-              value: _ColorScope.document,
-              label: Text(l10n.colorsDocument),
-              icon: const Icon(Icons.palette_outlined),
-            ),
-            ButtonSegment(
-              value: _ColorScope.layer,
-              enabled: hasSelection,
-              label: Text(l10n.colorsLayer),
-              icon: const Icon(Icons.format_color_fill_rounded),
-            ),
-          ],
-          selected: {scope},
-          onSelectionChanged: (value) => setState(() => _scope = value.single),
-        ),
-        if (!hasSelection)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              l10n.selectLayerHint,
-              style: TextStyle(color: GalleryColors.of(context).muted),
-            ),
+        if (hasSelection)
+          _layerColors(l10n)
+        else
+          SectionCard(
+            icon: Icons.format_color_fill_rounded,
+            children: [
+              Text(l10n.selectLayerHint, style: TextStyle(color: GalleryColors.of(context).muted)),
+            ],
           ),
-        const SizedBox(height: AppSpacing.md),
-        if (scope == _ColorScope.document) _documentColors(l10n) else _layerColors(l10n),
-      ],
-    );
-  }
-
-  Widget _documentColors(AppLocalizations l10n) {
-    final palette = _editor.palette;
-    final from = palette.contains(_from) ? _from : null;
-    return SectionCard(
-      icon: Icons.palette_outlined,
-      title: l10n.paletteTitle,
-      children: [
-        if (palette.isEmpty)
-          Text(l10n.paletteEmpty)
-        else ...[
-          Text(l10n.paletteHint, style: TextStyle(color: GalleryColors.of(context).muted)),
-          ColorSwatchPicker(
-            size: 28,
-            colors: [for (final hex in palette) colorFromHex(hex)!],
-            selected: from == null ? null : colorFromHex(from),
-            onSelected: (color) => setState(() => _from = colorToHex(color)),
-          ),
-          if (from != null) ...[
-            _presetPalette(
-              l10n,
-              colorFromHex(from)!,
-              preview: (to) => _editor.preview(SvgColors.replace(_editor.svg, from, to)),
-              commit: (to) {
-                _editor.commit(SvgColors.replace(_editor.svg, from, to));
-                setState(() => _from = to);
-              },
-            ),
-            HslColorEditor(
-              key: ValueKey('replace-$from'),
-              color: colorFromHex(from)!,
-              labels: _labels(l10n),
-              onChanged: (color) =>
-                  _editor.preview(SvgColors.replace(_editor.svg, from, colorToHex(color))),
-              onChangeEnd: (color) {
-                final to = colorToHex(color);
-                _editor.commit(SvgColors.replace(_editor.svg, from, to));
-                setState(() => _from = to);
-              },
-            ),
-          ],
-        ],
       ],
     );
   }
@@ -191,7 +122,7 @@ class _ColorsPanelState extends State<ColorsPanel> {
 
     return SectionCard(
       icon: Icons.format_color_fill_rounded,
-      title: targets.length > 1
+      title: targets.length > 1 || _editor.selectedLayer == null
           ? l10n.multiSelectCount(targets.length)
           : l10n.layerPaint(l10n.layerLabel(_editor.selectedLayer!, _editor.layers)),
       children: [

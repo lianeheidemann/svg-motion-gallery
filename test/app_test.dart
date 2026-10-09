@@ -609,7 +609,8 @@ void main() {
     expect(find.byKey(const Key('code-hint')), findsNothing);
   });
 
-  testWidgets('code: valid text is applied by itself, with a dot while it waits', (tester) async {
+  /// Opens wave.svg in the editor on the Code tab.
+  Future<AppServices> openCodeTab(WidgetTester tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);
     await tester.tap(find.text('wave.svg'));
@@ -618,42 +619,90 @@ void main() {
     await tester.tap(find.byKey(const Key('edit-svg')));
     await tester.pumpAndSettle();
     await _tapTab(tester, 'Código');
+    return services;
+  }
 
-    FilledButton save() => tester.widget<FilledButton>(find.byKey(const Key('save')));
+  const rectOnly =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="5" height="5"/></svg>';
+
+  /// Types [text] in the code field and lets the editor hear about it.
+  Future<void> typeCode(WidgetTester tester, String text) async {
+    await tester.enterText(find.byKey(const Key('code-field')), text);
+    await tester.pump(const Duration(milliseconds: 700)); // the check runs
+    await tester.pump(); // the editor hears, Save rebuilds
+  }
+
+  testWidgets('code: typed text waits with a dot and is applied when leaving the tab', (
+    tester,
+  ) async {
+    await openCodeTab(tester);
     expect(find.byKey(const Key('code-pending-dot')), findsNothing);
 
-    const typed =
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="5" height="5"/></svg>';
-    await tester.enterText(find.byKey(const Key('code-field')), typed);
-    await tester.pump(const Duration(milliseconds: 100));
-    await tester.pump();
-    // Typed, not applied yet: a dot on Apply, and Save says to apply first.
+    await typeCode(tester, rectOnly);
+    // Valid, but not applied by itself: the dot stays, however long it waits.
     expect(find.byKey(const Key('code-pending-dot')), findsOneWidget);
-    await tester.tap(find.byKey(const Key('save')));
-    await tester.pump();
-    expect(find.textContaining('ainda não foi aplicado'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 3));
+    expect(find.byKey(const Key('code-pending-dot')), findsOneWidget);
+    expect(find.text('Aplicado'), findsNothing);
 
-    // Typing pauses: the text works, so it goes to the preview by itself.
-    await tester.pump(const Duration(milliseconds: 600));
-    await tester.pumpAndSettle();
+    // Leaving the tab applies it.
+    await _tapTab(tester, 'Camadas');
+    expect(find.text('Retângulo'), findsWidgets, reason: 'the typed rectangle is a layer now');
+    await _tapTab(tester, 'Código');
     expect(find.byKey(const Key('code-pending-dot')), findsNothing);
-    expect(
-      find.descendant(of: find.byKey(const Key('apply-code')), matching: find.text('Aplicado')),
-      findsOneWidget,
-    );
-    expect(save().onPressed, isNotNull, reason: 'it can be saved without tapping Apply');
+  });
 
-    // Broken text is never applied by itself.
-    await tester.enterText(find.byKey(const Key('code-field')), '<svg><g></svg>');
-    await tester.pump(const Duration(milliseconds: 700));
-    await tester.pump();
-    expect(find.byKey(const Key('code-error')), findsOneWidget);
+  testWidgets('code: Save applies valid typed code and saves it', (tester) async {
+    final services = await openCodeTab(tester);
+    final wave = services.library.documents.firstWhere((d) => d.name == 'wave.svg');
+
+    await typeCode(tester, rectOnly);
+    FilledButton save() => tester.widget<FilledButton>(find.byKey(const Key('save')));
+    expect(save().onPressed, isNotNull, reason: 'typed code that works can be saved');
     await tester.tap(find.byKey(const Key('save')));
-    // The earlier message hides first, then this one comes in.
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pumpAndSettle();
+    expect(find.text('Alterações salvas'), findsOneWidget);
+    expect(services.library.contentOf(services.library.byId(wave.id)!), contains('<rect'));
+  });
+
+  testWidgets('code: an error hides "SVG válido", is never applied, and Save explains', (
+    tester,
+  ) async {
+    final services = await openCodeTab(tester);
+    final wave = services.library.documents.firstWhere((d) => d.name == 'wave.svg');
+
+    await typeCode(tester, rectOnly);
+    await tester.tap(find.byKey(const Key('save')));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pumpAndSettle();
+    expect(find.text('SVG válido'), findsOneWidget, reason: 'shown after a save');
+
+    await typeCode(tester, '<svg><g></svg>');
+    expect(find.byKey(const Key('code-error')), findsOneWidget);
+    expect(find.text('SVG válido'), findsNothing, reason: 'not while there is an error');
+
+    await tester.tap(find.byKey(const Key('save')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.textContaining('Não dá para salvar'), findsOneWidget);
+    expect(
+      services.library.contentOf(services.library.byId(wave.id)!),
+      isNot(contains('<g>')),
+      reason: 'broken code is never written',
+    );
+  });
+
+  testWidgets('code: leaving the editor with typed code that was not applied asks first', (
+    tester,
+  ) async {
+    await openCodeTab(tester);
+    await typeCode(tester, rectOnly);
+
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(find.text('Alterações não salvas'), findsOneWidget);
   });
 
   testWidgets('insert: width and height stretch the selected shape', (tester) async {

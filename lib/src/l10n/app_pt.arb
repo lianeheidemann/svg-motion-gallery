@@ -230,7 +230,6 @@
       }
     }
   },
-  "saveBlockedPending": "O código digitado ainda não foi aplicado. Toque em Aplicar e depois salve.",
   "issueMalformed": "XML malformado.",
   "issueMalformedAt": "XML malformado na linha {line}, coluna {column}.",
   "@issueMalformedAt": {
@@ -288,10 +287,6 @@
   "height": "Altura",
   "lockAspect": "Manter proporção",
   "unlockAspect": "Liberar proporção",
-  "colorsDocument": "Documento",
-  "colorsLayer": "Camada",
-  "paletteTitle": "Paleta do documento",
-  "paletteHint": "Toque em uma cor do SVG e escolha a nova cor na paleta ou ajuste pelos controles.",
   "presetPalette": "Paleta de cores",
   "eyedropper": "Conta-gotas",
   "customColor": "Cor personalizada",
