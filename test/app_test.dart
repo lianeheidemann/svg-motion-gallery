@@ -495,6 +495,51 @@ void main() {
     expect(find.byTooltip('Tamanho'), findsNothing);
   });
 
+  testWidgets('code: the magnifier opens a search that finds and steps through matches', (
+    tester,
+  ) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('sun-moon.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Código');
+
+    expect(find.byKey(const Key('code-search-field')), findsNothing);
+    await tester.tap(find.byKey(const Key('code-search')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('code-search-field')), findsOneWidget);
+
+    // Letter case does not matter, and every match is counted.
+    await tester.enterText(find.byKey(const Key('code-search-field')), 'CIRCLE');
+    await tester.pumpAndSettle();
+    final code = tester.widget<TextField>(find.byKey(const Key('code-field'))).controller!.text;
+    final total = RegExp('circle').allMatches(code).length;
+    expect(total, greaterThan(1));
+    final count = find.byKey(const Key('code-search-count'));
+    expect(tester.widget<Text>(count).data, '1/$total');
+
+    await tester.tap(find.byKey(const Key('code-search-next')));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(count).data, '2/$total');
+    await tester.tap(find.byKey(const Key('code-search-previous')));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(count).data, '1/$total');
+    await tester.tap(find.byKey(const Key('code-search-previous')));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(count).data, '$total/$total', reason: 'goes around');
+
+    await tester.enterText(find.byKey(const Key('code-search-field')), 'zzzz-not-there');
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(count).data, '0');
+
+    await tester.tap(find.byKey(const Key('code-search-close')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('code-search-field')), findsNothing);
+  });
+
   testWidgets('insert: width and height stretch the selected shape', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);
