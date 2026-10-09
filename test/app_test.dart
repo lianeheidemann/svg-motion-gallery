@@ -705,6 +705,56 @@ void main() {
     expect(find.text('Alterações não salvas'), findsOneWidget);
   });
 
+  testWidgets('text: width and height bars stretch the text, without an outline bar', (
+    tester,
+  ) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Texto');
+
+    // Before the text is added, the bars set how the next one is born.
+    expect(find.byKey(const Key('new-width')), findsOneWidget);
+    expect(find.byKey(const Key('new-height')), findsOneWidget);
+    expect(find.text('Contorno'), findsNothing, reason: 'text has no outline');
+
+    await tester.ensureVisible(find.byKey(const Key('insert-shape')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('insert-shape')));
+    await tester.pumpAndSettle();
+
+    final width = find.byKey(const Key('selected-width'));
+    final height = find.byKey(const Key('selected-height'));
+    await tester.ensureVisible(width);
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: width, matching: find.text('Largura')), findsOneWidget);
+    expect(find.descendant(of: height, matching: find.text('Altura')), findsOneWidget);
+    expect(find.text('Contorno'), findsNothing);
+
+    // Each bar stretches on its own axis.
+    await tester.drag(
+      find.descendant(of: width, matching: find.byType(Slider)),
+      const Offset(80, 0),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(height);
+    await tester.pumpAndSettle();
+    await tester.drag(
+      find.descendant(of: height, matching: find.byType(Slider)),
+      const Offset(-60, 0),
+    );
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Código');
+    final code = tester.widget<TextField>(find.byKey(const Key('code-field'))).controller!.text;
+    final scale = RegExp(r'scale\(([-\d.]+) ([-\d.]+)\)').firstMatch(code);
+    expect(scale, isNotNull, reason: 'width and height give the text two different scales');
+    expect(double.parse(scale!.group(1)!), greaterThan(double.parse(scale.group(2)!)));
+  });
+
   testWidgets('insert: width and height stretch the selected shape', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);
