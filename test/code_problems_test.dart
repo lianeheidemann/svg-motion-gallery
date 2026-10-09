@@ -24,7 +24,7 @@ Future<List<TextSpan>> _spans(WidgetTester tester, SvgCodeController controller)
 }
 
 void main() {
-  testWidgets('problems are underlined with a wavy line, red or amber', (tester) async {
+  testWidgets('problems are underlined with a red wavy line', (tester) async {
     final controller = SvgCodeController(text: _source);
     addTearDown(controller.dispose);
     final bad = _source.indexOf('#12');
@@ -39,7 +39,7 @@ void main() {
     final underlined = spans.where((s) => s.style?.decoration == TextDecoration.underline);
     expect(underlined.map((s) => s.text), ['svg', '#12']);
     expect(underlined.first.style!.decorationStyle, TextDecorationStyle.wavy);
-    expect(underlined.first.style!.decorationColor, isNot(underlined.last.style!.decorationColor));
+    expect(underlined.first.style!.decorationColor, underlined.last.style!.decorationColor);
   });
 
   testWidgets('search matches and problems can share the same text', (tester) async {

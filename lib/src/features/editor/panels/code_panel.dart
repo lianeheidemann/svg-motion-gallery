@@ -44,7 +44,7 @@ class SvgCodeController extends TextEditingController {
   static const _matchColor = Color(0x55FFC107);
   static const _currentColor = Color(0xAAFFA000);
   static const _errorColor = Color(0xFFEF4444);
-  static const _hintColor = Color(0xFFF59E0B);
+  static const _hintColor = _errorColor;
 
   /// [text] from [start] to [end] in [color], with the matches marked and the
   /// problems underlined. [walk] remembers how far the lists have been read,
@@ -533,7 +533,9 @@ class _CodePanelState extends State<CodePanel> {
   Widget _problemBar(AppLocalizations l10n) {
     final issue = _shown!;
     final error = _error != null;
-    final color = error ? const Color(0xFFEF4444) : const Color(0xFFF59E0B);
+    // Both are red: a wrong value is as much a mistake as broken XML, the
+    // difference is only that it does not stop Apply.
+    const color = Color(0xFFEF4444);
     final more = error ? 0 : _hints.length - 1;
     return Padding(
       padding: const EdgeInsets.only(top: 6),
@@ -547,11 +549,7 @@ class _CodePanelState extends State<CodePanel> {
         ),
         child: Row(
           children: [
-            Icon(
-              error ? Icons.error_outline_rounded : Icons.warning_amber_rounded,
-              size: 20,
-              color: color,
-            ),
+            const Icon(Icons.error_outline_rounded, size: 20, color: color),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -566,7 +564,7 @@ class _CodePanelState extends State<CodePanel> {
                 padding: const EdgeInsets.only(left: 4),
                 child: Text(
                   l10n.codeMoreProblems(more),
-                  style: TextStyle(color: color, fontWeight: FontWeight.w700),
+                  style: const TextStyle(color: color, fontWeight: FontWeight.w700),
                 ),
               ),
             IconButton(
