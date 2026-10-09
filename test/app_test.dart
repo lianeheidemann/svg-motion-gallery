@@ -199,12 +199,16 @@ void main() {
     expect(save().onPressed, isNull);
 
     await _tapTab(tester, 'Inserir');
-    await tester.ensureVisible(find.byKey(const Key('insert-shape')));
+    expect(find.byKey(const Key('insert-shape')), findsNothing, reason: 'no Add button');
+    // Tapping a shape adds it right away.
+    await tester.ensureVisible(find.byKey(const Key('insert-rectangle')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('insert-shape')));
+    await tester.tap(find.byKey(const Key('insert-rectangle')));
     await tester.pumpAndSettle();
     expect(save().onPressed, isNotNull);
     expect(find.textContaining('Selecionado: Retângulo'), findsOneWidget);
+    expect(find.text('Contorno'), findsWidgets);
+    expect(find.text('Preenchimento'), findsNothing, reason: 'hollow: no fill color yet');
 
     // New shapes are hollow; the box fills them.
     CheckboxListTile filled() =>
@@ -215,6 +219,10 @@ void main() {
     await tester.tap(find.byKey(const Key('selected-filled')));
     await tester.pumpAndSettle();
     expect(filled().value, isTrue);
+    expect(find.text('Preenchimento'), findsOneWidget, reason: 'filled: pick the fill color too');
+    // The fill colors pushed the box down.
+    await tester.ensureVisible(find.byKey(const Key('selected-filled')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('selected-filled')));
     await tester.pumpAndSettle();
     expect(filled().value, isFalse);
@@ -331,9 +339,9 @@ void main() {
     await tester.pumpAndSettle();
 
     await _tapTab(tester, 'Inserir');
-    await tester.ensureVisible(find.byKey(const Key('insert-shape')));
+    await tester.ensureVisible(find.byKey(const Key('insert-rectangle')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('insert-shape')));
+    await tester.tap(find.byKey(const Key('insert-rectangle')));
     await tester.pumpAndSettle();
 
     // The second swatch is purple (#A04BFF); the shape is hollow, so its
@@ -477,15 +485,41 @@ void main() {
     await tester.pumpAndSettle();
     expect(save().onPressed, isNotNull, reason: 'stretching the width is an edit');
 
-    await tester.tap(find.byTooltip('Desfazer'));
+    // The card is just "Transformar", and the document size has no tab.
+    expect(find.text('Transformar'), findsWidgets);
+    expect(find.byTooltip('Tamanho'), findsNothing);
+  });
+
+  testWidgets('insert: width and height stretch the selected shape', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
     await tester.pumpAndSettle();
-    await _tapTab(tester, 'Tamanho');
-    expect(find.text('Tamanho do documento'), findsOneWidget);
-    expect(find.text('Largura'), findsOneWidget);
-    expect(find.text('Altura'), findsOneWidget);
-    await tester.drag(find.byType(Slider).first, const Offset(40, 0));
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
     await tester.pumpAndSettle();
-    expect(save().onPressed, isNotNull, reason: 'changing the document width is an edit');
+
+    await _tapTab(tester, 'Inserir');
+    await tester.ensureVisible(find.byKey(const Key('insert-circle')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('insert-circle')));
+    await tester.pumpAndSettle();
+
+    final width = find.byKey(const Key('selected-width'));
+    final height = find.byKey(const Key('selected-height'));
+    await tester.ensureVisible(width);
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: width, matching: find.text('Largura')), findsOneWidget);
+    expect(find.descendant(of: height, matching: find.text('Altura')), findsOneWidget);
+
+    await tester.drag(
+      find.descendant(of: width, matching: find.byType(Slider)),
+      const Offset(60, 0),
+    );
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Código');
+    final code = tester.widget<TextField>(find.byKey(const Key('code-field'))).controller!.text;
+    expect(code, contains('scale('), reason: 'the width is a stretch of the shape');
   });
 
   testWidgets('animation: a motion applies as soon as it is tapped and "None" removes it', (

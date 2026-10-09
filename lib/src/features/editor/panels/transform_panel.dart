@@ -82,7 +82,6 @@ class _TransformPanelState extends State<TransformPanel> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final layer = _editor.selectedLayer;
-    final count = _editor.multiMode ? _editor.multiSelection.length : 0;
     final values =
         _live ?? SvgTransformEdit.read(_editor.svg, _editor.multiMode ? _first : _editor.selection);
     final metadata = _editor.metadata;
@@ -94,11 +93,7 @@ class _TransformPanelState extends State<TransformPanel> {
       children: [
         SectionCard(
           icon: Icons.open_with_rounded,
-          title: count > 1
-              ? l10n.multiSelectCount(count)
-              : layer == null
-              ? l10n.transformDocument
-              : l10n.transformLayer(l10n.layerLabel(layer, _editor.layers)),
+          title: l10n.tabTransform,
           spacing: 6,
           children: [
             if (layer == null)

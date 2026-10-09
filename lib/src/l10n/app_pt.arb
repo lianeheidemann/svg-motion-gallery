@@ -16,7 +16,6 @@
   "backgroundLight": "Claro",
   "backgroundDark": "Escuro",
   "backgroundChecker": "Quadriculado (transparência)",
-  "tabSize": "Tamanho",
   "presetNone": "Nenhum",
   "pauseAll": "Pausar animações",
   "resumeAll": "Retomar animações",
@@ -245,15 +244,6 @@
   },
   "clearSelection": "Limpar seleção",
   "selectLayerHint": "Selecione uma camada na aba Camadas para editar só ela.",
-  "transformDocument": "Transformar desenho inteiro",
-  "transformLayer": "Transformar {name}",
-  "@transformLayer": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "transformHint": "Sem seleção, os ajustes valem para todo o desenho.",
   "positionX": "Posição X",
   "positionY": "Posição Y",
@@ -261,7 +251,6 @@
   "rotation": "Rotação",
   "opacity": "Opacidade",
   "resetTransform": "Redefinir",
-  "documentSize": "Tamanho do documento",
   "width": "Largura",
   "height": "Altura",
   "lockAspect": "Manter proporção",

@@ -360,6 +360,17 @@ void main() {
         strokeWidth: 3,
       );
       expect(ring.svg, contains('stroke-width="3"'));
+      // A filled shape can have a fill color of its own, apart from the outline.
+      final both = SvgInsertEdit.insert(
+        base,
+        SvgShapeKind.rectangle,
+        color: '#112233',
+        fillColor: '#AABBCC',
+        filled: true,
+        strokeWidth: 2,
+      );
+      expect(both.svg, contains('fill="#AABBCC"'));
+      expect(both.svg, contains('stroke="#112233"'));
       final text = SvgInsertEdit.insert(base, SvgShapeKind.text, color: '#FFFFFF', text: 'Oi');
       expect(text.svg, contains('>Oi</text>'));
     });
