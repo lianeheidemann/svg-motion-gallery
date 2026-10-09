@@ -262,14 +262,43 @@ class _EditorScreenState extends State<EditorScreen> {
         ),
         Padding(
           padding: const EdgeInsets.only(right: 12, left: 4),
-          child: FilledButton(
-            key: const Key('save'),
-            onPressed: editor.canSave && !_saving ? _save : null,
-            child: Text(l10n.save),
-          ),
+          child: _saveButton(context, editor),
         ),
       ],
     );
+  }
+
+  /// Save. When it cannot save because of the code (an error, or typed text
+  /// that was not applied), it looks off but a tap says why, instead of doing
+  /// nothing.
+  Widget _saveButton(BuildContext context, EditorController editor) {
+    final l10n = context.l10n;
+    final canSave = editor.canSave && !_saving && !editor.codePending;
+    final error = editor.codeError ?? editor.validation.issue;
+    final blocked = !canSave && !_saving && (error != null || editor.codePending);
+    final scheme = Theme.of(context).colorScheme;
+    return FilledButton(
+      key: const Key('save'),
+      onPressed: canSave ? _save : (blocked ? () => _explainBlockedSave(editor) : null),
+      style: blocked
+          ? FilledButton.styleFrom(
+              backgroundColor: scheme.onSurface.withValues(alpha: .12),
+              foregroundColor: scheme.onSurface.withValues(alpha: .38),
+            )
+          : null,
+      child: Text(l10n.save),
+    );
+  }
+
+  void _explainBlockedSave(EditorController editor) {
+    final l10n = context.l10n;
+    final error = editor.codeError ?? editor.validation.issue;
+    final message = error != null
+        ? l10n.saveBlockedError(l10n.issueMessage(error))
+        : l10n.saveBlockedPending;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   bool _selectedIsShape(EditorController editor) {

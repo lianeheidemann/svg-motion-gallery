@@ -190,6 +190,17 @@ class _CodePanelState extends State<CodePanel> {
   Timer? _checkTimer;
   static const _checkDelay = Duration(milliseconds: 500);
 
+  /// True from an edit until the next check: what [_error] says is old.
+  var _stale = false;
+
+  /// Shows "Applied" in the button for a moment after text is applied.
+  var _justApplied = false;
+  Timer? _appliedTimer;
+
+  /// What was last reported to the editor, so Save can explain itself.
+  bool _reportedPending = false;
+  SvgIssue? _reportedError;
+
   /// Width of the text area, in characters, used to break long lines.
   var _columns = 0;
 
@@ -260,6 +271,8 @@ class _CodePanelState extends State<CodePanel> {
     _horizontal.dispose();
     _query.dispose();
     _checkTimer?.cancel();
+    _appliedTimer?.cancel();
+    Future.microtask(() => editor.setCodeState(pending: false));
     super.dispose();
   }
 
@@ -288,6 +301,21 @@ class _CodePanelState extends State<CodePanel> {
     return found;
   }
 
+  /// Tells the editor whether typed text is waiting and what is wrong with it,
+  /// so the Save button can say why it will not save. Done after the frame:
+  /// the editor must not notify while this panel is building.
+  void _reportToEditor() {
+    final pending = _hasPending;
+    final error = _stale ? null : _error;
+    if (pending == _reportedPending && identical(error, _reportedError)) return;
+    _reportedPending = pending;
+    _reportedError = error;
+    final editor = widget.editor;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) editor.setCodeState(pending: pending, error: error);
+    });
+  }
+
   /// Checks the text now: parser errors, then values that look wrong.
   void _check() {
     final text = _code.text;
@@ -296,6 +324,7 @@ class _CodePanelState extends State<CodePanel> {
     _error = validation.issue;
     _hints = hints;
     _hintIndex = 0;
+    _stale = false;
     _underline();
   }
 
@@ -328,10 +357,28 @@ class _CodePanelState extends State<CodePanel> {
   /// problems are, so they go at once; the check runs when typing pauses.
   void _typed() {
     _code.problems = const [];
+    _stale = true;
+    _justApplied = false;
     _checkTimer?.cancel();
     _checkTimer = Timer(_checkDelay, () {
       if (!mounted) return;
       setState(_check);
+      // Typing paused on text that works: it goes to the preview by itself.
+      // Not formatted here (that would move the text under the cursor); the
+      // Apply button still does the formatting.
+      if (_error == null && _hasPending) {
+        widget.editor.updateCode(_code.text);
+        _flashApplied();
+      }
+    });
+  }
+
+  /// "Applied" in the button for a moment.
+  void _flashApplied() {
+    _appliedTimer?.cancel();
+    setState(() => _justApplied = true);
+    _appliedTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _justApplied = false);
     });
   }
 
@@ -409,13 +456,8 @@ class _CodePanelState extends State<CodePanel> {
     widget.editor.updateCode(_code.text);
     _checkTimer?.cancel();
     setState(_check);
-    final validation = widget.editor.validation;
-    // Errors and warnings have their own banner; confirm only a clean apply.
-    if (validation.isValid && validation.warning == null) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(context.l10n.codeApplied)));
-    }
+    // Problems are told under the code; a clean apply shows in the button.
+    if (widget.editor.validation.isValid) _flashApplied();
   }
 
   void _format() {
@@ -436,6 +478,7 @@ class _CodePanelState extends State<CodePanel> {
       color: colors.codeText,
     );
     final lines = '\n'.allMatches(_code.text).length + 1;
+    _reportToEditor();
     final found = _findMatches();
     if (_matchIndex >= found.length) _matchIndex = 0;
     _code
@@ -465,6 +508,57 @@ class _CodePanelState extends State<CodePanel> {
         _columns = math.max(((constraints.maxWidth - 54) / (_fontSize * 0.62)).floor(), 0);
         return _body(context, l10n, colors, style, lines, field, found);
       },
+    );
+  }
+
+  /// Apply: waiting (a dot), applied (a check), or, with an error, a button
+  /// that takes you to it.
+  Widget _applyButton(AppLocalizations l10n) {
+    final pending = _hasPending;
+    final error = _error != null && !_stale;
+    final success = GalleryColors.of(context).success;
+    final button = error
+        ? FilledButton.icon(
+            key: const Key('apply-code'),
+            style: _compact.merge(FilledButton.styleFrom(backgroundColor: const Color(0xFFEF4444))),
+            onPressed: _goToProblem,
+            icon: const Icon(Icons.error_outline_rounded, size: 18),
+            label: Text(l10n.codeShowError),
+          )
+        : FilledButton.icon(
+            key: const Key('apply-code'),
+            style: _compact.merge(
+              _justApplied && !pending
+                  ? FilledButton.styleFrom(
+                      disabledBackgroundColor: success.withValues(alpha: .22),
+                      disabledForegroundColor: success,
+                    )
+                  : null,
+            ),
+            onPressed: pending ? _apply : null,
+            icon: const Icon(Icons.check_rounded, size: 18),
+            label: Text(_justApplied && !pending ? l10n.codeApplied : l10n.applyCode),
+          );
+    if (!pending || error) return button;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        button,
+        Positioned(
+          top: -3,
+          right: -3,
+          child: Container(
+            key: const Key('code-pending-dot'),
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFA000),
+              shape: BoxShape.circle,
+              border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 1.5),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -638,13 +732,7 @@ class _CodePanelState extends State<CodePanel> {
                 ),
               ),
               const SizedBox(width: 6),
-              FilledButton.icon(
-                key: const Key('apply-code'),
-                style: _compact,
-                onPressed: _hasPending ? _apply : null,
-                icon: const Icon(Icons.check_rounded, size: 18),
-                label: Text(l10n.applyCode),
-              ),
+              _applyButton(l10n),
             ],
           ),
           if (_searching) _searchBar(l10n, found),

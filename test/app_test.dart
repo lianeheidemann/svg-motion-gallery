@@ -294,22 +294,34 @@ void main() {
     );
     await tester.enterText(find.byKey(const Key('code-field')), '<svg><g></svg>');
     await tester.pump(const Duration(milliseconds: 600));
-    expect(find.text('SVG inválido'), findsNothing, reason: 'validated only on Apply');
-    await tester.tap(find.byKey(const Key('apply-code')));
-    await tester.pumpAndSettle();
+    await tester.pump(); // the editor hears about the error, then Save rebuilds
+    expect(find.text('SVG inválido'), findsNothing, reason: 'never the banner below the code');
     // The error is told once, under the code, without the parser's English text.
     expect(find.byKey(const Key('code-error')), findsOneWidget);
-    expect(find.text('SVG inválido'), findsNothing, reason: 'no second message below');
     expect(find.textContaining('expected'), findsNothing);
     expect(find.textContaining('XML malformado'), findsOneWidget);
-    expect(save().onPressed, isNull);
+    // Apply becomes the way to the error, and Save explains itself when tapped.
+    expect(
+      find.descendant(of: find.byKey(const Key('apply-code')), matching: find.text('Ver erro')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('save')));
+    await tester.pump();
+    expect(find.textContaining('Não dá para salvar'), findsOneWidget);
+    expect(services.library.contentOf(services.library.byId(wave.id)!), isNot(contains('<g>')));
 
     await tester.enterText(find.byKey(const Key('code-field')), _valid);
     await tester.pump();
+    // Right after typing the old error no longer counts: Apply applies again.
     await tester.tap(find.byKey(const Key('apply-code')));
     await tester.pumpAndSettle();
-    expect(find.text('SVG inválido'), findsNothing);
-    expect(find.text('Código aplicado'), findsOneWidget, reason: 'a clean apply is confirmed');
+    expect(find.byKey(const Key('code-error')), findsNothing);
+    expect(
+      find.descendant(of: find.byKey(const Key('apply-code')), matching: find.text('Aplicado')),
+      findsOneWidget,
+      reason: 'a clean apply shows in the button, not in a message over the tabs',
+    );
+    expect(find.text('Código aplicado'), findsNothing);
     expect(find.text('SVG válido'), findsNothing, reason: 'shown only after saving');
 
     // Nonsense inside <style> is still XML: a warning, and saving stays possible.
@@ -595,6 +607,53 @@ void main() {
     await type('$open\n<circle r="4" fill="#FFC83D"/>\n</svg>');
     expect(find.byKey(const Key('code-error')), findsNothing);
     expect(find.byKey(const Key('code-hint')), findsNothing);
+  });
+
+  testWidgets('code: valid text is applied by itself, with a dot while it waits', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Código');
+
+    FilledButton save() => tester.widget<FilledButton>(find.byKey(const Key('save')));
+    expect(find.byKey(const Key('code-pending-dot')), findsNothing);
+
+    const typed =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="5" height="5"/></svg>';
+    await tester.enterText(find.byKey(const Key('code-field')), typed);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
+    // Typed, not applied yet: a dot on Apply, and Save says to apply first.
+    expect(find.byKey(const Key('code-pending-dot')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('save')));
+    await tester.pump();
+    expect(find.textContaining('ainda não foi aplicado'), findsOneWidget);
+
+    // Typing pauses: the text works, so it goes to the preview by itself.
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('code-pending-dot')), findsNothing);
+    expect(
+      find.descendant(of: find.byKey(const Key('apply-code')), matching: find.text('Aplicado')),
+      findsOneWidget,
+    );
+    expect(save().onPressed, isNotNull, reason: 'it can be saved without tapping Apply');
+
+    // Broken text is never applied by itself.
+    await tester.enterText(find.byKey(const Key('code-field')), '<svg><g></svg>');
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pump();
+    expect(find.byKey(const Key('code-error')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('save')));
+    // The earlier message hides first, then this one comes in.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.textContaining('Não dá para salvar'), findsOneWidget);
   });
 
   testWidgets('insert: width and height stretch the selected shape', (tester) async {

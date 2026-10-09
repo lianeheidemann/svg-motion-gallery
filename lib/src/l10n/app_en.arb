@@ -130,7 +130,10 @@
     }
   },
   "svgWarning": "Valid SVG, with a warning",
-  "codeApplied": "Code applied",
+  "codeApplied": "Applied",
+  "codeShowError": "Show error",
+  "saveBlockedError": "Cannot save: {message}",
+  "saveBlockedPending": "The typed code was not applied yet. Tap Apply, then save.",
   "issueMalformed": "Malformed XML.",
   "issueMalformedAt": "Malformed XML at line {line}, column {column}.",
   "issueValue": "Invalid value “{value}” in {attribute}, at line {line}.",

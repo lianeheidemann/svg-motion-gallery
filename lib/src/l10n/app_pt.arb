@@ -220,7 +220,17 @@
     }
   },
   "svgWarning": "SVG válido, com um aviso",
-  "codeApplied": "Código aplicado",
+  "codeApplied": "Aplicado",
+  "codeShowError": "Ver erro",
+  "saveBlockedError": "Não dá para salvar: {message}",
+  "@saveBlockedError": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "saveBlockedPending": "O código digitado ainda não foi aplicado. Toque em Aplicar e depois salve.",
   "issueMalformed": "XML malformado.",
   "issueMalformedAt": "XML malformado na linha {line}, coluna {column}.",
   "@issueMalformedAt": {
