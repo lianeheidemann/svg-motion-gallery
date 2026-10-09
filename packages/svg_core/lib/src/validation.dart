@@ -22,6 +22,11 @@ enum SvgIssueCode {
   /// is not one (see [SvgIssue.attribute] and [SvgIssue.detail]). Only ever
   /// reported by the linter, as a hint: the SVG is still valid.
   invalidValue,
+
+  /// A color written like Android's `#AARRGGBB` (see [SvgIssue.detail]); in an
+  /// SVG the last two digits are the transparency (`#RRGGBBAA`). Only ever
+  /// reported by the linter, as a hint.
+  argbColor,
 }
 
 /// A validation problem with its location (1-based) when known.

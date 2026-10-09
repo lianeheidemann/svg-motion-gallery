@@ -139,6 +139,18 @@
   "issueMalformed": "Malformed XML.",
   "issueMalformedAt": "Malformed XML at line {line}, column {column}.",
   "issueValue": "Invalid value “{value}” in {attribute}, at line {line}.",
+  "issueArgb": "Color “{value}”: in an SVG the last 2 digits are the transparency (#RRGGBBAA). If it is #AARRGGBB (Android), tap Convert. As written it is {percent}% opaque.",
+  "@issueArgb": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "codeConvertArgb": "Convert",
   "codeProblemGo": "Go to the problem",
   "codeMoreProblems": "+{count}",
   "selectionNone": "Selected: All",

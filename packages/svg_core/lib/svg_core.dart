@@ -17,7 +17,7 @@ export 'src/editing/transform.dart' show SvgDocumentEdit, SvgTransformEdit, SvgT
 export 'src/formatting.dart' show formatSvg, wrapSvgLines;
 export 'src/highlighter.dart' show SvgToken, SvgTokenType, maxHighlightLength, tokenizeSvg;
 export 'src/history.dart' show EditHistory;
-export 'src/lint.dart' show lintSvgValues, svgIssueRange;
+export 'src/lint.dart' show lintSvgValues, svgArgbToRgba, svgIssueRange;
 export 'src/metadata.dart' show SvgAnimationKind, SvgMetadata, SvgViewBox;
 export 'src/playback.dart' show forceLoop, forcePlayOnce;
 export 'src/sanitizer.dart' show sanitizeSvg;

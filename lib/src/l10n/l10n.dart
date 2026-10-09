@@ -21,6 +21,17 @@ extension AppLocalizationsFormat on AppLocalizations {
       SvgIssueCode.malformedXml =>
         issue.line == null ? issueMalformed : issueMalformedAt(issue.line!, issue.column ?? 0),
       SvgIssueCode.malformedCss => issue.line == null ? issueCss : issueCssAt(issue.line!),
+      SvgIssueCode.argbColor => issueArgb(
+        issue.detail ?? '',
+        ((int.tryParse(
+                      (issue.detail ?? '').substring((issue.detail ?? '').length - 2),
+                      radix: 16,
+                    ) ??
+                    255) *
+                100 /
+                255)
+            .round(),
+      ),
       SvgIssueCode.invalidValue => issueValue(
         issue.detail ?? '',
         issue.attribute ?? '',

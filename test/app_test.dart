@@ -184,6 +184,35 @@ void main() {
     expect(squash(text()), before);
   });
 
+  testWidgets('code tab: an #AARRGGBB color is flagged and can be converted', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Código');
+
+    final field = find.byKey(const Key('code-field'));
+    String text() => tester.widget<TextField>(field).controller!.text;
+    await tester.enterText(
+      field,
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+      '<rect width="4" height="4" fill="#FFFF0000"/></svg>',
+    );
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+    expect(find.byKey(const Key('code-hint')), findsOneWidget);
+    expect(find.textContaining('0% opaca'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('code-convert-argb')));
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+    expect(text(), contains('fill="#FF0000FF"'));
+    expect(find.byKey(const Key('code-hint')), findsNothing);
+  });
+
   testWidgets('editor inserts a shape, undoes, validates code and saves', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);

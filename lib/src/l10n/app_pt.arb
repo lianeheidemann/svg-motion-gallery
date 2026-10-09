@@ -259,6 +259,18 @@
       }
     }
   },
+  "issueArgb": "Cor “{value}”: no SVG os 2 últimos dígitos são a transparência (#RRGGBBAA). Se for #AARRGGBB (Android), toque em Converter. Assim fica {percent}% opaca.",
+  "@issueArgb": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "codeConvertArgb": "Converter",
   "codeProblemGo": "Ir para o problema",
   "codeMoreProblems": "+{count}",
   "@codeMoreProblems": {

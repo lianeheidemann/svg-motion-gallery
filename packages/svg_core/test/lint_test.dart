@@ -18,6 +18,17 @@ void main() {
       expect(source.substring(issue.start!, issue.end!), '#FFC----@83D');
     });
 
+    test('flags Android-style #AARRGGBB colors and converts them', () {
+      final issues = lintSvgValues(
+        _svg('<rect fill="#FFFF0000"/><rect fill="#FFFFCCCC"/><rect fill="#FF0000FF"/>'),
+      );
+      expect(issues.map((i) => i.code), [SvgIssueCode.argbColor, SvgIssueCode.argbColor]);
+      expect(issues.first.detail, '#FFFF0000');
+      expect(svgArgbToRgba('#FFFF0000'), '#FF0000FF');
+      expect(svgArgbToRgba('#80FF0000'), '#FF000080');
+      expect(svgArgbToRgba('#FF0000'), isNull);
+    });
+
     test('flags bad hex lengths, unknown names and bad numbers', () {
       final issues = lintSvgValues(
         _svg('<rect width="abc" height="10" fill="#12"/><circle r="4" stroke="reed"/>'),
