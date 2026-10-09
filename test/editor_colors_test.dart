@@ -175,6 +175,37 @@ void main() {
     expect(saved, isNot(contains('#0000FF')), reason: 'everything took the picked green');
   });
 
+  testWidgets('light/dark: the icon switches the version and colors go to that one only', (
+    tester,
+  ) async {
+    final services = await _openRedInEditor(
+      tester,
+      svg:
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+          '<style>.bg{fill:#000011}@media (prefers-color-scheme: light){.bg{fill:#EEEEFF}}</style>'
+          '<rect class="bg" width="10" height="10"/></svg>',
+    );
+    // The test app is dark: that is the version shown first.
+    final icon = find.byKey(const Key('theme-variant'));
+    expect(icon, findsOneWidget);
+    expect(find.byTooltip('Editando a versão escura — toque para a clara'), findsOneWidget);
+
+    await tester.tap(icon);
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Editando a versão clara — toque para a escura'), findsOneWidget);
+
+    await _tapTab(tester, 'Cores');
+    await _pickPreset(tester, '#3B82F6');
+    final saved = await _save(tester, services);
+    expect(saved, contains('#3B82F6'));
+    expect(saved, contains('#000011'), reason: 'the dark version is untouched');
+  });
+
+  testWidgets('light/dark: a file without both versions has no icon', (tester) async {
+    await _openRedInEditor(tester);
+    expect(find.byKey(const Key('theme-variant')), findsNothing);
+  });
+
   testWidgets('the rainbow swatch opens a free picker that recolors the layer', (tester) async {
     final services = await _openRedInEditor(tester);
     await _selectLayerThenColors(tester, 'Retângulo');

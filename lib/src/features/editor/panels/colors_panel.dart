@@ -10,9 +10,13 @@ import '../editor_controller.dart';
 /// Colors are picked from a palette of ready-made colors and fine-tuned with
 /// hue/saturation/lightness sliders.
 class ColorsPanel extends StatefulWidget {
-  const ColorsPanel({super.key, required this.editor});
+  const ColorsPanel({super.key, required this.editor, this.scheme});
 
   final EditorController editor;
+
+  /// The light/dark version being edited (the change goes to that version
+  /// only); null for a file without such versions.
+  final SvgColorScheme? scheme;
 
   @override
   State<ColorsPanel> createState() => _ColorsPanelState();
@@ -49,9 +53,15 @@ class _ColorsPanelState extends State<ColorsPanel> {
   String _paint(String svg, String? color) {
     final targets = _editor.paintTargets;
     var out = svg;
+    final scheme = widget.scheme;
     for (final target in targets) {
-      if (targets.length > 1 && SvgPaintEdit.read(out, target).fill == 'none') continue;
-      out = SvgPaintEdit.setFill(out, target, color);
+      final current = scheme == null
+          ? SvgPaintEdit.read(out, target).fill
+          : SvgThemeEdit.fillFor(out, target, scheme);
+      if (targets.length > 1 && current == 'none') continue;
+      out = scheme == null || color == null
+          ? SvgPaintEdit.setFill(out, target, color)
+          : SvgThemeEdit.setFill(out, target, color, scheme);
     }
     return out;
   }
@@ -148,8 +158,10 @@ class _ColorsPanelState extends State<ColorsPanel> {
     // Every ticked layer takes the change; the card shows the first one's paint.
     final targets = _editor.paintTargets;
     final path = targets.first;
+    final scheme = widget.scheme;
     final paint = SvgPaintEdit.read(_editor.svg, path);
-    final hex = paint.fillColor;
+    final shown = scheme == null ? null : SvgThemeEdit.fillFor(_editor.svg, path, scheme);
+    final hex = scheme == null ? paint.fillColor : (shown?.startsWith('#') ?? false ? shown : null);
     String apply(String svg, String? color) => _paint(svg, color);
 
     return SectionCard(

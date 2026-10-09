@@ -274,6 +274,8 @@
   "eyedropper": "Conta-gotas",
   "eyedropperHint": "Toque no desenho para pegar uma cor",
   "eyedropperNoColor": "Não há uma cor sólida aqui",
+  "editingLight": "Editando a versão clara — toque para a escura",
+  "editingDark": "Editando a versão escura — toque para a clara",
   "codeProblemGo": "Ir para o problema",
   "codeMoreProblems": "+{count}",
   "@codeMoreProblems": {

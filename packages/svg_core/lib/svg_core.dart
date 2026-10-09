@@ -13,6 +13,7 @@ export 'src/editing/insert.dart' show SvgInsertEdit, SvgShapeKind;
 export 'src/editing/layers.dart' show SvgLayer, SvgLayers;
 export 'src/editing/paint.dart' show ElementPaint, SvgPaintEdit;
 export 'src/editing/shape_size.dart' show SvgShapeFactors, SvgShapeSize;
+export 'src/editing/theme_edit.dart' show SvgThemeEdit;
 export 'src/editing/transform.dart' show SvgDocumentEdit, SvgTransformEdit, SvgTransformValues;
 export 'src/formatting.dart' show formatSvg, wrapSvgLines;
 export 'src/highlighter.dart' show SvgToken, SvgTokenType, maxHighlightLength, tokenizeSvg;

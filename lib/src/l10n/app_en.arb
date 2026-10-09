@@ -154,6 +154,8 @@
   "eyedropper": "Eyedropper",
   "eyedropperHint": "Tap the drawing to pick a color",
   "eyedropperNoColor": "No solid color here",
+  "editingLight": "Editing the light version — tap for dark",
+  "editingDark": "Editing the dark version — tap for light",
   "codeProblemGo": "Go to the problem",
   "codeMoreProblems": "+{count}",
   "selectionNone": "Selected: All",

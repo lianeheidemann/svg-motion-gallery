@@ -44,6 +44,15 @@ class _EditorScreenState extends State<EditorScreen> {
   SvgDocument? _document;
   final _playback = SvgPlaybackController();
 
+  /// The variant (light/dark) chosen with the Layers tab icon; null follows
+  /// the app's theme.
+  SvgColorScheme? _variant;
+
+  /// The variant being viewed and edited, or null when the file has no
+  /// light/dark versions in its code.
+  SvgColorScheme? _editScheme(BuildContext context, EditorController editor) =>
+      SvgThemeEdit.canEdit(editor.svg) ? (_variant ?? schemeOf(context)) : null;
+
   /// Whether the stage was playing before the Colors tab froze it.
   var _resumeAfterColors = false;
   var _tab = _EditorTab.layers;
@@ -351,7 +360,15 @@ class _EditorScreenState extends State<EditorScreen> {
                         (d.localPosition.dy - map.originY) / map.scale,
                       )
                     : null;
-                final hex = hit == null ? null : SvgPaintEdit.sampleFill(editor.svg, hit.path);
+                final scheme = _editScheme(context, editor);
+                final picked = hit == null || scheme == null
+                    ? null
+                    : SvgThemeEdit.fillFor(editor.svg, hit.path, scheme);
+                final hex = hit == null
+                    ? null
+                    : scheme == null
+                    ? SvgPaintEdit.sampleFill(editor.svg, hit.path)
+                    : (picked != null && picked.startsWith('#') ? picked : null);
                 if (hex == null) {
                   ScaffoldMessenger.of(context)
                     ..hideCurrentSnackBar()
@@ -416,6 +433,7 @@ class _EditorScreenState extends State<EditorScreen> {
                           handleLabel: l10n.compareHandle,
                           before: SvgPreview(
                             svg: editor.initialSvg,
+                            scheme: _editScheme(context, editor),
                             autoplay: false,
                             showGrid: true,
                             background: _background,
@@ -424,6 +442,7 @@ class _EditorScreenState extends State<EditorScreen> {
                           ),
                           after: SvgPreview(
                             svg: editor.displaySvg,
+                            scheme: _editScheme(context, editor),
                             controller: _playback,
                             showGrid: true,
                             background: _background,
@@ -433,6 +452,7 @@ class _EditorScreenState extends State<EditorScreen> {
                         )
                       : SvgPreview(
                           svg: editor.displaySvg,
+                          scheme: _editScheme(context, editor),
                           controller: _playback,
                           showGrid: true,
                           background: _background,
@@ -547,9 +567,13 @@ class _EditorScreenState extends State<EditorScreen> {
     _EditorTab.transform => TransformPanel(editor: editor),
     _EditorTab.window => WindowPanel(editor: editor, playback: _playback),
     _EditorTab.align => AlignPanel(editor: editor, playback: _playback),
-    _EditorTab.colors => ColorsPanel(editor: editor),
+    _EditorTab.colors => ColorsPanel(editor: editor, scheme: _editScheme(context, editor)),
     _EditorTab.animation => AnimationPanel(editor: editor, playback: _playback),
-    _EditorTab.layers => LayersPanel(editor: editor),
+    _EditorTab.layers => LayersPanel(
+      editor: editor,
+      themeScheme: _editScheme(context, editor),
+      onToggleTheme: () => setState(() => _variant = _editScheme(context, editor)?.opposite),
+    ),
     _EditorTab.insert => InsertPanel(editor: editor),
     _EditorTab.text => InsertPanel(key: const Key('text-panel'), editor: editor, text: true),
     _EditorTab.code => CodePanel(editor: editor),

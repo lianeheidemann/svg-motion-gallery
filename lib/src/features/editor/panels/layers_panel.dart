@@ -11,9 +11,16 @@ import '../editor_controller.dart';
 /// the header fold or open every folder. Layers with the
 /// same name next to each other are numbered.
 class LayersPanel extends StatefulWidget {
-  const LayersPanel({super.key, required this.editor});
+  const LayersPanel({super.key, required this.editor, this.themeScheme, this.onToggleTheme});
 
   final EditorController editor;
+
+  /// The light/dark version being viewed and edited; null when the file has
+  /// no such versions (the toggle is then not shown).
+  final SvgColorScheme? themeScheme;
+
+  /// Switches between the light and the dark version.
+  final VoidCallback? onToggleTheme;
 
   static IconData iconFor(SvgLayer layer) => switch (layer.tag) {
     _ when layer.isEditorGroup => Icons.tune_rounded,
@@ -130,18 +137,37 @@ class _LayersPanelState extends State<LayersPanel> {
           title: l10n.layersTitle(layers.length),
           // Small box in the corner: ticked, a tap on a layer ticks it instead
           // of selecting only it.
-          trailing: Tooltip(
-            message: l10n.multiSelect,
-            child: Semantics(
-              label: l10n.multiSelect,
-              child: Checkbox(
-                key: const Key('multi-select'),
-                value: multi,
-                visualDensity: VisualDensity.compact,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                onChanged: (value) => editor.setMultiMode(value ?? false),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.themeScheme != null)
+                IconButton(
+                  key: const Key('theme-variant'),
+                  tooltip: widget.themeScheme == SvgColorScheme.light
+                      ? l10n.editingLight
+                      : l10n.editingDark,
+                  visualDensity: VisualDensity.compact,
+                  onPressed: widget.onToggleTheme,
+                  icon: Icon(
+                    widget.themeScheme == SvgColorScheme.light
+                        ? Icons.light_mode_rounded
+                        : Icons.dark_mode_rounded,
+                  ),
+                ),
+              Tooltip(
+                message: l10n.multiSelect,
+                child: Semantics(
+                  label: l10n.multiSelect,
+                  child: Checkbox(
+                    key: const Key('multi-select'),
+                    value: multi,
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    onChanged: (value) => editor.setMultiMode(value ?? false),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
           // Two taps on the header fold every folder, or open them all again.
           onTitleDoubleTap: () => _toggleFoldAll(layers),
