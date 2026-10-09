@@ -115,7 +115,7 @@ class SettingsStore {
         language: AppLanguage.values.asNameMap()[pick('language', '')] ?? defaults.language,
         accent: AccentColor.values.asNameMap()[pick('accent', '')] ?? defaults.accent,
         autoplay: pick('autoplay', defaults.autoplay),
-        loop: pick('loop', defaults.loop),
+        loop: pick('autoplay', defaults.autoplay) && pick('loop', defaults.loop),
         highQualityPreviews: pick('highQualityPreviews', defaults.highQualityPreviews),
         autoBackup: pick('autoBackup', defaults.autoBackup),
         autoFormatCode: pick('autoFormatCode', defaults.autoFormatCode),

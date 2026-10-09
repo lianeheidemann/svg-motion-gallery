@@ -29,8 +29,8 @@ void main() {
       expect(still, isNot(contains('<style')));
     });
 
-    test('loops only when asked', () {
-      const animated = '<svg><animate dur="1s" repeatCount="1"/></svg>';
+    test('loops when asked, otherwise plays once', () {
+      const animated = '<svg><animate dur="1s" repeatCount="indefinite"/></svg>';
       expect(
         prepareSvgForDisplay(animated, scheme: SvgColorScheme.dark),
         contains('repeatCount="1"'),

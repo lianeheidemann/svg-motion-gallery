@@ -949,6 +949,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(services.settings.value.loop, isFalse);
 
+    // Repeating needs autoplay: switching it off turns repeat off and locks it.
+    await tester.tap(find.text('Repetir animação'));
+    await tester.pumpAndSettle();
+    expect(services.settings.value.loop, isTrue);
+    await tester.tap(find.text('Reprodução automática'));
+    await tester.pumpAndSettle();
+    expect(services.settings.value.loop, isFalse);
+    await tester.tap(find.text('Repetir animação'));
+    await tester.pumpAndSettle();
+    expect(services.settings.value.loop, isFalse, reason: 'disabled while autoplay is off');
+    await tester.tap(find.text('Reprodução automática'));
+    await tester.pumpAndSettle();
+
     await tester.tap(find.bySemanticsLabel('Rosa'));
     await tester.pumpAndSettle();
     expect(

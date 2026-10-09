@@ -38,7 +38,9 @@ class SettingsController extends ChangeNotifier {
   );
 
   void setAccent(AccentColor accent) => _update(_value.copyWith(accent: accent));
-  void setAutoplay(bool enabled) => _update(_value.copyWith(autoplay: enabled));
+  // Repeating makes no sense without autoplay, so it goes off with it.
+  void setAutoplay(bool enabled) =>
+      _update(_value.copyWith(autoplay: enabled, loop: enabled ? null : false));
   void setLoop(bool enabled) => _update(_value.copyWith(loop: enabled));
   void setHighQualityPreviews(bool enabled) =>
       _update(_value.copyWith(highQualityPreviews: enabled));

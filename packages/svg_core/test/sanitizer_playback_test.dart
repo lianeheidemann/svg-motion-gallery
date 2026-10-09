@@ -20,6 +20,18 @@ void main() {
     });
   });
 
+  group('forcePlayOnce', () {
+    test('plays SMIL and CSS animations a single time', () {
+      final once = forcePlayOnce('<svg><animate dur="1s" repeatCount="indefinite"/></svg>');
+      expect(once, contains('repeatCount="1"'));
+      expect(once, contains('fill="freeze"'));
+      final css = forcePlayOnce('<svg><style>.a{animation:x 1s infinite}</style></svg>');
+      expect(css, contains('animation-iteration-count:1 !important'));
+      const still = '<svg><rect/></svg>';
+      expect(forcePlayOnce(still), same(still));
+    });
+  });
+
   group('forceLoop', () {
     test('makes SMIL animations repeat forever', () {
       final looped = forceLoop('<svg><animate dur="1s" repeatCount="2" repeatDur="3s"/></svg>');

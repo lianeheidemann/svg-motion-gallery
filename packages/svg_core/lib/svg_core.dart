@@ -19,7 +19,7 @@ export 'src/highlighter.dart' show SvgToken, SvgTokenType, maxHighlightLength, t
 export 'src/history.dart' show EditHistory;
 export 'src/lint.dart' show lintSvgValues, svgIssueRange;
 export 'src/metadata.dart' show SvgAnimationKind, SvgMetadata, SvgViewBox;
-export 'src/playback.dart' show forceLoop;
+export 'src/playback.dart' show forceLoop, forcePlayOnce;
 export 'src/sanitizer.dart' show sanitizeSvg;
 export 'src/theme/color_scheme.dart' show SvgColorScheme;
 export 'src/theme/theme_resolver.dart' show SvgThemeResolver;
