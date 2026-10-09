@@ -53,7 +53,7 @@ class _AdjustTabsState<T> extends State<AdjustTabs<T>> {
         controller: _scroll,
         scrollDirection: Axis.horizontal,
         // A handful of items: all stay built, so each can be found and scrolled to.
-        cacheExtent: double.infinity,
+        scrollCacheExtent: const ScrollCacheExtent.viewport(3),
         itemCount: tabs.length + (widget.trailing == null ? 0 : 1),
         separatorBuilder: (context, index) => const SizedBox(width: 6),
         itemBuilder: (context, index) {
