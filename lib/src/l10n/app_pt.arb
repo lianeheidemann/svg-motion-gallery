@@ -283,7 +283,6 @@
     }
   },
   "fill": "Preenchimento",
-  "stroke": "Traço",
   "currentPaint": "Atual: {value}",
   "@currentPaint": {
     "placeholders": {
@@ -295,9 +294,7 @@
   "paintInherited": "herdado",
   "paintNone": "nenhum",
   "paintGradient": "gradiente",
-  "strokeWidth": "Espessura",
   "removeFill": "Remover preenchimento",
-  "removeStroke": "Remover traço",
   "hue": "Matiz",
   "saturation": "Saturação",
   "lightness": "Luminosidade",
