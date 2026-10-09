@@ -1,6 +1,7 @@
 import 'package:xml/xml.dart';
 
 import '../css.dart';
+import '../css_rules.dart';
 import '../time.dart';
 import '../xml_support.dart';
 import 'element_path.dart';
@@ -73,7 +74,9 @@ class SvgAnimationEdit {
       elements = [root, ...root.descendantElements];
     }
 
-    final sheetRules = scoped ? _sheetAnimations(root) : const <_SheetRule>[];
+    final sheetRules = scoped
+        ? simpleRules(root, (property) => property.startsWith('animation'))
+        : const <CssRule>[];
     for (final element in elements) {
       if (smilTags.contains(element.localName)) {
         for (final name in _timingAttributes) {
@@ -118,26 +121,6 @@ class SvgAnimationEdit {
       }
     }
     return document.toXmlString();
-  }
-
-  /// The `animation*` declarations of the simple rules (`.class`, `#id`, `tag`,
-  /// `tag.class`) of every `<style>`, in order.
-  static List<_SheetRule> _sheetAnimations(XmlElement root) {
-    final rules = <_SheetRule>[];
-    for (final style in root.descendantElements.where((e) => e.localName == 'style')) {
-      for (final match in RegExp(r'([^{}@;]+)\{([^{}]*)\}').allMatches(styleText(style))) {
-        final declarations = <String, String>{};
-        mapDeclarations(match.group(2)!, (property, value) {
-          if (property.startsWith('animation')) declarations[property] = value.trim();
-          return value;
-        });
-        if (declarations.isEmpty) continue;
-        for (final selector in match.group(1)!.split(',')) {
-          rules.add(_SheetRule(selector.trim(), declarations));
-        }
-      }
-    }
-    return rules;
   }
 
   /// Removes all SMIL elements, CSS `animation*` declarations and
@@ -258,29 +241,5 @@ class SvgAnimationEdit {
         children: [XmlText(_presetKeyframes)],
       ),
     );
-  }
-}
-
-/// A stylesheet rule's selector with its `animation*` declarations.
-class _SheetRule {
-  _SheetRule(this.selector, this.declarations);
-
-  final String selector;
-  final Map<String, String> declarations;
-
-  static final _simple = RegExp(r'^([A-Za-z][\w-]*)?(?:\.([\w-]+))?(?:#([\w-]+))?$');
-
-  /// Whether [element] is matched by this (simple) selector.
-  bool matches(XmlElement element) {
-    final match = _simple.firstMatch(selector);
-    if (match == null || selector.isEmpty) return false;
-    final tag = match.group(1);
-    final cls = match.group(2);
-    final id = match.group(3);
-    if (tag != null && tag != element.localName) return false;
-    if (cls != null && !(element.getAttribute('class') ?? '').split(RegExp(r'\s+')).contains(cls)) {
-      return false;
-    }
-    return id == null || element.getAttribute('id') == id;
   }
 }

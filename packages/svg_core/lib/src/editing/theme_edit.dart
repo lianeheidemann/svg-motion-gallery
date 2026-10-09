@@ -2,6 +2,7 @@ import 'package:xml/xml.dart';
 
 import '../colors.dart';
 import '../css.dart';
+import '../css_rules.dart';
 import '../theme/color_scheme.dart';
 import '../theme/theme_resolver.dart';
 import '../theme/theme_support.dart';
@@ -34,9 +35,9 @@ class SvgThemeEdit {
     final document = tryParseSvg(SvgThemeResolver.resolve(svg, scheme));
     var element = _target(document, path);
     if (document == null || element == null) return null;
-    final rules = _rules(document.rootElement, 'fill');
+    final rules = simpleRules(document.rootElement, (p) => p == 'fill');
     while (element != null) {
-      final value = _valueOf(element, rules, 'fill') ?? element.getAttribute('fill');
+      final value = cssValueOf(element, rules, 'fill');
       if (value != null) return SvgColorValue.normalize(value) ?? value.trim();
       element = element.parentElement;
     }
@@ -86,9 +87,9 @@ class SvgThemeEdit {
     if (document == null) return true;
     var element = path.isRoot ? null : path.resolve(document.rootElement);
     if (element == null) return true;
-    final rules = _rules(document.rootElement, 'display');
+    final rules = simpleRules(document.rootElement, (p) => p == 'display');
     while (element != null) {
-      final value = _valueOf(element, rules, 'display');
+      final value = cssValueOf(element, rules, 'display');
       if (value != null && value.trim() == 'none') return false;
       element = element.parentElement;
     }
@@ -160,60 +161,5 @@ class SvgThemeEdit {
       if (n != null && n > highest) highest = n;
     }
     return '${highest + 1}';
-  }
-
-  static final _ruleText = RegExp(r'([^{}@;]+)\{([^{}]*)\}');
-  static final _simple = RegExp(
-    r'^([A-Za-z][\w-]*)?(?:\.([\w-]+))?(?:#([\w-]+))?(?:\[data-sm-t="(\d+)"\])?$',
-  );
-
-  /// The `fill` declarations of the simple rules of every `<style>`, in order.
-  static List<(String, String)> _rules(XmlElement root, String property) {
-    final out = <(String, String)>[];
-    for (final style in root.descendantElements.where((e) => e.localName == 'style')) {
-      for (final match in _ruleText.allMatches(styleText(style))) {
-        String? found;
-        mapDeclarations(match.group(2)!, (name, value) {
-          if (name == property) found = value.replaceAll('!important', '').trim();
-          return value;
-        });
-        if (found == null) continue;
-        for (final selector in match.group(1)!.split(',')) {
-          out.add((selector.trim(), found!));
-        }
-      }
-    }
-    return out;
-  }
-
-  static bool _matches(String selector, XmlElement element) {
-    final match = _simple.firstMatch(selector);
-    if (match == null || selector.isEmpty) return false;
-    final tag = match.group(1);
-    final cls = match.group(2);
-    final id = match.group(3);
-    final key = match.group(4);
-    if (tag != null && tag != element.localName) return false;
-    if (cls != null && !(element.getAttribute('class') ?? '').split(RegExp(r'\s+')).contains(cls)) {
-      return false;
-    }
-    if (id != null && element.getAttribute('id') != id) return false;
-    return key == null || element.getAttribute(_attribute) == key;
-  }
-
-  /// The value of [property] for [element]: its inline style, else the last
-  /// matching stylesheet rule; null when neither sets it.
-  static String? _valueOf(XmlElement element, List<(String, String)> rules, String property) {
-    String? inline;
-    mapDeclarations(element.getAttribute('style') ?? '', (name, value) {
-      if (name == property) inline = value.trim();
-      return value;
-    });
-    if (inline != null) return inline;
-    String? fromRule;
-    for (final (selector, value) in rules) {
-      if (_matches(selector, element)) fromRule = value;
-    }
-    return fromRule ?? element.getAttribute(property);
   }
 }
