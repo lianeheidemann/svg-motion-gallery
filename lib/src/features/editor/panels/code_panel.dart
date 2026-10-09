@@ -395,12 +395,25 @@ class _CodePanelState extends State<CodePanel> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Side padding 16 + 16, text padding 10 + 10, border 2; monospace
-        // glyphs are about 0.6 em wide.
-        _columns = math.max(((constraints.maxWidth - 54) / (_fontSize * 0.62)).floor(), 0);
+        // Side padding 16 + 16, text padding 10 + 10, border 2, and a column
+        // of slack so the field never wraps a line again by itself (which
+        // would put the rest at the left margin, losing the indent).
+        final glyph = _glyphWidth(style);
+        _columns = glyph > 0 ? math.max(((constraints.maxWidth - 54) / glyph).floor() - 1, 0) : 0;
         return _body(context, l10n, colors, style, lines, field, found);
       },
     );
+  }
+
+  /// The real width of one monospace character in [style].
+  double _glyphWidth(TextStyle style) {
+    final painter = TextPainter(
+      text: TextSpan(text: 'M' * 20, style: style),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final width = painter.width / 20;
+    painter.dispose();
+    return width;
   }
 
   /// Apply: waiting (a dot), applied (a check), or, with an error, a button
