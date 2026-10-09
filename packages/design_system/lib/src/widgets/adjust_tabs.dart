@@ -52,6 +52,8 @@ class _AdjustTabsState<T> extends State<AdjustTabs<T>> {
       child: ListView.separated(
         controller: _scroll,
         scrollDirection: Axis.horizontal,
+        // A handful of items: all stay built, so each can be found and scrolled to.
+        cacheExtent: double.infinity,
         itemCount: tabs.length + (widget.trailing == null ? 0 : 1),
         separatorBuilder: (context, index) => const SizedBox(width: 6),
         itemBuilder: (context, index) {

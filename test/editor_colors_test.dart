@@ -275,6 +275,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(reset().onPressed, isNotNull);
 
+    // The row swipes; the reset button is its last item.
+    await tester.ensureVisible(find.byKey(const Key('adjust-reset')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('adjust-reset')));
     await tester.pumpAndSettle();
     expect(reset().onPressed, isNull, reason: 'done');
