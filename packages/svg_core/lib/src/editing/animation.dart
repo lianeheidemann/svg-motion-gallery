@@ -19,12 +19,20 @@ enum SvgAnimationPreset {
   final String easing;
 }
 
+/// The presets' keyframes. How strong a motion is comes from `--sm-i` on the
+/// layer's wrapper (1 = the original strength; 1 when it is missing, so old
+/// files keep working), so every layer can have its own without more keyframes.
+/// A spin is a full turn whatever the strength.
 const _presetKeyframes =
     '@keyframes sm-spin{to{transform:rotate(360deg)}}'
-    '@keyframes sm-pulse{50%{transform:scale(1.15)}}'
-    '@keyframes sm-float{50%{transform:translateY(-8%)}}'
-    '@keyframes sm-sway{25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}'
-    '@keyframes sm-fade{50%{opacity:.25}}';
+    '@keyframes sm-pulse{50%{transform:scale(calc(1 + .15 * var(--sm-i,1)))}}'
+    '@keyframes sm-float{50%{transform:translateY(calc(-8% * var(--sm-i,1)))}}'
+    '@keyframes sm-sway{25%{transform:rotate(calc(-8deg * var(--sm-i,1)))}'
+    '75%{transform:rotate(calc(8deg * var(--sm-i,1)))}}'
+    '@keyframes sm-fade{50%{opacity:calc(1 - .75 * var(--sm-i,1))}}';
+
+/// Name of the custom property holding a motion's strength.
+const _intensityProperty = '--sm-i';
 
 const _timingAttributes = {'dur', 'begin', 'end', 'repeatDur'};
 
@@ -95,11 +103,15 @@ class SvgAnimationEdit {
   /// Adds [preset] to the element at [path] through an animation wrapper
   /// group (so it composes with the element's own transform). Applying a
   /// preset to an existing animation wrapper replaces its motion.
+  ///
+  /// [intensity] is how strong the motion is (1 = the original: a pulse grows
+  /// 15 %, a sway turns 8 degrees, and so on). A spin ignores it.
   static SvgEditResult addPreset(
     String svg,
     ElementPath path,
     SvgAnimationPreset preset, {
     double seconds = 2,
+    double intensity = 1,
   }) {
     final document = tryParseSvg(svg);
     if (document == null || path.isRoot) return SvgEditResult(svg, selection: path);
@@ -113,6 +125,7 @@ class SvgAnimationEdit {
       ..setAttribute(
         'style',
         'transform-box:fill-box;transform-origin:center;'
+            '$_intensityProperty:${formatNumber(intensity.clamp(0, 5))};'
             'animation:${preset.keyframesName} ${formatClockValue(seconds)} ${preset.easing} infinite',
       );
     _ensureKeyframes(root);
@@ -144,6 +157,15 @@ class SvgAnimationEdit {
     final element = document == null || path.isRoot ? null : path.resolve(document.rootElement);
     final name = element?.getAttribute(animationAttribute);
     return SvgAnimationPreset.values.where((preset) => preset.name == name).firstOrNull;
+  }
+
+  /// How strong the motion on the wrapper at [path] is (1 = the original).
+  static double intensityAt(String svg, ElementPath path) {
+    final document = tryParseSvg(svg);
+    final element = document == null || path.isRoot ? null : path.resolve(document.rootElement);
+    final style = element?.getAttribute('style') ?? '';
+    final match = RegExp('$_intensityProperty\\s*:\\s*([0-9.]+)').firstMatch(style);
+    return double.tryParse(match?.group(1) ?? '') ?? 1;
   }
 
   static XmlElement _wrap(XmlElement element) {

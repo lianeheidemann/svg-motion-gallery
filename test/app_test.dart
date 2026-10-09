@@ -803,6 +803,51 @@ void main() {
     expect(none().selected, isTrue, reason: '"None" took the motion off');
   });
 
+  testWidgets('animation: the intensity bar changes how strong the chosen motion is', (
+    tester,
+  ) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('sun-moon.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Retângulo').first);
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Animação');
+
+    final bar = find.byKey(const Key('preset-intensity'));
+    Slider slider() =>
+        tester.widget<Slider>(find.descendant(of: bar, matching: find.byType(Slider)));
+    await tester.ensureVisible(bar);
+    await tester.pumpAndSettle();
+    expect(find.text('Intensidade'), findsOneWidget);
+    expect(slider().onChanged, isNull, reason: 'no motion chosen yet');
+
+    // A spin is a full turn whatever the strength: nothing to adjust.
+    await tester.tap(find.text('Girar'));
+    await tester.pumpAndSettle();
+    expect(slider().onChanged, isNull);
+
+    await tester.ensureVisible(find.text('Pulsar'));
+    await tester.tap(find.text('Pulsar'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(bar);
+    await tester.pumpAndSettle();
+    expect(slider().onChanged, isNotNull);
+    expect(slider().value, 100, reason: 'starts at the original strength');
+
+    await tester.drag(find.descendant(of: bar, matching: find.byType(Slider)), const Offset(80, 0));
+    await tester.pumpAndSettle();
+    expect(slider().value, greaterThan(100));
+
+    await _tapTab(tester, 'Código');
+    final code = tester.widget<TextField>(find.byKey(const Key('code-field'))).controller!.text;
+    expect(code, contains('--sm-i:'));
+    expect(code, isNot(contains('--sm-i:1;')), reason: 'the new strength was written');
+  });
+
   testWidgets('editor: the preview background can be switched', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);

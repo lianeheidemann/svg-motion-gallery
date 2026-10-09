@@ -269,6 +269,55 @@ void main() {
       expect(SvgLayers.list(removed.svg).first.id, 'bg');
     });
 
+    test('intensity is kept per layer and read back, and the keyframes use it', () {
+      final soft = SvgAnimationEdit.addPreset(
+        base,
+        const ElementPath([1]),
+        SvgAnimationPreset.sway,
+        intensity: 0.5,
+      );
+      expect(soft.svg, contains('--sm-i:0.5'));
+      expect(SvgAnimationEdit.intensityAt(soft.svg, soft.selection!), 0.5);
+      // Every preset reads the strength, with 1 when it is missing.
+      expect(soft.svg, contains('var(--sm-i,1)'));
+      expect(RegExp(r'var\(--sm-i,1\)').allMatches(soft.svg).length, greaterThanOrEqualTo(4));
+
+      // Another layer keeps its own; changing one does not touch the other.
+      // (The keyframes style went in first, so the group is the 4th child.)
+      final second = SvgAnimationEdit.addPreset(
+        soft.svg,
+        const ElementPath([3]),
+        SvgAnimationPreset.pulse,
+        intensity: 2,
+      );
+      expect(SvgAnimationEdit.intensityAt(second.svg, second.selection!), 2);
+      expect(SvgAnimationEdit.intensityAt(second.svg, soft.selection!), 0.5);
+
+      // Without a preset, or with an old wrapper that has no value: 1.
+      expect(SvgAnimationEdit.intensityAt(base, const ElementPath([1])), 1);
+      final plain = SvgAnimationEdit.addPreset(
+        base,
+        const ElementPath([1]),
+        SvgAnimationPreset.fade,
+      );
+      expect(SvgAnimationEdit.intensityAt(plain.svg, plain.selection!), 1);
+      final old = plain.svg.replaceAll('--sm-i:1;', '');
+      expect(SvgAnimationEdit.intensityAt(old, plain.selection!), 1);
+    });
+
+    test('changing the speed does not scale the intensity', () {
+      final pulsed = SvgAnimationEdit.addPreset(
+        base,
+        const ElementPath([1]),
+        SvgAnimationPreset.pulse,
+        seconds: 2,
+        intensity: 1.5,
+      );
+      final faster = SvgAnimationEdit.changeSpeed(pulsed.svg, 2);
+      expect(faster, contains('animation:sm-pulse 1s'));
+      expect(SvgAnimationEdit.intensityAt(faster, pulsed.selection!), 1.5);
+    });
+
     test('keyframes come back after removing all animation', () {
       final spun = SvgAnimationEdit.addPreset(
         base,

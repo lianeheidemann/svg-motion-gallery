@@ -36,6 +36,11 @@ class _AnimationPanelState extends State<AnimationPanel> {
 
   var _seconds = 2.0;
 
+  /// Strength of the motion, 1 = the original (shown as 100 %). Kept for the
+  /// next motion picked; a layer that already has one shows its own.
+  var _intensity = 1.0;
+  double? _liveIntensity;
+
   /// The cycle of [_base] (at speed 1), kept so the text under the title can
   /// follow the speed bar without reading the document on every move.
   Duration? _baseCycle;
@@ -44,17 +49,55 @@ class _AnimationPanelState extends State<AnimationPanel> {
   EditorController get _editor => widget.editor;
 
   /// Puts [preset] on the layer at [path] (replacing its motion), lasting
-  /// [seconds] (the bar's value when not given).
-  void _setPreset(ElementPath path, SvgAnimationPreset preset, [double? seconds]) {
-    setState(() => _seconds = seconds ?? _seconds);
+  /// [seconds] with strength [intensity] (the bars' values when not given).
+  /// With [preview] it only shows the result, without recording it.
+  void _setPreset(
+    ElementPath path,
+    SvgAnimationPreset preset, {
+    double? seconds,
+    double? intensity,
+    bool preview = false,
+  }) {
+    setState(() {
+      _seconds = seconds ?? _seconds;
+      _intensity = intensity ?? _intensity;
+    });
+    String edit(String svg, ElementPath target) => SvgAnimationEdit.addPreset(
+      svg,
+      target,
+      preset,
+      seconds: _seconds,
+      intensity: _intensity,
+    ).svg;
     if (_editor.multiMode) {
-      _editor.applyToTargets(
-        (svg, target) => SvgAnimationEdit.addPreset(svg, target, preset, seconds: _seconds).svg,
-      );
+      if (preview) {
+        var out = _editor.svg;
+        for (final target in _editor.targets.reversed) {
+          out = edit(out, target);
+        }
+        _editor.preview(out);
+      } else {
+        _editor.applyToTargets(edit);
+      }
+    } else if (preview) {
+      _editor.preview(edit(_editor.svg, path));
     } else {
-      _editor.apply(SvgAnimationEdit.addPreset(_editor.svg, path, preset, seconds: _seconds));
+      _editor.apply(
+        SvgAnimationEdit.addPreset(
+          _editor.svg,
+          path,
+          preset,
+          seconds: _seconds,
+          intensity: _intensity,
+        ),
+      );
     }
   }
+
+  /// The strength to show: the layer's own when it has a motion, else the one
+  /// the next motion will get.
+  double _shownIntensity(ElementPath? path, SvgAnimationPreset? chosen) =>
+      path == null || chosen == null ? _intensity : SvgAnimationEdit.intensityAt(_editor.svg, path);
 
   void _syncBase() {
     if (_editor.svg == (_applied ?? _base)) return;
@@ -177,7 +220,38 @@ class _AnimationPanelState extends State<AnimationPanel> {
                 unit: 's',
                 // Nothing to time while "None" is picked.
                 onChanged: chosen == null ? null : (v) => setState(() => _seconds = v),
-                onChangeEnd: chosen == null ? null : (v) => _setPreset(layer.path, chosen, v),
+                onChangeEnd: chosen == null
+                    ? null
+                    : (v) => _setPreset(layer.path, chosen, seconds: v),
+              ),
+              // How strong the chosen motion is. A spin is always a full turn.
+              SliderField(
+                key: const Key('preset-intensity'),
+                label: l10n.intensity,
+                value: ((_liveIntensity ?? _shownIntensity(presetPath, chosen)) * 100).clamp(
+                  10,
+                  200,
+                ),
+                min: 10,
+                max: 200,
+                unit: '%',
+                onChanged: chosen == null || chosen == SvgAnimationPreset.spin
+                    ? null
+                    : (v) {
+                        setState(() => _liveIntensity = v.roundToDouble() / 100);
+                        _setPreset(
+                          layer.path,
+                          chosen,
+                          intensity: v.roundToDouble() / 100,
+                          preview: true,
+                        );
+                      },
+                onChangeEnd: chosen == null || chosen == SvgAnimationPreset.spin
+                    ? null
+                    : (v) {
+                        _liveIntensity = null;
+                        _setPreset(layer.path, chosen, intensity: v.roundToDouble() / 100);
+                      },
               ),
             ],
           ],

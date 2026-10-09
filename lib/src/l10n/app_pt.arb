@@ -322,6 +322,7 @@
   "presetFloat": "Flutuar",
   "presetSway": "Balançar",
   "presetFade": "Esmaecer",
+  "intensity": "Intensidade",
   "duration": "Duração",
   "layersTitle": "{count, plural, =0{Camadas} =1{1 camada} other{{count} camadas}}",
   "@layersTitle": {
