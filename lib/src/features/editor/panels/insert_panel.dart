@@ -6,6 +6,7 @@ import 'package:svg_core/svg_core.dart';
 
 import '../../../l10n/l10n.dart';
 import '../editor_controller.dart';
+import 'insert/insert_widgets.dart';
 
 /// Adds shapes and text centered on the canvas.
 class InsertPanel extends StatefulWidget {
@@ -43,27 +44,17 @@ class _InsertPanelState extends State<InsertPanel> {
   var _filled = false;
   double? _liveScale;
   double? _liveStroke;
-  var _picker = _ColorPicker.none;
-  var _fillPicker = _ColorPicker.none;
+  var _picker = InsertColorPicker.none;
+  var _fillPicker = InsertColorPicker.none;
   TextEditingController? _text;
   final _hex = TextEditingController();
   final _fillHex = TextEditingController();
-
-  static const _quickColors = [
-    Color(0xFF1E7BFF),
-    Color(0xFFA04BFF),
-    Color(0xFFFF4D8D),
-    Color(0xFF16B9D8),
-    Color(0xFFFF8A1F),
-    Color(0xFF22C55E),
-    Color(0xFFFFFFFF),
-  ];
 
   static Widget _icon(SvgShapeKind kind) => switch (kind) {
     SvgShapeKind.rectangle => const Icon(Icons.crop_square_rounded, size: 18),
     SvgShapeKind.circle => const Icon(Icons.circle_outlined, size: 18),
     // No stock icon is an oval: a circle would look like the one above.
-    SvgShapeKind.ellipse => const _EllipseIcon(),
+    SvgShapeKind.ellipse => const EllipseIcon(),
     SvgShapeKind.line => const Icon(Icons.horizontal_rule_rounded, size: 18),
     SvgShapeKind.star => const Icon(Icons.star_outline_rounded, size: 18),
     SvgShapeKind.text => const Icon(Icons.text_fields_rounded, size: 18),
@@ -267,108 +258,11 @@ class _InsertPanelState extends State<InsertPanel> {
         ),
       );
 
-  void _togglePicker(_ColorPicker picker) =>
-      setState(() => _picker = _picker == picker ? _ColorPicker.none : picker);
+  void _togglePicker(InsertColorPicker picker) =>
+      setState(() => _picker = _picker == picker ? InsertColorPicker.none : picker);
 
-  void _toggleFillPicker(_ColorPicker picker) =>
-      setState(() => _fillPicker = _fillPicker == picker ? _ColorPicker.none : picker);
-
-  /// A row of swatches plus the eyedropper and free picker, for one color.
-  List<Widget> _colorSection({
-    required String label,
-    required String keys,
-    required Color color,
-    required _ColorPicker picker,
-    required TextEditingController hex,
-    required void Function(_ColorPicker) togglePicker,
-    required void Function(Color value, {bool live}) pick,
-    required VoidCallback closePicker,
-    required List<Color> palette,
-  }) {
-    final l10n = context.l10n;
-    return [
-      Text(label),
-      ColorPaletteGrid(
-        key: Key('$keys-colors'),
-        colors: _quickColors,
-        size: 36,
-        selected: color,
-        onSelected: (value) {
-          closePicker();
-          pick(value);
-        },
-        trailing: [
-          _ToolDot(
-            key: Key('$keys-eyedropper'),
-            icon: Icons.colorize_rounded,
-            label: l10n.eyedropper,
-            selected: picker == _ColorPicker.drawing,
-            onTap: () => togglePicker(_ColorPicker.drawing),
-          ),
-          ColorDot(
-            key: Key('$keys-custom-color'),
-            color: color,
-            size: 36,
-            selected: picker == _ColorPicker.custom,
-            semanticLabel: l10n.customColor,
-            gradient: const SweepGradient(
-              colors: [
-                Color(0xFFFF0000),
-                Color(0xFFFFFF00),
-                Color(0xFF00FF00),
-                Color(0xFF00FFFF),
-                Color(0xFF0000FF),
-                Color(0xFFFF00FF),
-                Color(0xFFFF0000),
-              ],
-            ),
-            onTap: () {
-              hex.text = colorToHex(color);
-              togglePicker(_ColorPicker.custom);
-            },
-          ),
-        ],
-      ),
-      if (picker == _ColorPicker.drawing)
-        palette.isEmpty
-            ? Text(l10n.paletteEmpty)
-            : ColorPaletteGrid(
-                key: Key('$keys-drawing-colors'),
-                colors: palette,
-                size: 32,
-                selected: color,
-                onSelected: pick,
-              ),
-      if (picker == _ColorPicker.custom) ...[
-        ColorAreaPicker(
-          key: Key('$keys-color-area'),
-          color: color,
-          onChanged: (value) {
-            hex.text = colorToHex(value);
-            pick(value, live: true);
-          },
-          onChangeEnd: pick,
-        ),
-        TextField(
-          key: Key('$keys-hex'),
-          controller: hex,
-          decoration: InputDecoration(labelText: l10n.hex),
-          onChanged: (value) {
-            final parsed = colorFromHex(value);
-            if (parsed == null) return;
-            // A whole color (#RRGGBB) is one undoable step; a partial one
-            // only previews.
-            final whole = value.replaceAll('#', '').length >= 6;
-            pick(parsed, live: !whole);
-          },
-          onSubmitted: (value) {
-            final parsed = colorFromHex(value);
-            if (parsed == null) hex.text = colorToHex(color);
-          },
-        ),
-      ],
-    ];
-  }
+  void _toggleFillPicker(InsertColorPicker picker) =>
+      setState(() => _fillPicker = _fillPicker == picker ? InsertColorPicker.none : picker);
 
   @override
   Widget build(BuildContext context) {
@@ -416,7 +310,8 @@ class _InsertPanelState extends State<InsertPanel> {
                       ),
                 ],
               ),
-            ..._colorSection(
+            ...insertColorSection(
+              context,
               label: widget.text ? l10n.color : l10n.outline,
               keys: 'insert',
               color: color,
@@ -424,11 +319,12 @@ class _InsertPanelState extends State<InsertPanel> {
               hex: _hex,
               togglePicker: _togglePicker,
               pick: (value, {live = false}) => _pick(value, selectedShape, live: live),
-              closePicker: () => setState(() => _picker = _ColorPicker.none),
+              closePicker: () => setState(() => _picker = InsertColorPicker.none),
               palette: palette,
             ),
             if (showFill)
-              ..._colorSection(
+              ...insertColorSection(
+                context,
                 label: l10n.fill,
                 keys: 'fill',
                 color: fill,
@@ -436,7 +332,7 @@ class _InsertPanelState extends State<InsertPanel> {
                 hex: _fillHex,
                 togglePicker: _toggleFillPicker,
                 pick: (value, {live = false}) => _pickFill(value, selectedShape, live: live),
-                closePicker: () => setState(() => _fillPicker = _ColorPicker.none),
+                closePicker: () => setState(() => _fillPicker = InsertColorPicker.none),
                 palette: palette,
               ),
             if (selectedShape == null) ...[
@@ -594,79 +490,4 @@ class _InsertPanelState extends State<InsertPanel> {
       ],
     );
   }
-}
-
-enum _ColorPicker { none, drawing, custom }
-
-/// Round button that sits among the color swatches but opens a picker.
-class _ToolDot extends StatelessWidget {
-  const _ToolDot({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.selected = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: label,
-      child: InkResponse(
-        onTap: onTap,
-        radius: 24,
-        child: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: selected ? scheme.onSurface : scheme.outline,
-              width: selected ? 3 : 1,
-            ),
-          ),
-          child: Icon(icon, size: 18, color: scheme.onSurface),
-        ),
-      ),
-    );
-  }
-}
-
-/// An oval outline, so Ellipse does not look like Circle.
-class _EllipseIcon extends StatelessWidget {
-  const _EllipseIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    final color = IconTheme.of(context).color ?? Theme.of(context).colorScheme.onSurface;
-    return CustomPaint(size: const Size(20, 18), painter: _EllipsePainter(color));
-  }
-}
-
-class _EllipsePainter extends CustomPainter {
-  const _EllipsePainter(this.color);
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawOval(
-      Rect.fromCenter(center: size.center(Offset.zero), width: size.width - 2, height: 11),
-      Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_EllipsePainter old) => old.color != color;
 }
