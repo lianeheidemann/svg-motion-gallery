@@ -123,6 +123,17 @@ class EditorController extends ChangeNotifier {
     return paths..sort(_compare);
   }
 
+  /// What an edit covers: the [targets], or every drawn layer (not the
+  /// groups around them) when nothing is selected ("Todas").
+  List<ElementPath> get editTargets {
+    final chosen = targets;
+    if (chosen.isNotEmpty) return chosen;
+    return [
+      for (final layer in layers)
+        if (layer.tag != 'g') layer.path,
+    ];
+  }
+
   static int _compare(ElementPath a, ElementPath b) {
     for (var i = 0; i < a.indices.length && i < b.indices.length; i++) {
       if (a.indices[i] != b.indices[i]) return a.indices[i].compareTo(b.indices[i]);
@@ -162,9 +173,12 @@ class EditorController extends ChangeNotifier {
   /// an edit that wraps a layer never moves the path of one still to come.
   /// Only for edits that leave other layers at the same path (colors,
   /// transform, animation, visibility...).
-  void applyToTargets(String Function(String svg, ElementPath path) edit) {
+  void applyToTargets(
+    String Function(String svg, ElementPath path) edit, {
+    List<ElementPath>? paths,
+  }) {
     var next = svg;
-    for (final path in targets.reversed) {
+    for (final path in (paths ?? targets).reversed) {
       next = edit(next, path);
     }
     if (next != svg) commit(next);

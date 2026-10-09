@@ -33,7 +33,7 @@ class _ColorsPanelState extends State<ColorsPanel> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final hasSelection = _editor.targets.isNotEmpty;
+    final hasSelection = _editor.editTargets.isNotEmpty;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
@@ -107,7 +107,7 @@ class _ColorsPanelState extends State<ColorsPanel> {
 
   Widget _layerColors(AppLocalizations l10n) {
     // Every ticked layer takes the change; the card shows the first one's paint.
-    final targets = _editor.targets;
+    final targets = _editor.editTargets;
     final path = targets.first;
     final paint = SvgPaintEdit.read(_editor.svg, path);
     final raw = paint.fill;

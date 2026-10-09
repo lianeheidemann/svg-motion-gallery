@@ -69,15 +69,16 @@ class _AnimationPanelState extends State<AnimationPanel> {
       seconds: _seconds,
       intensity: _intensity,
     ).svg;
-    if (_editor.multiMode) {
+    // Several layers ticked, or nothing selected ("Todas"): every one of them.
+    if (_editor.multiMode || _editor.selection == null) {
       if (preview) {
         var out = _editor.svg;
-        for (final target in _editor.targets.reversed) {
+        for (final target in _editor.editTargets.reversed) {
           out = edit(out, target);
         }
         _editor.preview(out);
       } else {
-        _editor.applyToTargets(edit);
+        _editor.applyToTargets(edit, paths: _editor.editTargets);
       }
     } else if (preview) {
       _editor.preview(edit(_editor.svg, path));
@@ -122,7 +123,9 @@ class _AnimationPanelState extends State<AnimationPanel> {
     final metadata = _editor.metadata;
     final layer = _editor.selectedLayer;
     // With several layers ticked the chips show the first one's motion.
-    final presetPath = _editor.multiMode ? _editor.targets.firstOrNull : layer?.path;
+    final presetPath = _editor.multiMode || layer == null
+        ? _editor.editTargets.firstOrNull
+        : layer.path;
     final currentPreset = presetPath == null
         ? null
         : SvgAnimationEdit.presetAt(_editor.svg, presetPath);
@@ -193,7 +196,7 @@ class _AnimationPanelState extends State<AnimationPanel> {
           title: l10n.presetsTitle,
           spacing: 8,
           children: [
-            if (layer == null)
+            if (presetPath == null)
               Text(l10n.selectLayerHint, style: muted)
             else ...[
               Wrap(
@@ -206,9 +209,10 @@ class _AnimationPanelState extends State<AnimationPanel> {
                     selected: chosen == null,
                     // "None" takes the motion off the layer.
                     onSelected: (_) {
-                      if (_editor.multiMode) {
+                      if (_editor.multiMode || layer == null) {
                         _editor.applyToTargets(
                           (svg, target) => SvgAnimationEdit.removePreset(svg, target).svg,
+                          paths: _editor.editTargets,
                         );
                       } else if (currentPreset != null) {
                         _editor.apply(SvgAnimationEdit.removePreset(_editor.svg, layer.path));
@@ -219,7 +223,7 @@ class _AnimationPanelState extends State<AnimationPanel> {
                     ChoiceChip(
                       label: Text(l10n.preset(preset)),
                       selected: preset == chosen,
-                      onSelected: (_) => _setPreset(layer.path, preset),
+                      onSelected: (_) => _setPreset(presetPath, preset),
                     ),
                 ],
               ),
@@ -234,7 +238,7 @@ class _AnimationPanelState extends State<AnimationPanel> {
                 onChanged: chosen == null ? null : (v) => setState(() => _seconds = v),
                 onChangeEnd: chosen == null
                     ? null
-                    : (v) => _setPreset(layer.path, chosen, seconds: v),
+                    : (v) => _setPreset(presetPath, chosen, seconds: v),
               ),
               // How strong the chosen motion is. A spin is always a full turn.
               SliderField(
@@ -252,7 +256,7 @@ class _AnimationPanelState extends State<AnimationPanel> {
                     : (v) {
                         setState(() => _liveIntensity = v.roundToDouble() / 100);
                         _setPreset(
-                          layer.path,
+                          presetPath,
                           chosen,
                           intensity: v.roundToDouble() / 100,
                           preview: true,
@@ -262,7 +266,7 @@ class _AnimationPanelState extends State<AnimationPanel> {
                     ? null
                     : (v) {
                         _liveIntensity = null;
-                        _setPreset(layer.path, chosen, intensity: v.roundToDouble() / 100);
+                        _setPreset(presetPath, chosen, intensity: v.roundToDouble() / 100);
                       },
               ),
             ],

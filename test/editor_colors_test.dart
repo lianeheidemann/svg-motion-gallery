@@ -73,11 +73,11 @@ void main() {
     await _openRedInEditor(tester);
     await _tapTab(tester, 'Cores');
 
-    // Nothing selected: a hint, no switch and no palette to paint with.
+    // Nothing selected ("Todas"): the palette paints every layer.
     expect(find.text('Documento'), findsNothing);
     expect(find.text('Camada'), findsNothing);
-    expect(find.textContaining('Selecione uma camada'), findsOneWidget);
-    expect(find.byKey(const Key('preset-palette')), findsNothing);
+    expect(find.textContaining('Selecione uma camada'), findsNothing);
+    expect(find.byKey(const Key('preset-palette')), findsOneWidget);
 
     await _selectLayerThenColors(tester, 'Retângulo');
     expect(find.textContaining('Selecione uma camada'), findsNothing);
