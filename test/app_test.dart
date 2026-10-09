@@ -291,7 +291,9 @@ void main() {
     },
   );
 
-  testWidgets('dragging a shape moves it in every tab except Insert and Text', (tester) async {
+  testWidgets('dragging a shape moves it in every tab; Insert and Text only move their own', (
+    tester,
+  ) async {
     final services = await _services(tester);
     await pumpApp(tester, services);
     await tester.tap(find.text('wave.svg'));
@@ -316,7 +318,7 @@ void main() {
       await _tapTab(tester, tab);
       await dragShape();
       await _tapTab(tester, 'Camadas');
-      expect(find.text('Ajuste do editor'), findsNothing, reason: 'no move from $tab');
+      expect(find.text('Ajuste do editor'), findsWidgets, reason: 'moved from $tab');
       await tester.tap(find.byTooltip('Desfazer').first);
       await tester.pumpAndSettle();
     }

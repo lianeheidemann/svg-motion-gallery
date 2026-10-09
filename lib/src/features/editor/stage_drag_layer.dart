@@ -19,6 +19,7 @@ class StageDragLayer extends StatefulWidget {
     required this.padding,
     this.canMove = true,
     this.showHandles = true,
+    this.canTouch,
   });
 
   final EditorController editor;
@@ -32,6 +33,10 @@ class StageDragLayer extends StatefulWidget {
 
   /// Whether the resize and rotate handles are shown.
   final bool showHandles;
+
+  /// Limits which shapes a touch can select or move (the Insert and Text tabs
+  /// only work on what they added). Null: every shape.
+  final bool Function(SvgMovable shape)? canTouch;
 
   @override
   State<StageDragLayer> createState() => _StageDragLayerState();
@@ -110,6 +115,7 @@ class _StageDragLayerState extends State<StageDragLayer> {
 
   void _tap(Offset position, Size size) {
     final hit = _hit(position, _mapping(size));
+    if (hit != null && !(widget.canTouch?.call(hit) ?? true)) return;
     if (hit == null) {
       if (_editor.selection != null) _editor.select(null);
     } else if (_editor.selection != hit.path) {
@@ -122,7 +128,7 @@ class _StageDragLayerState extends State<StageDragLayer> {
     // measure from where it first touched, so that part is not lost.
     final from = _touchDown ?? d.localFocalPoint;
     final hit = _hit(from, _mapping(size));
-    if (hit == null) return;
+    if (hit == null || !(widget.canTouch?.call(hit) ?? true)) return;
     if (_editor.selection != hit.path) _editor.select(hit.path);
     setState(() {
       _reset(hit);

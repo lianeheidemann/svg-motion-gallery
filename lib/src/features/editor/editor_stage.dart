@@ -199,9 +199,11 @@ class EditorStage extends StatelessWidget {
                     child: StageDragLayer(
                       editor: editor,
                       padding: const EdgeInsets.all(16),
-                      // Insert and Text only place things with their own controls;
-                      // dragging the shape moves it in the other tabs.
-                      canMove: !isInsertTab,
+                      // Insert and Text work on what they added only; the other
+                      // tabs move any shape that is dragged.
+                      canTouch: isInsertTab
+                          ? (shape) => SvgInsertEdit.isInserted(editor.svg, shape.path)
+                          : null,
                       showHandles: isInsertTab && _selectedIsInserted(),
                     ),
                   ),
