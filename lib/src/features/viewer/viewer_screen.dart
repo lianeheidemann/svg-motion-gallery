@@ -9,6 +9,7 @@ import 'package:svg_view/svg_view.dart';
 import '../../app_scope.dart';
 import '../../data/svg_document.dart';
 import '../../l10n/l10n.dart';
+import '../../widgets/app_bar_toggles.dart';
 import '../../widgets/svg_actions_menu.dart';
 import '../../widgets/svg_preview.dart';
 import '../editor/editor_screen.dart';
@@ -158,6 +159,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
               ],
             ),
             actions: [
+              const ThemeToggleButton(),
               FavoriteButton(document: document),
               IconButton(
                 tooltip: l10n.actionShare,

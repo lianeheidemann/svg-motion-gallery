@@ -229,14 +229,22 @@ class _InsertPanelState extends State<InsertPanel> {
       strokeWidth: _stroke / 100 * _side,
     );
     if (_width != 100 || _height != 100) {
-      result = SvgTransformEdit.apply(
-        result.svg,
-        result.selection,
-        SvgTransformValues.identity.copyWith(
-          widthFactor: _width / 100,
-          heightFactor: _height / 100,
-        ),
-      );
+      // In the shape's own geometry, so the outline keeps its thickness.
+      result =
+          SvgShapeSize.stretch(
+            result.svg,
+            result.selection!,
+            width: _width / 100,
+            height: _height / 100,
+          ) ??
+          SvgTransformEdit.apply(
+            result.svg,
+            result.selection,
+            SvgTransformValues.identity.copyWith(
+              widthFactor: _width / 100,
+              heightFactor: _height / 100,
+            ),
+          );
     }
     editor.apply(result);
   }
@@ -269,8 +277,11 @@ class _InsertPanelState extends State<InsertPanel> {
     final l10n = context.l10n;
     final palette = [for (final hex in editor.palette) colorFromHex(hex)!];
     final selection = editor.selection;
+    // Only what this tab added is resized here, never a layer of the file.
     final selectedShape =
-        selection != null && SvgHitTest.movables(editor.svg).any((m) => m.path == selection)
+        selection != null &&
+            SvgInsertEdit.isInserted(editor.svg, selection) &&
+            SvgHitTest.movables(editor.svg).any((m) => m.path == selection)
         ? selection
         : null;
     final primary = Theme.of(context).colorScheme.primary;
@@ -310,18 +321,17 @@ class _InsertPanelState extends State<InsertPanel> {
                       ),
                 ],
               ),
-            ...insertColorSection(
-              context,
-              label: widget.text ? l10n.color : l10n.outline,
-              keys: 'insert',
-              color: color,
-              picker: _picker,
-              hex: _hex,
-              togglePicker: _togglePicker,
-              pick: (value, {live = false}) => _pick(value, selectedShape, live: live),
-              closePicker: () => setState(() => _picker = InsertColorPicker.none),
-              palette: palette,
-            ),
+            if (!widget.text && (selectedShape == null || _fillable(selectedShape)))
+              CheckboxListTile(
+                key: Key(selectedShape == null ? 'new-filled' : 'selected-filled'),
+                contentPadding: const EdgeInsets.only(left: 8),
+                controlAffinity: ListTileControlAffinity.leading,
+                title: Text(l10n.filledShape),
+                value: selectedShape == null ? _filled : _isFilled(selectedShape),
+                onChanged: (v) => selectedShape == null
+                    ? setState(() => _filled = v ?? false)
+                    : _setFilled(selectedShape, v ?? false, fill),
+              ),
             if (showFill)
               ...insertColorSection(
                 context,
@@ -335,6 +345,18 @@ class _InsertPanelState extends State<InsertPanel> {
                 closePicker: () => setState(() => _fillPicker = InsertColorPicker.none),
                 palette: palette,
               ),
+            ...insertColorSection(
+              context,
+              label: widget.text ? l10n.color : l10n.outline,
+              keys: 'insert',
+              color: color,
+              picker: _picker,
+              hex: _hex,
+              togglePicker: _togglePicker,
+              pick: (value, {live = false}) => _pick(value, selectedShape, live: live),
+              closePicker: () => setState(() => _picker = InsertColorPicker.none),
+              palette: palette,
+            ),
             if (selectedShape == null) ...[
               SliderField(
                 label: l10n.shapeSize,
@@ -461,21 +483,7 @@ class _InsertPanelState extends State<InsertPanel> {
                       : () => editor.apply(SvgLayers.remove(editor.svg, selectedShape)),
                   icon: const Icon(Icons.delete_outline_rounded),
                 ),
-                if (!widget.text && (selectedShape == null || _fillable(selectedShape)))
-                  Expanded(
-                    child: CheckboxListTile(
-                      key: Key(selectedShape == null ? 'new-filled' : 'selected-filled'),
-                      contentPadding: const EdgeInsets.only(left: 8),
-                      controlAffinity: ListTileControlAffinity.leading,
-                      title: Text(l10n.filledShape),
-                      value: selectedShape == null ? _filled : _isFilled(selectedShape),
-                      onChanged: (v) => selectedShape == null
-                          ? setState(() => _filled = v ?? false)
-                          : _setFilled(selectedShape, v ?? false, fill),
-                    ),
-                  )
-                else
-                  const Spacer(),
+                const Spacer(),
                 if (widget.text)
                   FilledButton.icon(
                     key: const Key('insert-shape'),

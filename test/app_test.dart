@@ -247,6 +247,50 @@ void main() {
     expect(bar(3).onChanged, isNull);
   });
 
+  testWidgets('the viewer has the light/dark toggle in its bar', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('theme-toggle')), findsOneWidget);
+  });
+
+  testWidgets(
+    'insert: only shapes added there are resized; a new stretched one keeps its outline',
+    (tester) async {
+      final services = await _services(tester);
+      await pumpApp(tester, services);
+      await tester.tap(find.text('wave.svg'));
+      await tester.pumpAndSettle();
+      await _scrollToEdit(tester);
+      await tester.tap(find.byKey(const Key('edit-svg')));
+      await tester.pumpAndSettle();
+
+      // A layer of the file selected in Layers is not resized from Insert.
+      await tester.tap(find.text('Retângulo').first);
+      await tester.pumpAndSettle();
+      await _tapTab(tester, 'Inserir');
+      expect(find.byKey(const Key('selected-size')), findsNothing);
+      expect(find.byKey(const Key('new-width')), findsOneWidget);
+
+      // A new shape stretched while it is added keeps the outline's thickness.
+      await tester.drag(
+        find.descendant(of: find.byKey(const Key('new-width')), matching: find.byType(Slider)),
+        const Offset(80, 0),
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('insert-rectangle')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('insert-rectangle')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('selected-size')), findsOneWidget, reason: 'its own shape');
+      await _tapTab(tester, 'Código');
+      final code = tester.widget<TextField>(find.byKey(const Key('code-field'))).controller!.text;
+      expect(code, contains('data-sm-ins'));
+      expect(code, isNot(contains('data-sm-edit="element"')), reason: 'no scaling wrapper');
+    },
+  );
+
   testWidgets('dragging a shape moves it in every tab except Insert and Text', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);

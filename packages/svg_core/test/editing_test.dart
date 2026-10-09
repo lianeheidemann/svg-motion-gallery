@@ -449,7 +449,10 @@ void main() {
         filled: true,
         strokeWidth: 0,
       );
-      expect(circle.svg, contains('<circle cx="50" cy="25" r="12.5" fill="#FFFFFF"/>'));
+      expect(circle.svg, contains('<circle cx="50" cy="25" r="12.5" fill="#FFFFFF"'));
+      // Marked, so the Insert tab only resizes what it added itself.
+      expect(SvgInsertEdit.isInserted(circle.svg, circle.selection!), isTrue);
+      expect(SvgInsertEdit.isInserted(circle.svg, const ElementPath([1])), isFalse);
       // Hollow by default: an outline, no fill.
       final hollow = SvgInsertEdit.insert(base, SvgShapeKind.rectangle, color: '#112233');
       expect(hollow.svg, contains('fill="none"'));

@@ -49,6 +49,11 @@ class EditorStage extends StatelessWidget {
 
   bool get isInsertTab => tab == EditorTab.insert || tab == EditorTab.text;
 
+  bool _selectedIsInserted() {
+    final selection = editor.selection;
+    return selection != null && SvgInsertEdit.isInserted(editor.svg, selection);
+  }
+
   bool _selectedIsShape() {
     final selection = editor.selection;
     return selection != null && SvgHitTest.movables(editor.svg).any((m) => m.path == selection);
@@ -197,7 +202,7 @@ class EditorStage extends StatelessWidget {
                       // Insert and Text only place things with their own controls;
                       // dragging the shape moves it in the other tabs.
                       canMove: !isInsertTab,
-                      showHandles: isInsertTab,
+                      showHandles: isInsertTab && _selectedIsInserted(),
                     ),
                   ),
               ],

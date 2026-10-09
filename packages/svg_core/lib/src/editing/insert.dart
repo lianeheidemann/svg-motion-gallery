@@ -6,6 +6,9 @@ import '../metadata.dart';
 import '../xml_support.dart';
 import 'element_path.dart';
 
+/// Marks the elements the Insert and Text tabs added.
+const insertedAttribute = 'data-sm-ins';
+
 /// Shapes the editor can insert.
 enum SvgShapeKind { rectangle, circle, ellipse, line, star, text }
 
@@ -90,8 +93,17 @@ class SvgInsertEdit {
         'dominant-baseline': 'middle',
       }, text),
     };
+    element.setAttribute(insertedAttribute, '1');
     document.rootElement.children.add(element);
     return SvgEditResult(document.toXmlString(), selection: ElementPath.of(element));
+  }
+
+  /// Whether the element at [path] (or what an editor wrapper holds) was
+  /// added by the Insert/Text tabs, which only resize their own shapes.
+  static bool isInserted(String svg, ElementPath path) {
+    final document = tryParseSvg(svg);
+    final element = document == null || path.isRoot ? null : path.resolve(document.rootElement);
+    return element != null && unwrapEditorGroups(element).getAttribute(insertedAttribute) != null;
   }
 
   static XmlElement _element(String tag, Map<String, String> attributes, [String? text]) =>
