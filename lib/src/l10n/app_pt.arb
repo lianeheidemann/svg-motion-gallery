@@ -303,7 +303,6 @@
     }
   },
   "fill": "Preenchimento",
-  "removeFill": "Remover preenchimento",
   "hue": "Matiz",
   "saturation": "Saturação",
   "lightness": "Luminosidade",

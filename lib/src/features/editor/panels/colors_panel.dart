@@ -110,11 +110,12 @@ class _ColorsPanelState extends State<ColorsPanel> {
     final targets = _editor.editTargets;
     final path = targets.first;
     final paint = SvgPaintEdit.read(_editor.svg, path);
-    final raw = paint.fill;
     final hex = paint.fillColor;
     String apply(String svg, String? color) {
       var out = svg;
       for (final target in targets) {
+        // Outline-only shapes (fill none) stay that way when several are painted.
+        if (targets.length > 1 && SvgPaintEdit.read(out, target).fill == 'none') continue;
         out = SvgPaintEdit.setFill(out, target, color);
       }
       return out;
@@ -138,14 +139,6 @@ class _ColorsPanelState extends State<ColorsPanel> {
           labels: _labels(l10n),
           onChanged: (color) => _editor.preview(apply(_editor.svg, colorToHex(color))),
           onChangeEnd: (color) => _editor.commit(apply(_editor.svg, colorToHex(color))),
-        ),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton.icon(
-            onPressed: raw == 'none' ? null : () => _editor.commit(apply(_editor.svg, null)),
-            icon: const Icon(Icons.format_color_reset_rounded),
-            label: Text(l10n.removeFill),
-          ),
         ),
       ],
     );

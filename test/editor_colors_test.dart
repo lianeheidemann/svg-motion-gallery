@@ -8,9 +8,9 @@ const _red =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10" fill="#FF0000"/></svg>';
 
 /// Imports `red.svg` and opens it in the editor.
-Future<AppServices> _openRedInEditor(WidgetTester tester) async {
+Future<AppServices> _openRedInEditor(WidgetTester tester, {String svg = _red}) async {
   final services = (await tester.runAsync(
-    () => createTestServices(importFiles: [(name: 'red.svg', content: _red)]),
+    () => createTestServices(importFiles: [(name: 'red.svg', content: svg)]),
   ))!;
   await pumpApp(tester, services);
   await tester.tap(find.text('Importar SVG'));
@@ -105,6 +105,22 @@ void main() {
 
     await _tapTab(tester, 'Camadas');
     expect(find.byKey(const Key('before-after')), findsNothing);
+  });
+
+  testWidgets('colors: painting everything leaves outline-only shapes alone', (tester) async {
+    final services = await _openRedInEditor(
+      tester,
+      svg:
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+          '<rect width="10" height="10" fill="#FF0000"/>'
+          '<path d="M1 5 Q5 9 9 5" fill="none" stroke="#00FF00"/></svg>',
+    );
+    await _tapTab(tester, 'Cores');
+    expect(find.text('Remover preenchimento'), findsNothing);
+    await _pickPreset(tester, '#3B82F6');
+    final saved = await _save(tester, services);
+    expect(saved, contains('#3B82F6'));
+    expect(saved, contains('FILL="NONE"'));
   });
 
   testWidgets('the rainbow swatch opens a free picker that recolors the layer', (tester) async {

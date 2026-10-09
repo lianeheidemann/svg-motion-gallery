@@ -162,7 +162,6 @@
   "paletteEmpty": "No solid colors found.",
   "layerPaint": "Paint of {name}",
   "fill": "Fill",
-  "removeFill": "Remove fill",
   "hue": "Hue",
   "saturation": "Saturation",
   "lightness": "Lightness",
