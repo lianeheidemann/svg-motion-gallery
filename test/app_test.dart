@@ -270,20 +270,27 @@ void main() {
       await tester.tap(find.text('Retângulo').first);
       await tester.pumpAndSettle();
       await _tapTab(tester, 'Inserir');
-      expect(find.byKey(const Key('selected-size')), findsNothing);
-      expect(find.byKey(const Key('new-width')), findsOneWidget);
-
-      // A new shape stretched while it is added keeps the outline's thickness.
-      await tester.drag(
-        find.descendant(of: find.byKey(const Key('new-width')), matching: find.byType(Slider)),
-        const Offset(80, 0),
+      // The bars are greyed out: nothing of this tab is selected.
+      Slider bar(String key) => tester.widget<Slider>(
+        find.descendant(of: find.byKey(Key(key)), matching: find.byType(Slider)),
       );
-      await tester.pumpAndSettle();
+      expect(bar('selected-size').onChanged, isNull);
+      expect(bar('selected-width').onChanged, isNull);
+
       await tester.ensureVisible(find.byKey(const Key('insert-rectangle')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('insert-rectangle')));
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('selected-size')), findsOneWidget, reason: 'its own shape');
+      expect(bar('selected-size').onChanged, isNotNull, reason: 'its own shape');
+
+      // A shape stretched keeps the outline's thickness.
+      await tester.ensureVisible(find.byKey(const Key('selected-width')));
+      await tester.pumpAndSettle();
+      await tester.drag(
+        find.descendant(of: find.byKey(const Key('selected-width')), matching: find.byType(Slider)),
+        const Offset(80, 0),
+      );
+      await tester.pumpAndSettle();
       await _tapTab(tester, 'Código');
       final code = tester.widget<TextField>(find.byKey(const Key('code-field'))).controller!.text;
       expect(code, contains('data-sm-ins'));
@@ -893,9 +900,11 @@ void main() {
     await tester.pumpAndSettle();
     await _tapTab(tester, 'Texto');
 
-    // Before the text is added, the bars set how the next one is born.
-    expect(find.byKey(const Key('new-width')), findsOneWidget);
-    expect(find.byKey(const Key('new-height')), findsOneWidget);
+    // Before the text is added, the bars are there but greyed out.
+    for (final key in ['selected-width', 'selected-height']) {
+      final bar = find.descendant(of: find.byKey(Key(key)), matching: find.byType(Slider));
+      expect(tester.widget<Slider>(bar).onChanged, isNull);
+    }
     expect(find.text('Contorno'), findsNothing, reason: 'text has no outline');
 
     await tester.ensureVisible(find.byKey(const Key('insert-shape')));
