@@ -213,6 +213,34 @@ void main() {
     expect(find.byKey(const Key('code-hint')), findsNothing);
   });
 
+  testWidgets('transform: width and height keep the proportion until it is unlocked', (
+    tester,
+  ) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Transformar');
+
+    double width() => tester.widget<Slider>(find.byType(Slider).at(3)).value;
+    double height() => tester.widget<Slider>(find.byType(Slider).at(4)).value;
+
+    await tester.drag(find.byType(Slider).at(3), const Offset(60, 0));
+    await tester.pumpAndSettle();
+    expect(width(), greaterThan(100));
+    expect(height(), closeTo(width(), 1), reason: 'locked: the height follows');
+
+    await tester.tap(find.byKey(const Key('keep-proportion')));
+    await tester.pumpAndSettle();
+    final heightBefore = height();
+    await tester.drag(find.byType(Slider).at(3), const Offset(-30, 0));
+    await tester.pumpAndSettle();
+    expect(height(), closeTo(heightBefore, 0.5), reason: 'unlocked: only the width moves');
+  });
+
   testWidgets('dragging a shape moves it in every tab except Insert and Text', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);

@@ -21,6 +21,11 @@ class TransformPanel extends StatefulWidget {
 class _TransformPanelState extends State<TransformPanel> {
   SvgTransformValues? _live;
 
+  /// While on, Width and Height move together and keep the proportion the
+  /// object had when the bar was grabbed, so nothing gets distorted.
+  var _keepProportion = true;
+  var _ratio = 1.0;
+
   EditorController get _editor => widget.editor;
 
   /// What the sliders show: the first ticked layer when several are ticked.
@@ -123,22 +128,51 @@ class _TransformPanelState extends State<TransformPanel> {
               onChanged: (v) => _preview(values.copyWith(scale: v.roundToDouble() / 100)),
               onChangeEnd: (_) => _commit(),
             ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                key: const Key('keep-proportion'),
+                onPressed: () => setState(() => _keepProportion = !_keepProportion),
+                icon: Icon(_keepProportion ? Icons.lock_rounded : Icons.lock_open_rounded),
+                label: Text(l10n.keepProportion),
+              ),
+            ),
             SliderField(
+              key: const Key('transform-width'),
               label: l10n.width,
               value: (values.widthFactor * 100).clamp(10, 400),
               min: 10,
               max: 400,
               unit: '%',
-              onChanged: (v) => _preview(values.copyWith(widthFactor: v.roundToDouble() / 100)),
+              onChangeStart: (_) => _ratio = values.heightFactor / values.widthFactor,
+              onChanged: (v) {
+                final w = v.roundToDouble() / 100;
+                _preview(
+                  values.copyWith(
+                    widthFactor: w,
+                    heightFactor: _keepProportion ? (w * _ratio).clamp(.1, 4) : null,
+                  ),
+                );
+              },
               onChangeEnd: (_) => _commit(),
             ),
             SliderField(
+              key: const Key('transform-height'),
               label: l10n.height,
               value: (values.heightFactor * 100).clamp(10, 400),
               min: 10,
               max: 400,
               unit: '%',
-              onChanged: (v) => _preview(values.copyWith(heightFactor: v.roundToDouble() / 100)),
+              onChangeStart: (_) => _ratio = values.heightFactor / values.widthFactor,
+              onChanged: (v) {
+                final h = v.roundToDouble() / 100;
+                _preview(
+                  values.copyWith(
+                    heightFactor: h,
+                    widthFactor: _keepProportion ? (h / _ratio).clamp(.1, 4) : null,
+                  ),
+                );
+              },
               onChangeEnd: (_) => _commit(),
             ),
             SliderField(

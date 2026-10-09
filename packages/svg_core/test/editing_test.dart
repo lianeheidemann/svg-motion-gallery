@@ -67,11 +67,25 @@ void main() {
       final result = SvgTransformEdit.apply(base, const ElementPath([2]), values);
       expect(result.svg, contains('scale(1 3)'), reason: 'scale 2 x (0.5, 1.5)');
       final read = SvgTransformEdit.read(result.svg, result.selection);
-      expect(read.scale, closeTo(1, 1e-9));
-      expect(read.heightFactor, closeTo(3, 1e-9));
-      // Same drawing either way: the factors are only a different way to write it.
-      expect(read.scale * read.widthFactor, closeTo(1, 1e-9));
-      expect(read.scale * read.heightFactor, closeTo(3, 1e-9));
+      // The bars read back exactly what was set.
+      expect(read.scale, closeTo(2, 1e-9));
+      expect(read.widthFactor, closeTo(0.5, 1e-9));
+      expect(read.heightFactor, closeTo(1.5, 1e-9));
+      // Without the note (e.g. code edited by hand) the products still read.
+      final bare = result.svg.replaceAll(RegExp(r' data-sm-wh="[^"]*"'), '');
+      final plain = SvgTransformEdit.read(bare, result.selection);
+      expect(plain.scale * plain.widthFactor, closeTo(1, 1e-9));
+      expect(plain.scale * plain.heightFactor, closeTo(3, 1e-9));
+      // Equal factors (a locked pair) are kept apart from the scale too.
+      final locked = SvgTransformEdit.apply(
+        base,
+        const ElementPath([2]),
+        const SvgTransformValues(widthFactor: 1.5, heightFactor: 1.5),
+      );
+      final back = SvgTransformEdit.read(locked.svg, locked.selection);
+      expect(back.scale, closeTo(1, 1e-9));
+      expect(back.widthFactor, closeTo(1.5, 1e-9));
+      expect(back.heightFactor, closeTo(1.5, 1e-9));
       expect(const SvgTransformValues(widthFactor: 2).isIdentity, isFalse);
       expect(
         SvgTransformEdit.apply(base, const ElementPath([2]), const SvgTransformValues()).svg,

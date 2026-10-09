@@ -156,6 +156,7 @@
   "eyedropperNoColor": "No solid color here",
   "editingLight": "Editing the light version — tap for dark",
   "editingDark": "Editing the dark version — tap for light",
+  "keepProportion": "Keep proportion",
   "codeProblemGo": "Go to the problem",
   "codeMoreProblems": "+{count}",
   "selectionNone": "Selected: All",
