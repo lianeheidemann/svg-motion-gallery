@@ -189,19 +189,12 @@ class _ColorsPanelState extends State<ColorsPanel> {
       return out;
     }
 
-    final current = switch (raw) {
-      null => l10n.paintInherited,
-      'none' => l10n.paintNone,
-      final value when value.startsWith('url(') => l10n.paintGradient,
-      final value => value,
-    };
     return SectionCard(
       icon: Icons.format_color_fill_rounded,
       title: targets.length > 1
           ? l10n.multiSelectCount(targets.length)
           : l10n.layerPaint(l10n.layerLabel(_editor.selectedLayer!, _editor.layers)),
       children: [
-        Text(l10n.currentPaint(current)),
         _presetPalette(
           l10n,
           colorFromHex(hex ?? '') ?? Theme.of(context).colorScheme.primary,

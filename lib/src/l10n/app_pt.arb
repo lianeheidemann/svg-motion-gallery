@@ -295,17 +295,6 @@
     }
   },
   "fill": "Preenchimento",
-  "currentPaint": "Atual: {value}",
-  "@currentPaint": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
-  "paintInherited": "herdado",
-  "paintNone": "nenhum",
-  "paintGradient": "gradiente",
   "removeFill": "Remover preenchimento",
   "hue": "Matiz",
   "saturation": "Saturação",
