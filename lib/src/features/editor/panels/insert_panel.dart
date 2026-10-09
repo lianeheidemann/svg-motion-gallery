@@ -265,10 +265,7 @@ class _InsertPanelState extends State<InsertPanel> {
 
   /// [children] greyed out and untouchable while [off].
   List<Widget> _dimmed(bool off, List<Widget> children) => off
-      ? [
-          for (final child in children)
-            IgnorePointer(child: Opacity(opacity: .38, child: child)),
-        ]
+      ? [for (final child in children) IgnorePointer(child: Opacity(opacity: .38, child: child))]
       : children;
 
   void _togglePicker(InsertColorPicker picker) =>
@@ -308,7 +305,10 @@ class _InsertPanelState extends State<InsertPanel> {
     final fill = (shown ? _shapeFill(selectedShape) : null) ?? _fillColor ?? color;
     // The fill color only matters while the shapes are filled.
     final showFill =
-        !widget.text && selectedShape != null && _fillable(selectedShape) && _isFilled(selectedShape);
+        !widget.text &&
+        selectedShape != null &&
+        _fillable(selectedShape) &&
+        _isFilled(selectedShape);
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
