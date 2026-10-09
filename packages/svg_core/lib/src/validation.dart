@@ -17,11 +17,24 @@ enum SvgIssueCode {
   /// A `<style>` block has CSS that browsers will ignore or misread. Only
   /// ever reported as a [SvgValidation.warning]: the SVG is still valid.
   malformedCss,
+
+  /// An attribute value that cannot be read, such as a color or a number that
+  /// is not one (see [SvgIssue.attribute] and [SvgIssue.detail]). Only ever
+  /// reported by the linter, as a hint: the SVG is still valid.
+  invalidValue,
 }
 
 /// A validation problem with its location (1-based) when known.
 class SvgIssue {
-  const SvgIssue(this.code, {this.detail, this.line, this.column});
+  const SvgIssue(
+    this.code, {
+    this.detail,
+    this.line,
+    this.column,
+    this.attribute,
+    this.start,
+    this.end,
+  });
 
   final SvgIssueCode code;
 
@@ -29,6 +42,14 @@ class SvgIssue {
   final String? detail;
   final int? line;
   final int? column;
+
+  /// For [SvgIssueCode.invalidValue]: the attribute holding the bad value.
+  final String? attribute;
+
+  /// Where the problem is in the source (`start` inclusive, `end` exclusive),
+  /// when the linter knows it exactly.
+  final int? start;
+  final int? end;
 
   @override
   String toString() => 'SvgIssue($code, $detail, $line:$column)';

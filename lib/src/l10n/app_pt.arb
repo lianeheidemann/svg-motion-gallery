@@ -233,6 +233,29 @@
       }
     }
   },
+  "issueValue": "Valor inválido “{value}” em {attribute}, na linha {line}.",
+  "@issueValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "attribute": {
+        "type": "String"
+      },
+      "line": {
+        "type": "int"
+      }
+    }
+  },
+  "codeProblemGo": "Ir para o problema",
+  "codeMoreProblems": "+{count}",
+  "@codeMoreProblems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "selectionNone": "Selecionado: Todas",
   "selectionLayer": "Selecionado: {name}",
   "@selectionLayer": {

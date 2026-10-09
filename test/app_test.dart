@@ -540,6 +540,54 @@ void main() {
     expect(find.byKey(const Key('code-search-field')), findsNothing);
   });
 
+  testWidgets('code: a broken SVG shows a red message, a wrong value an amber hint', (
+    tester,
+  ) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('sun-moon.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Código');
+
+    final field = find.byKey(const Key('code-field'));
+    const open = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">';
+    Future<void> type(String text) async {
+      await tester.enterText(field, text);
+      // The check waits for typing to pause.
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 600));
+    }
+
+    expect(find.byKey(const Key('code-error')), findsNothing);
+    expect(find.byKey(const Key('code-hint')), findsNothing);
+
+    // Valid XML with a color that is not one: a hint, not an error.
+    await type('$open\n<circle r="4" fill="#FFC----@83D"/>\n</svg>');
+    expect(find.byKey(const Key('code-hint')), findsOneWidget);
+    expect(find.byKey(const Key('code-error')), findsNothing);
+    expect(find.textContaining('Valor inválido'), findsOneWidget);
+    expect(find.textContaining('#FFC----@83D'), findsWidgets);
+    expect(find.textContaining('linha 2'), findsOneWidget);
+
+    // Broken XML: a red error that names the line.
+    await type('$open\n<rect width="1" height=">\n</svg>');
+    expect(find.byKey(const Key('code-error')), findsOneWidget);
+    expect(find.byKey(const Key('code-hint')), findsNothing);
+    expect(find.textContaining('XML malformado'), findsOneWidget);
+
+    // The button jumps to the problem without breaking anything.
+    await tester.tap(find.byKey(const Key('code-problem-go')));
+    await tester.pumpAndSettle();
+
+    // Fixed: both go away.
+    await type('$open\n<circle r="4" fill="#FFC83D"/>\n</svg>');
+    expect(find.byKey(const Key('code-error')), findsNothing);
+    expect(find.byKey(const Key('code-hint')), findsNothing);
+  });
+
   testWidgets('insert: width and height stretch the selected shape', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);
