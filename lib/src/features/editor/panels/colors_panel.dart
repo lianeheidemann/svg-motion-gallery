@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:svg_core/svg_core.dart';
 
 import '../../../l10n/l10n.dart';
+import '../color_adjust.dart';
 import '../color_presets.dart';
 import '../editor_controller.dart';
+import 'colors/color_adjuster.dart';
 
 /// Paints the selected layers (all of them at once when several are ticked).
 /// Colors are picked from a palette of ready-made colors and fine-tuned with
@@ -62,6 +64,26 @@ class _ColorsPanelState extends State<ColorsPanel> {
       out = scheme == null || color == null
           ? SvgPaintEdit.setFill(out, target, color)
           : SvgThemeEdit.setFill(out, target, color, scheme);
+    }
+    return out;
+  }
+
+  /// [svg] with every target's own color moved by [amount] of [kind]: each
+  /// shape keeps its place in the palette, they are not all set to one color.
+  /// Shapes with no plain fill color (a gradient, none) are left alone.
+  String _adjust(String svg, ColorAdjustment kind, double amount) {
+    final scheme = widget.scheme;
+    var out = svg;
+    for (final target in _editor.paintTargets) {
+      final String? shown = scheme == null
+          ? SvgPaintEdit.read(out, target).fillColor
+          : SvgThemeEdit.fillFor(out, target, scheme);
+      final base = shown != null && shown.startsWith('#') ? colorFromHex(shown) : null;
+      if (base == null) continue;
+      final hex = colorToHex(adjustColor(base, kind, amount));
+      out = scheme == null
+          ? SvgPaintEdit.setFill(out, target, hex)
+          : SvgThemeEdit.setFill(out, target, hex, scheme);
     }
     return out;
   }
@@ -180,8 +202,16 @@ class _ColorsPanelState extends State<ColorsPanel> {
           key: ValueKey('paint-$path-$hex'),
           color: colorFromHex(hex ?? '') ?? Theme.of(context).colorScheme.primary,
           labels: _labels(l10n),
+          showSliders: false,
           onChanged: (color) => _editor.preview(apply(_editor.svg, colorToHex(color))),
           onChangeEnd: (color) => _editor.commit(apply(_editor.svg, colorToHex(color))),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        ColorAdjuster(
+          onPreview: (kind, amount) => _editor.preview(_adjust(_editor.svg, kind, amount)),
+          onCommit: (kind, amount) {
+            if (amount != 0) _editor.commit(_adjust(_editor.svg, kind, amount));
+          },
         ),
       ],
     );

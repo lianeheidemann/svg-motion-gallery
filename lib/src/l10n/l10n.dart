@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:svg_core/svg_core.dart';
 
+import '../features/editor/color_adjust.dart';
 import 'gen/app_localizations.dart';
 
 export 'gen/app_localizations.dart';
@@ -14,6 +15,17 @@ extension L10nContext on BuildContext {
 /// Formatting and enum labels shared by every screen. Keeping them here
 /// means svg_core stays language-agnostic.
 extension AppLocalizationsFormat on AppLocalizations {
+  String colorAdjustment(ColorAdjustment kind) => switch (kind) {
+    ColorAdjustment.hue => hue,
+    ColorAdjustment.saturation => saturation,
+    ColorAdjustment.lightness => lightness,
+    ColorAdjustment.brightness => adjustBrightness,
+    ColorAdjustment.contrast => adjustContrast,
+    ColorAdjustment.temperature => adjustTemperature,
+    ColorAdjustment.highlights => adjustHighlights,
+    ColorAdjustment.shadows => adjustShadows,
+  };
+
   String issueMessage(SvgIssue issue) {
     final base = switch (issue.code) {
       SvgIssueCode.empty => issueEmpty,

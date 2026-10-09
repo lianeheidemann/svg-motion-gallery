@@ -238,6 +238,24 @@ void main() {
     expect(find.text('3 camadas selecionadas'), findsNothing);
   });
 
+  testWidgets('colors: a ruler with icon tabs adjusts the painted color', (tester) async {
+    final services = await _openRedInEditor(tester);
+    await _tapTab(tester, 'Cores');
+    expect(find.byType(Slider), findsNothing, reason: 'the bars are gone');
+    expect(find.text('Matiz'), findsOneWidget);
+    expect(find.text('Saturação'), findsOneWidget);
+
+    // Hue: dragging the ruler turns red into another color, and it returns to 0.
+    final ruler = find.byKey(const Key('ruler'));
+    await tester.ensureVisible(ruler);
+    await tester.pumpAndSettle();
+    await tester.drag(ruler, const Offset(-120, 0));
+    await tester.pumpAndSettle();
+    final saved = await _save(tester, services);
+    expect(saved, isNot(contains('#FF0000')), reason: 'the red was turned');
+    expect(saved, contains('FILL="#'));
+  });
+
   testWidgets('the rainbow swatch opens a free picker that recolors the layer', (tester) async {
     final services = await _openRedInEditor(tester);
     await _selectLayerThenColors(tester, 'Retângulo');
