@@ -116,8 +116,17 @@ void main() {
         tester.widgetList<SvgView>(find.byType(SvgView)).map((v) => v.controller).nonNulls.first;
     expect(stage()!.isPlaying, isTrue);
 
+    // The stage's play button pauses and resumes.
+    await tester.tap(find.byKey(const Key('stage-play')));
+    await tester.pump();
+    expect(stage()!.isPlaying, isFalse);
+    await tester.tap(find.byKey(const Key('stage-play')));
+    await tester.pump();
+    expect(stage()!.isPlaying, isTrue);
+
     await _tapTab(tester, 'Cores');
     expect(stage()!.isPlaying, isFalse);
+    expect(tester.widget<IconButton>(find.byKey(const Key('stage-play'))).onPressed, isNull);
     final views = tester.widgetList<SvgView>(find.byType(SvgView)).toList();
     expect(views, hasLength(2));
     final before = views.firstWhere((v) => v.controller == null);

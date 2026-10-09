@@ -473,7 +473,7 @@ class _EditorScreenState extends State<EditorScreen> {
                   size: 18,
                   color: Theme.of(context).colorScheme.primary,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     ticked > 1
@@ -484,14 +484,37 @@ class _EditorScreenState extends State<EditorScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                ListenableBuilder(
+                  listenable: _playback,
+                  builder: (context, _) => IconButton(
+                    key: const Key('stage-play'),
+                    style: IconButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      fixedSize: const Size(28, 40),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    tooltip: _playback.isPlaying ? l10n.pause : l10n.play,
+                    // Colors compares two still previews.
+                    onPressed: _tab == _EditorTab.colors ? null : _playback.toggle,
+                    icon: Icon(
+                      _playback.isPlaying ? Icons.pause_circle_rounded : Icons.play_circle_rounded,
+                    ),
+                  ),
+                ),
                 if (layer != null)
                   TextButton(
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      minimumSize: const Size(0, 40),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                     onPressed: () => editor.select(null),
                     child: Text(l10n.clearSelection),
                   ),
                 PopupMenuButton<StageBackground>(
                   key: const Key('preview-bg'),
                   tooltip: l10n.previewBackground,
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
                   icon: const Icon(Icons.wallpaper_rounded),
                   initialValue: _background,
                   onSelected: (value) => setState(() => _background = value),
@@ -507,6 +530,7 @@ class _EditorScreenState extends State<EditorScreen> {
                 ),
                 IconButton(
                   key: const Key('reset-all'),
+                  visualDensity: VisualDensity.compact,
                   tooltip: l10n.resetAll,
                   onPressed: editor.canReset ? () => _confirmReset(editor) : null,
                   icon: const Icon(Icons.restart_alt_rounded),
