@@ -213,6 +213,41 @@ void main() {
     expect(find.byKey(const Key('code-hint')), findsNothing);
   });
 
+  testWidgets('dragging a shape moves it in every tab except Insert and Text', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+
+    await _tapTab(tester, 'Inserir');
+    await tester.ensureVisible(find.byKey(const Key('insert-rectangle')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('insert-rectangle')));
+    await tester.pumpAndSettle();
+
+    Future<void> dragShape() async {
+      final stage = find.byKey(const Key('stage-drag'));
+      await tester.dragFrom(tester.getCenter(stage), const Offset(40, 0));
+      await tester.pumpAndSettle();
+    }
+
+    for (final tab in ['Inserir', 'Texto']) {
+      await _tapTab(tester, tab);
+      await dragShape();
+      await _tapTab(tester, 'Camadas');
+      expect(find.text('Ajuste do editor'), findsNothing, reason: 'no move from $tab');
+      await tester.tap(find.byTooltip('Desfazer').first);
+      await tester.pumpAndSettle();
+    }
+
+    // Layers: the same drag moves it (inside an editor transform group).
+    await dragShape();
+    expect(find.text('Ajuste do editor'), findsWidgets, reason: 'moved in Layers');
+  });
+
   testWidgets('editor inserts a shape, undoes, validates code and saves', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);

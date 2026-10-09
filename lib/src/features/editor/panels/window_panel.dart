@@ -169,7 +169,7 @@ class _WindowPanelState extends State<WindowPanel> {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
         SectionCard(
-          icon: Icons.crop_rounded,
+          icon: Icons.aspect_ratio_rounded,
           title: l10n.windowTitle,
           spacing: 6,
           trailing: IconButton(

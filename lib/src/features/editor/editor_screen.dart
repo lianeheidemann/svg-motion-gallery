@@ -56,6 +56,10 @@ class _EditorScreenState extends State<EditorScreen> {
   /// Whether the stage was playing before the Colors tab froze it.
   var _resumeAfterColors = false;
   var _tab = _EditorTab.layers;
+
+  /// Colors compares two previews with a divider that is dragged.
+  bool get _showsDragLayer => _tab != _EditorTab.colors;
+
   bool get _isInsertTab => _tab == _EditorTab.insert || _tab == _EditorTab.text;
   var _saving = false;
 
@@ -229,7 +233,7 @@ class _EditorScreenState extends State<EditorScreen> {
                       accent: editor.selection == null ? GalleryColors.of(context).success : null,
                     ),
                     PillTab(l10n.tabTransform, icon: Icons.open_with_rounded),
-                    PillTab(l10n.tabWindow, icon: Icons.crop_rounded),
+                    PillTab(l10n.tabWindow, icon: Icons.aspect_ratio_rounded),
                     PillTab(l10n.tabAlign, icon: Icons.align_horizontal_center_rounded),
                     PillTab(l10n.tabColors, icon: Icons.palette_outlined),
                     PillTab(l10n.tabAnimation, icon: Icons.animation_rounded),
@@ -464,7 +468,7 @@ class _EditorScreenState extends State<EditorScreen> {
                   child: CanvasFrame(svg: editor.displaySvg, padding: const EdgeInsets.all(16)),
                 ),
                 // The Insert tab draws its own outline (with handles) for shapes.
-                if (!(_isInsertTab && _selectedIsShape(editor)))
+                if (!(_showsDragLayer && _selectedIsShape(editor)))
                   Positioned.fill(
                     child: SelectionHighlight(
                       controller: _playback,
@@ -473,9 +477,16 @@ class _EditorScreenState extends State<EditorScreen> {
                   ),
                 if (_tab == _EditorTab.colors && editor.eyedropper)
                   Positioned.fill(child: _eyedropperLayer(context, editor)),
-                if (_isInsertTab)
+                if (_showsDragLayer)
                   Positioned.fill(
-                    child: StageDragLayer(editor: editor, padding: const EdgeInsets.all(16)),
+                    child: StageDragLayer(
+                      editor: editor,
+                      padding: const EdgeInsets.all(16),
+                      // Insert and Text only place things with their own controls;
+                      // dragging the shape moves it in the other tabs.
+                      canMove: !_isInsertTab,
+                      showHandles: _isInsertTab,
+                    ),
                   ),
               ],
             ),
