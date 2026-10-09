@@ -414,6 +414,44 @@ void main() {
     expect(circles.evaluate().length, shown);
   });
 
+  testWidgets('layers: the corner box ticks several layers, even from different folders', (
+    tester,
+  ) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('sun-moon.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+
+    final box = find.byKey(const Key('multi-select'));
+    await tester.ensureVisible(box);
+    await tester.pumpAndSettle();
+    expect(tester.widget<Checkbox>(box).value, isFalse);
+    await tester.tap(box);
+    await tester.pumpAndSettle();
+    expect(tester.widget<Checkbox>(box).value, isTrue);
+    expect(find.text('Toque nas camadas para selecioná-las'), findsOneWidget);
+
+    // Tapping a layer ticks it; tapping another one keeps the first ticked.
+    for (final name in ['Retângulo', 'Círculo']) {
+      final row = find.textContaining(name).first;
+      await tester.ensureVisible(row);
+      await tester.pumpAndSettle();
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+    }
+    expect(find.text('2 camadas selecionadas'), findsWidgets);
+
+    // Unticking the corner box goes back to a single selection.
+    await tester.ensureVisible(box);
+    await tester.pumpAndSettle();
+    await tester.tap(box);
+    await tester.pumpAndSettle();
+    expect(find.text('2 camadas selecionadas'), findsNothing);
+  });
+
   testWidgets('transform: width and height can be changed on their own', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);

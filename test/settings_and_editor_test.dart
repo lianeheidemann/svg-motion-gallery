@@ -36,6 +36,88 @@ void main() {
     });
   });
 
+  group('EditorController multi-selection', () {
+    const multiSvg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+        '<rect width="2" height="2"/>'
+        '<g><circle r="1"/><rect width="3" height="3"/></g>'
+        '<ellipse rx="1" ry="2"/></svg>';
+
+    test('ticks layers from different folders and lists them in document order', () {
+      final editor = EditorController(multiSvg)
+        ..setMultiMode(true)
+        ..select(const ElementPath([2]))
+        ..select(const ElementPath([1, 0]))
+        ..select(const ElementPath([0]));
+      expect(editor.multiSelection, hasLength(3));
+      expect(editor.targets, const [
+        ElementPath([0]),
+        ElementPath([1, 0]),
+        ElementPath([2]),
+      ]);
+      expect(editor.selection, const ElementPath([0]), reason: 'the last one ticked');
+
+      editor.select(const ElementPath([1, 0])); // ticking again unticks
+      expect(editor.targets, const [ElementPath([0]), ElementPath([2])]);
+      editor.select(null);
+      expect(editor.targets, isEmpty);
+    });
+
+    test('turning it off keeps one layer selected; turning it on keeps the selected one', () {
+      final editor = EditorController(multiSvg)..select(const ElementPath([2]));
+      editor.setMultiMode(true);
+      expect(editor.targets, const [ElementPath([2])]);
+      editor
+        ..select(const ElementPath([0]))
+        ..setMultiMode(false);
+      expect(editor.multiMode, isFalse);
+      expect(editor.selection, const ElementPath([0]));
+      expect(editor.multiSelection, isEmpty);
+    });
+
+    test('an edit reaches every ticked layer in one undo step', () {
+      final editor = EditorController(multiSvg)
+        ..setMultiMode(true)
+        ..select(const ElementPath([0]))
+        ..select(const ElementPath([1, 1]));
+      editor.applyToTargets((svg, path) => SvgPaintEdit.setFill(svg, path, '#FF0000'));
+      expect('fill="#FF0000"'.allMatches(editor.svg), hasLength(2));
+      editor.undo();
+      expect(editor.svg.contains('#FF0000'), isFalse, reason: 'one step undoes both');
+    });
+
+    test('deleting and duplicating work on every ticked layer', () {
+      final editor = EditorController(multiSvg)
+        ..setMultiMode(true)
+        ..select(const ElementPath([0]))
+        ..select(const ElementPath([1, 0]));
+      editor.duplicateTargets();
+      expect(editor.layers, hasLength(7), reason: 'two copies added to the 5 layers');
+      expect(editor.multiSelection, isEmpty);
+
+      final again = EditorController(multiSvg)
+        ..setMultiMode(true)
+        ..select(const ElementPath([0]))
+        ..select(const ElementPath([1, 0]));
+      again.removeTargets();
+      expect(again.layers.map((l) => l.tag), ['g', 'rect', 'ellipse']);
+    });
+
+    test('redo brings the ticked layers back', () {
+      final editor = EditorController(multiSvg)
+        ..setMultiMode(true)
+        ..select(const ElementPath([0]))
+        ..select(const ElementPath([2]));
+      editor.applyToTargets((svg, path) => SvgLayers.toggleVisibility(svg, path));
+      expect(editor.multiSelection, hasLength(2));
+      editor
+        ..select(null)
+        ..undo()
+        ..redo();
+      expect(editor.multiSelection, hasLength(2));
+    });
+  });
+
   group('EditorController', () {
     test('commits, undoes and redoes with the selection', () {
       final editor = EditorController(_svg);

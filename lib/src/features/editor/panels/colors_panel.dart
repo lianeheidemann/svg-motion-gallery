@@ -179,13 +179,31 @@ class _ColorsPanelState extends State<ColorsPanel> {
   }
 
   Widget _layerColors(AppLocalizations l10n) {
-    final path = _editor.selection!;
+    // Every ticked layer takes the change; the card shows the first one's paint.
+    final targets = _editor.targets;
+    final path = targets.first;
     final paint = SvgPaintEdit.read(_editor.svg, path);
     final isFill = _target == _PaintTarget.fill;
     final raw = isFill ? paint.fill : paint.stroke;
     final hex = isFill ? paint.fillColor : paint.strokeColor;
-    String apply(String svg, String? color) =>
-        isFill ? SvgPaintEdit.setFill(svg, path, color) : SvgPaintEdit.setStroke(svg, path, color);
+    String apply(String svg, String? color) {
+      var out = svg;
+      for (final target in targets) {
+        out = isFill
+            ? SvgPaintEdit.setFill(out, target, color)
+            : SvgPaintEdit.setStroke(out, target, color);
+      }
+      return out;
+    }
+
+    String applyWidth(String svg, double width) {
+      var out = svg;
+      for (final target in targets) {
+        out = SvgPaintEdit.setStrokeWidth(out, target, width);
+      }
+      return out;
+    }
+
     final current = switch (raw) {
       null => l10n.paintInherited,
       'none' => l10n.paintNone,
@@ -194,7 +212,9 @@ class _ColorsPanelState extends State<ColorsPanel> {
     };
     return SectionCard(
       icon: Icons.format_color_fill_rounded,
-      title: l10n.layerPaint(l10n.layerLabel(_editor.selectedLayer!, _editor.layers)),
+      title: targets.length > 1
+          ? l10n.multiSelectCount(targets.length)
+          : l10n.layerPaint(l10n.layerLabel(_editor.selectedLayer!, _editor.layers)),
       children: [
         SegmentedButton<_PaintTarget>(
           showSelectedIcon: false,
@@ -228,11 +248,11 @@ class _ColorsPanelState extends State<ColorsPanel> {
             fractionDigits: 1,
             onChanged: (v) {
               setState(() => _liveStrokeWidth = v);
-              _editor.preview(SvgPaintEdit.setStrokeWidth(_editor.svg, path, v));
+              _editor.preview(applyWidth(_editor.svg, v));
             },
             onChangeEnd: (v) {
               _liveStrokeWidth = null;
-              _editor.commit(SvgPaintEdit.setStrokeWidth(_editor.svg, path, v));
+              _editor.commit(applyWidth(_editor.svg, v));
             },
           ),
         Align(

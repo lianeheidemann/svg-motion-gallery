@@ -328,6 +328,25 @@
       }
     }
   },
+  "multiSelect": "Selecionar várias camadas",
+  "multiSelectCount": "{count, plural, =1{1 camada selecionada} other{{count} camadas selecionadas}}",
+  "@multiSelectCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "multiSelectNone": "Toque nas camadas para selecioná-las",
+  "deleteLayersTitle": "Excluir camadas?",
+  "deleteLayersMessage": "{count} camadas serão removidas do desenho. Você pode desfazer depois.",
+  "@deleteLayersMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "layersEmpty": "Este SVG não tem elementos desenháveis.",
   "deleteLayerTitle": "Excluir camada?",
   "deleteLayerMessage": "\"{name}\" será removida do desenho. Você pode desfazer depois.",

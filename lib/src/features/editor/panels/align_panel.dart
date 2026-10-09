@@ -1,4 +1,5 @@
 import 'package:design_system/design_system.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:svg_core/svg_core.dart';
 import 'package:svg_view/svg_view.dart';
@@ -26,39 +27,69 @@ class _AlignPanelState extends State<AlignPanel> {
   EditorController get _editor => widget.editor;
 
   Future<void> _align(String horizontal, String vertical) async {
-    final path = _editor.selection;
+    final targets = _editor.targets;
     final playback = widget.playback;
-    if (path == null || playback == null || _busy) return;
+    if (targets.isEmpty || playback == null || _busy) return;
+    final several = targets.length > 1;
     setState(() {
       _busy = true;
       _failed = false;
     });
-    final offset = await playback.alignmentOffset(horizontal: horizontal, vertical: vertical);
+    // The renderer measures one element at a time, so each ticked layer is
+    // pointed at in turn; every offset is measured against the same drawing.
+    final offsets = <ElementPath, Offset>{};
+    for (final path in targets) {
+      if (several) playback.selectElement(path.indices);
+      final offset = await playback.alignmentOffset(horizontal: horizontal, vertical: vertical);
+      if (offset == null) break;
+      offsets[path] = offset;
+    }
+    if (several) {
+      playback.selectElement(
+        _editor.selection?.indices,
+        also: [
+          for (final path in _editor.multiSelection)
+            if (path != _editor.selection) path.indices,
+        ],
+      );
+    }
     if (!mounted) return;
+    final measured = offsets.length == targets.length;
     setState(() {
       _busy = false;
-      _failed = offset == null;
+      _failed = !measured;
     });
     // The selection may have changed while the renderer was measuring.
-    if (offset == null || _editor.selection != path) return;
-    if (offset.dx.abs() < 1e-6 && offset.dy.abs() < 1e-6) return;
-    final now = SvgTransformEdit.read(_editor.svg, path);
-    _editor.apply(
-      SvgTransformEdit.apply(
-        _editor.svg,
+    if (!measured || !listEquals(_editor.targets, targets)) return;
+    var svg = _editor.svg;
+    SvgEditResult? single;
+    // Last layer first, so wrapping one never moves the path of another.
+    for (final path in targets.reversed) {
+      final offset = offsets[path]!;
+      if (offset.dx.abs() < 1e-6 && offset.dy.abs() < 1e-6) continue;
+      final now = SvgTransformEdit.read(svg, path);
+      single = SvgTransformEdit.apply(
+        svg,
         path,
         now.copyWith(
           translateX: now.translateX + offset.dx,
           translateY: now.translateY + offset.dy,
         ),
-      ),
-    );
+      );
+      svg = single.svg;
+    }
+    if (single == null) return;
+    if (several) {
+      _editor.commit(svg);
+    } else {
+      _editor.apply(single);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final enabled = _editor.selection != null && widget.playback != null && !_busy;
+    final enabled = _editor.targets.isNotEmpty && widget.playback != null && !_busy;
 
     Widget button(Key key, IconData icon, String tooltip, String h, String v) =>
         IconButton.outlined(
