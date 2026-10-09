@@ -29,19 +29,16 @@ class _InsertPanelState extends State<InsertPanel> {
   /// True while a color is being dragged in the free picker, so the row keeps
   /// showing that color instead of the one stored in the file.
   var _picking = false;
-  var _size = 30.0;
 
-  /// Stretch of new shapes' width and height, in percent.
-  var _width = 100.0;
-  var _height = 100.0;
+  /// How new shapes are born: the controls below only edit what is selected,
+  /// so these never change.
+  static const _size = 30.0;
+  static const _width = 100.0;
+  static const _height = 100.0;
+  static const _stroke = 1.5;
+  static const _filled = false;
   double? _liveWidth;
   double? _liveHeight;
-
-  /// Outline of new shapes, as a percentage of the smaller canvas side.
-  var _stroke = 1.5;
-
-  /// Whether new shapes are filled; they are hollow (outline only) by default.
-  var _filled = false;
   double? _liveScale;
   double? _liveStroke;
   var _picker = InsertColorPicker.none;
@@ -266,6 +263,14 @@ class _InsertPanelState extends State<InsertPanel> {
         ),
       );
 
+  /// [children] greyed out and untouchable while [off].
+  List<Widget> _dimmed(bool off, List<Widget> children) => off
+      ? [
+          for (final child in children)
+            IgnorePointer(child: Opacity(opacity: .38, child: child)),
+        ]
+      : children;
+
   void _togglePicker(InsertColorPicker picker) =>
       setState(() => _picker = _picker == picker ? InsertColorPicker.none : picker);
 
@@ -278,12 +283,16 @@ class _InsertPanelState extends State<InsertPanel> {
     final palette = [for (final hex in editor.palette) colorFromHex(hex)!];
     final selection = editor.selection;
     // Only what this tab added is resized here, never a layer of the file.
+    // The Text tab edits text and the Insert tab edits shapes: anything else
+    // leaves the controls greyed out.
     final selectedShape =
         selection != null &&
             SvgInsertEdit.isInserted(editor.svg, selection) &&
+            (_layerAt(selection)?.tag == 'text') == widget.text &&
             SvgHitTest.movables(editor.svg).any((m) => m.path == selection)
         ? selection
         : null;
+    final enabled = selectedShape != null;
     final primary = Theme.of(context).colorScheme.primary;
     // With a shape selected the rows show (and change) that shape's colors.
     final shown = selectedShape != null && !_picking;
@@ -296,8 +305,7 @@ class _InsertPanelState extends State<InsertPanel> {
     final fill = (shown ? _shapeFill(selectedShape) : null) ?? _fillColor ?? color;
     // The fill color only matters while the shapes are filled.
     final showFill =
-        !widget.text &&
-        (selectedShape == null ? _filled : _fillable(selectedShape) && _isFilled(selectedShape));
+        !widget.text && selectedShape != null && _fillable(selectedShape) && _isFilled(selectedShape);
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
@@ -321,16 +329,16 @@ class _InsertPanelState extends State<InsertPanel> {
                       ),
                 ],
               ),
-            if (!widget.text && (selectedShape == null || _fillable(selectedShape)))
+            if (!widget.text)
               CheckboxListTile(
-                key: Key(selectedShape == null ? 'new-filled' : 'selected-filled'),
+                key: const Key('selected-filled'),
                 contentPadding: const EdgeInsets.only(left: 8),
                 controlAffinity: ListTileControlAffinity.leading,
                 title: Text(l10n.filledShape),
-                value: selectedShape == null ? _filled : _isFilled(selectedShape),
-                onChanged: (v) => selectedShape == null
-                    ? setState(() => _filled = v ?? false)
-                    : _setFilled(selectedShape, v ?? false, fill),
+                value: selectedShape != null && _isFilled(selectedShape),
+                onChanged: selectedShape == null || !_fillable(selectedShape)
+                    ? null
+                    : (v) => _setFilled(selectedShape, v ?? false, fill),
               ),
             if (showFill)
               ...insertColorSection(
@@ -345,129 +353,115 @@ class _InsertPanelState extends State<InsertPanel> {
                 closePicker: () => setState(() => _fillPicker = InsertColorPicker.none),
                 palette: palette,
               ),
-            ...insertColorSection(
-              context,
-              label: widget.text ? l10n.color : l10n.outline,
-              keys: 'insert',
-              color: color,
-              picker: _picker,
-              hex: _hex,
-              togglePicker: _togglePicker,
-              pick: (value, {live = false}) => _pick(value, selectedShape, live: live),
-              closePicker: () => setState(() => _picker = InsertColorPicker.none),
-              palette: palette,
+            ..._dimmed(
+              !enabled,
+              insertColorSection(
+                context,
+                label: widget.text ? l10n.color : l10n.outline,
+                keys: 'insert',
+                color: color,
+                picker: _picker,
+                hex: _hex,
+                togglePicker: _togglePicker,
+                pick: (value, {live = false}) => _pick(value, selectedShape, live: live),
+                closePicker: () => setState(() => _picker = InsertColorPicker.none),
+                palette: palette,
+              ),
             ),
-            if (selectedShape == null) ...[
-              SliderField(
-                label: l10n.shapeSize,
-                value: _size,
-                min: 5,
-                max: 100,
-                unit: '%',
-                onChanged: (v) => setState(() => _size = v.roundToDouble()),
-              ),
-              SliderField(
-                key: const Key('new-width'),
-                label: l10n.width,
-                value: _width,
-                min: 10,
-                max: 400,
-                unit: '%',
-                onChanged: (v) => setState(() => _width = v.roundToDouble()),
-              ),
-              SliderField(
-                key: const Key('new-height'),
-                label: l10n.height,
-                value: _height,
-                min: 10,
-                max: 400,
-                unit: '%',
-                onChanged: (v) => setState(() => _height = v.roundToDouble()),
-              ),
-              if (!widget.text)
-                SliderField(
-                  key: const Key('new-stroke'),
-                  label: l10n.outline,
-                  value: _stroke,
-                  min: 0,
-                  max: 10,
-                  fractionDigits: 1,
-                  unit: '%',
-                  onChanged: (v) => setState(() => _stroke = v),
-                ),
-            ] else ...[
-              SliderField(
+            SliderField(
                 key: const Key('selected-size'),
                 label: l10n.shapeSize,
-                value: (_liveScale ?? _factors(selectedShape).size * 100).clamp(5, 400),
+                value: selectedShape == null
+                    ? 100
+                    : (_liveScale ?? _factors(selectedShape).size * 100).clamp(5, 400),
                 min: 5,
                 max: 400,
                 unit: '%',
-                onChanged: (v) {
-                  setState(() => _liveScale = v.roundToDouble());
-                  editor.preview(_scaled(selectedShape, v / 100).svg);
-                },
-                onChangeEnd: (v) {
-                  _liveScale = null;
-                  editor.apply(_scaled(selectedShape, v.roundToDouble() / 100));
-                },
+                onChanged: selectedShape == null
+                    ? null
+                    : (v) {
+                        setState(() => _liveScale = v.roundToDouble());
+                        editor.preview(_scaled(selectedShape, v / 100).svg);
+                      },
+                onChangeEnd: selectedShape == null
+                    ? null
+                    : (v) {
+                        _liveScale = null;
+                        editor.apply(_scaled(selectedShape, v.roundToDouble() / 100));
+                      },
               ),
               SliderField(
                 key: const Key('selected-width'),
                 label: l10n.width,
-                value: (_liveWidth ?? _factors(selectedShape).width * 100).clamp(10, 400),
+                value: selectedShape == null
+                    ? 100
+                    : (_liveWidth ?? _factors(selectedShape).width * 100).clamp(10, 400),
                 min: 10,
                 max: 400,
                 unit: '%',
-                onChanged: (v) {
-                  setState(() => _liveWidth = v.roundToDouble());
-                  editor.preview(_stretched(selectedShape, width: v.roundToDouble()).svg);
-                },
-                onChangeEnd: (v) {
-                  _liveWidth = null;
-                  editor.apply(_stretched(selectedShape, width: v.roundToDouble()));
-                },
+                onChanged: selectedShape == null
+                    ? null
+                    : (v) {
+                        setState(() => _liveWidth = v.roundToDouble());
+                        editor.preview(_stretched(selectedShape, width: v.roundToDouble()).svg);
+                      },
+                onChangeEnd: selectedShape == null
+                    ? null
+                    : (v) {
+                        _liveWidth = null;
+                        editor.apply(_stretched(selectedShape, width: v.roundToDouble()));
+                      },
               ),
               SliderField(
                 key: const Key('selected-height'),
                 label: l10n.height,
-                value: (_liveHeight ?? _factors(selectedShape).height * 100).clamp(10, 400),
+                value: selectedShape == null
+                    ? 100
+                    : (_liveHeight ?? _factors(selectedShape).height * 100).clamp(10, 400),
                 min: 10,
                 max: 400,
                 unit: '%',
-                onChanged: (v) {
-                  setState(() => _liveHeight = v.roundToDouble());
-                  editor.preview(_stretched(selectedShape, height: v.roundToDouble()).svg);
-                },
-                onChangeEnd: (v) {
-                  _liveHeight = null;
-                  editor.apply(_stretched(selectedShape, height: v.roundToDouble()));
-                },
+                onChanged: selectedShape == null
+                    ? null
+                    : (v) {
+                        setState(() => _liveHeight = v.roundToDouble());
+                        editor.preview(_stretched(selectedShape, height: v.roundToDouble()).svg);
+                      },
+                onChangeEnd: selectedShape == null
+                    ? null
+                    : (v) {
+                        _liveHeight = null;
+                        editor.apply(_stretched(selectedShape, height: v.roundToDouble()));
+                      },
               ),
               if (!widget.text)
                 SliderField(
                   key: const Key('selected-stroke'),
                   label: l10n.outline,
-                  value:
-                      (_liveStroke ??
-                              (SvgPaintEdit.read(editor.svg, selectedShape).strokeWidth ?? 0) /
-                                  _side *
-                                  100)
-                          .clamp(0, 10),
+                  value: selectedShape == null
+                      ? 0
+                      : (_liveStroke ??
+                                (SvgPaintEdit.read(editor.svg, selectedShape).strokeWidth ?? 0) /
+                                    _side *
+                                    100)
+                            .clamp(0, 10),
                   min: 0,
                   max: 10,
                   fractionDigits: 1,
                   unit: '%',
-                  onChanged: (v) {
-                    setState(() => _liveStroke = v);
-                    editor.preview(_outlined(selectedShape, v, color));
-                  },
-                  onChangeEnd: (v) {
-                    _liveStroke = null;
-                    editor.commit(_outlined(selectedShape, v, color));
-                  },
+                  onChanged: selectedShape == null
+                      ? null
+                      : (v) {
+                          setState(() => _liveStroke = v);
+                          editor.preview(_outlined(selectedShape, v, color));
+                        },
+                  onChangeEnd: selectedShape == null
+                      ? null
+                      : (v) {
+                          _liveStroke = null;
+                          editor.commit(_outlined(selectedShape, v, color));
+                        },
                 ),
-            ],
             if (widget.text)
               TextField(
                 controller: _text,
