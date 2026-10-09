@@ -63,5 +63,6 @@ class _HighlightPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _HighlightPainter old) => !listEquals(old.rects, rects) || old.color != color;
+  bool shouldRepaint(covariant _HighlightPainter old) =>
+      !listEquals(old.rects, rects) || old.color != color;
 }

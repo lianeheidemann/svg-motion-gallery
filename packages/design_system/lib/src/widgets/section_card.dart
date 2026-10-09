@@ -26,8 +26,9 @@ class SectionCard extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final double spacing;
 
-  /// The header row; a taller touch target when it answers a double tap.
-  Widget _header(ThemeData theme, Widget row) => onTitleDoubleTap == null
+  /// The icon + title; a taller touch target when it answers a double tap.
+  /// [trailing] stays outside, so its own taps never wait for a second one.
+  Widget _titleArea(Widget row) => onTitleDoubleTap == null
       ? row
       : GestureDetector(
           behavior: HitTestBehavior.opaque,
@@ -49,26 +50,33 @@ class SectionCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (title != null) ...[
-              _header(
-                theme,
-                Row(
-                  children: [
-                    if (icon != null) ...[
-                      Icon(icon, color: theme.colorScheme.primary, size: 22),
-                      const SizedBox(width: AppSpacing.md),
-                    ],
-                    Expanded(
-                      child: Semantics(
-                        header: true,
-                        child: Text(
-                          title!,
-                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-                        ),
+              Row(
+                children: [
+                  Expanded(
+                    child: _titleArea(
+                      Row(
+                        children: [
+                          if (icon != null) ...[
+                            Icon(icon, color: theme.colorScheme.primary, size: 22),
+                            const SizedBox(width: AppSpacing.md),
+                          ],
+                          Expanded(
+                            child: Semantics(
+                              header: true,
+                              child: Text(
+                                title!,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    ?trailing,
-                  ],
-                ),
+                  ),
+                  ?trailing,
+                ],
               ),
               SizedBox(height: spacing),
             ],

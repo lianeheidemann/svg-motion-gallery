@@ -8,7 +8,6 @@ import '../editor_controller.dart';
 
 enum _ColorScope { document, layer }
 
-
 /// Recolors the whole document (palette) or paints the selected layer.
 /// Colors are picked from a palette of ready-made colors and fine-tuned with
 /// hue/saturation/lightness sliders.

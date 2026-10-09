@@ -58,7 +58,10 @@ void main() {
       expect(editor.selection, const ElementPath([0]), reason: 'the last one ticked');
 
       editor.select(const ElementPath([1, 0])); // ticking again unticks
-      expect(editor.targets, const [ElementPath([0]), ElementPath([2])]);
+      expect(editor.targets, const [
+        ElementPath([0]),
+        ElementPath([2]),
+      ]);
       editor.select(null);
       expect(editor.targets, isEmpty);
     });
@@ -66,7 +69,9 @@ void main() {
     test('turning it off keeps one layer selected; turning it on keeps the selected one', () {
       final editor = EditorController(multiSvg)..select(const ElementPath([2]));
       editor.setMultiMode(true);
-      expect(editor.targets, const [ElementPath([2])]);
+      expect(editor.targets, const [
+        ElementPath([2]),
+      ]);
       editor
         ..select(const ElementPath([0]))
         ..setMultiMode(false);
@@ -108,7 +113,7 @@ void main() {
         ..setMultiMode(true)
         ..select(const ElementPath([0]))
         ..select(const ElementPath([2]));
-      editor.applyToTargets((svg, path) => SvgLayers.toggleVisibility(svg, path));
+      editor.applyToTargets(SvgLayers.toggleVisibility);
       expect(editor.multiSelection, hasLength(2));
       editor
         ..select(null)

@@ -178,10 +178,7 @@ class _EditorScreenState extends State<EditorScreen> {
     _sentAlso = also;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _playback.selectElement(
-          selection?.indices,
-          also: [for (final path in also) path.indices],
-        );
+        _playback.selectElement(selection?.indices, also: [for (final path in also) path.indices]);
       }
     });
   }
