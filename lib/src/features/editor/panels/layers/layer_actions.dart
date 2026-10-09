@@ -11,9 +11,14 @@ import '../../editor_controller.dart';
 /// hide, delete). An action that does not fit the current selection (nothing
 /// selected, several layers for ordering) stays on screen but greyed out.
 class LayerActionsCard extends StatelessWidget {
-  const LayerActionsCard({super.key, required this.editor});
+  const LayerActionsCard({super.key, required this.editor, this.themeScheme, this.onToggleTheme});
 
   final EditorController editor;
+
+  /// The theme being edited (null when the drawing has no light/dark variants)
+  /// and the switch between them, shown first and highlighted.
+  final SvgColorScheme? themeScheme;
+  final VoidCallback? onToggleTheme;
 
   Future<void> _delete(BuildContext context, int count) async {
     final l10n = context.l10n;
@@ -70,6 +75,18 @@ class LayerActionsCard extends StatelessWidget {
           spacing: 4,
           runSpacing: 4,
           children: [
+            if (themeScheme != null)
+              IconButton.filled(
+                key: const Key('theme-variant'),
+                tooltip: themeScheme == SvgColorScheme.light ? l10n.editingLight : l10n.editingDark,
+                onPressed: onToggleTheme,
+                icon: Icon(
+                  themeScheme == SvgColorScheme.light
+                      ? Icons.light_mode_rounded
+                      : Icons.dark_mode_rounded,
+                  size: 20,
+                ),
+              ),
             action(
               const Key('select-all-layers'),
               Icons.select_all_rounded,
