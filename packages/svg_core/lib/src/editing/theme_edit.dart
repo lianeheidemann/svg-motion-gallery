@@ -31,13 +31,17 @@ class SvgThemeEdit {
   /// when nothing sets one. Looks at the element's inline style, the
   /// stylesheet rules that apply in that variant, its attribute, then its
   /// ancestors.
-  static String? fillFor(String svg, ElementPath path, SvgColorScheme scheme) {
+  static String? fillFor(String svg, ElementPath path, SvgColorScheme scheme) =>
+      paintFor(svg, path, scheme, 'fill');
+
+  /// Same as [fillFor] for [property] (`fill` or `stroke`).
+  static String? paintFor(String svg, ElementPath path, SvgColorScheme scheme, String property) {
     final document = tryParseSvg(SvgThemeResolver.resolve(svg, scheme));
     var element = _target(document, path);
     if (document == null || element == null) return null;
-    final rules = simpleRules(document.rootElement, (p) => p == 'fill');
+    final rules = simpleRules(document.rootElement, (p) => p == property);
     while (element != null) {
-      final value = cssValueOf(element, rules, 'fill');
+      final value = cssValueOf(element, rules, property);
       if (value != null) return SvgColorValue.normalize(value) ?? value.trim();
       element = element.parentElement;
     }
@@ -98,8 +102,18 @@ class SvgThemeEdit {
 
   /// Sets the fill of the element at [path] to [color] in the [scheme] variant
   /// only; the other variant keeps the paint it has now.
-  static String setFill(String svg, ElementPath path, String color, SvgColorScheme scheme) {
-    final keep = fillFor(svg, path, scheme.opposite) ?? '#000000';
+  static String setFill(String svg, ElementPath path, String color, SvgColorScheme scheme) =>
+      setPaint(svg, path, color, scheme, 'fill');
+
+  /// Same as [setFill] for [property] (`fill` or `stroke`).
+  static String setPaint(
+    String svg,
+    ElementPath path,
+    String color,
+    SvgColorScheme scheme,
+    String property,
+  ) {
+    final keep = paintFor(svg, path, scheme.opposite, property) ?? '#000000';
     final document = tryParseSvg(svg);
     final element = _target(document, path);
     if (document == null || element == null) return svg;
@@ -109,7 +123,7 @@ class SvgThemeEdit {
     element.setAttribute(_attribute, id);
     final style = element.getAttribute('style');
     if (style != null) {
-      final cleaned = mapDeclarations(style, (name, old) => name == 'fill' ? null : old);
+      final cleaned = mapDeclarations(style, (name, old) => name == property ? null : old);
       element.setAttribute('style', cleaned.trim().isEmpty ? null : cleaned);
     }
 
@@ -121,20 +135,21 @@ class SvgThemeEdit {
         final which = rule.prelude.contains('dark') ? SvgColorScheme.dark : SvgColorScheme.light;
         final inner = text.substring(rule.blockStart + 1, rule.blockEnd);
         for (final match in RegExp(
-          r'\[data-sm-t="(\d+)"\]\s*\{\s*fill\s*:\s*([^;}!]+)',
+          r'\[data-sm-t="(\d+)"\]\s*\{\s*(fill|stroke)\s*:\s*([^;}!]+)',
         ).allMatches(inner)) {
-          values[which]![match.group(1)!] = match.group(2)!.trim();
+          values[which]!['${match.group(2)}|${match.group(1)}'] = match.group(3)!.trim();
         }
       }
     }
-    values[scheme]![id] = color;
-    values[scheme.opposite]![id] = keep;
+    values[scheme]!['$property|$id'] = color;
+    values[scheme.opposite]!['$property|$id'] = keep;
 
     final css = StringBuffer();
     for (final s in SvgColorScheme.values) {
       css.write('@media (prefers-color-scheme: ${s.name}){');
       for (final entry in values[s]!.entries) {
-        css.write('[$_attribute="${entry.key}"]{fill:${entry.value} !important}');
+        final parts = entry.key.split('|');
+        css.write('[$_attribute="${parts[1]}"]{${parts[0]}:${entry.value} !important}');
       }
       css.write('}');
     }

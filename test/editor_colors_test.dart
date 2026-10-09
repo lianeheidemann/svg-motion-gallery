@@ -136,20 +136,22 @@ void main() {
     expect(stage()!.isPlaying, isTrue);
   });
 
-  testWidgets('colors: painting everything leaves outline-only shapes alone', (tester) async {
-    final services = await _openRedInEditor(
-      tester,
-      svg:
-          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
-          '<rect width="10" height="10" fill="#FF0000"/>'
-          '<path d="M1 5 Q5 9 9 5" fill="none" stroke="#00FF00"/></svg>',
-    );
+  testWidgets('colors: an outline-only shape is painted on its stroke, alone or with all', (
+    tester,
+  ) async {
+    const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+        '<rect width="10" height="10" fill="#FF0000"/>'
+        '<path d="M1 5 Q5 9 9 5" fill="none" stroke="#00FF00"/></svg>';
+    // All selected (nothing ticked): the rect's fill and the path's stroke.
+    final services = await _openRedInEditor(tester, svg: svg);
     await _tapTab(tester, 'Cores');
     expect(find.text('Remover preenchimento'), findsNothing);
     await _pickPreset(tester, '#3B82F6');
     final saved = await _save(tester, services);
-    expect(saved, contains('#3B82F6'));
-    expect(saved, contains('FILL="NONE"'));
+    expect(RegExp('#3B82F6').allMatches(saved).length, 2, reason: 'rect fill + path stroke');
+    expect(saved, contains('FILL="NONE"'), reason: 'the line never gets a fill');
+    expect(saved, isNot(contains('#00FF00')));
   });
 
   testWidgets('colors: the eyedropper takes the color of the shape that is tapped', (tester) async {
@@ -254,6 +256,22 @@ void main() {
     final saved = await _save(tester, services);
     expect(saved, isNot(contains('#FF0000')), reason: 'the red was turned');
     expect(saved, contains('FILL="#'));
+  });
+
+  testWidgets('colors: the line alone changes only its stroke, never gets a fill', (tester) async {
+    final services = await _openRedInEditor(
+      tester,
+      svg:
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+          '<rect width="10" height="10" fill="#FF0000"/>'
+          '<path d="M1 5 Q5 9 9 5" fill="none" stroke="#00FF00"/></svg>',
+    );
+    await _selectLayerThenColors(tester, 'Caminho');
+    await _pickPreset(tester, '#3B82F6');
+    final saved = await _save(tester, services);
+    expect(saved, contains('#FF0000'), reason: 'the rect is untouched');
+    expect(saved, contains('STROKE="#3B82F6"'));
+    expect(saved, contains('FILL="NONE"'));
   });
 
   testWidgets('the rainbow swatch opens a free picker that recolors the layer', (tester) async {
