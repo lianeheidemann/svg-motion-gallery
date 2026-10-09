@@ -9,7 +9,7 @@ import 'package:svg_motion_gallery/src/l10n/l10n.dart';
 // sits on 40..60, so it is at 80..120 px.
 const _svg =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'
-    '<rect x="40" y="40" width="20" height="20"/></svg>';
+    '<rect x="40" y="40" width="20" height="20" stroke="#000" stroke-width="2"/></svg>';
 
 Future<EditorController> _pump(WidgetTester tester) async {
   final editor = EditorController(_svg);
@@ -38,6 +38,8 @@ Future<EditorController> _pump(WidgetTester tester) async {
 SvgTransformValues _values(EditorController editor) =>
     SvgTransformEdit.read(editor.svg, editor.selection);
 
+double _size(EditorController editor) => SvgShapeSize.read(editor.svg, editor.selection!).size;
+
 void main() {
   testWidgets('moving, resizing and turning in a row keep what was done before', (tester) async {
     final editor = await _pump(tester);
@@ -57,11 +59,16 @@ void main() {
 
     // 3. Resize with the corner handle: the position must not go back.
     final before = _values(editor);
+    final sizeBefore = _size(editor);
     final handle = find.byKey(const Key('resize-handle'));
     await tester.drag(handle, const Offset(30, 30));
     await tester.pumpAndSettle();
     final resized = _values(editor);
-    expect(resized.scale, greaterThan(before.scale));
+    final sizeAfterResize = _size(editor);
+    // The shape grows in its own geometry: no scale, and the outline stays 2.
+    expect(_size(editor), greaterThan(sizeBefore));
+    expect(resized.scale, before.scale);
+    expect(editor.svg, contains('stroke-width="2"'));
     expect(resized.translateX, closeTo(before.translateX, 0.001), reason: 'resizing keeps x');
     expect(resized.translateY, closeTo(before.translateY, 0.001), reason: 'resizing keeps y');
 
@@ -69,6 +76,7 @@ void main() {
     await tester.drag(find.byKey(const Key('rotate-handle')), const Offset(-40, 30));
     await tester.pumpAndSettle();
     final turned = _values(editor);
+    expect(_size(editor), closeTo(sizeAfterResize, 0.001), reason: 'turning keeps the size');
     expect(turned.rotation, isNot(0));
     expect(turned.translateX, closeTo(resized.translateX, 0.001));
     expect(turned.translateY, closeTo(resized.translateY, 0.001));

@@ -188,18 +188,26 @@ class _StageDragLayerState extends State<StageDragLayer> {
     final start = _start;
     setState(() => _reset(null));
     if ((offset == Offset.zero && factor == 1 && angle == 0) || !map.isUsable) return;
-    _editor.apply(
-      SvgTransformEdit.apply(
-        _editor.svg,
-        target.path,
-        start.copyWith(
-          translateX: start.translateX + offset.dx / map.scale,
-          translateY: start.translateY + offset.dy / map.scale,
-          scale: (start.scale * factor).clamp(_minFactor, _maxFactor),
-          rotation: _fold(start.rotation + angle),
-        ),
+    // Shapes grow in their own geometry, so the outline keeps its thickness;
+    // everything else is scaled by its wrapper.
+    final grows = factor != 1 && SvgShapeSize.canStretch(_editor.svg, target.path);
+    var result = SvgTransformEdit.apply(
+      _editor.svg,
+      target.path,
+      start.copyWith(
+        translateX: start.translateX + offset.dx / map.scale,
+        translateY: start.translateY + offset.dy / map.scale,
+        scale: grows ? start.scale : (start.scale * factor).clamp(_minFactor, _maxFactor),
+        rotation: _fold(start.rotation + angle),
       ),
     );
+    if (grows) {
+      final size = SvgShapeSize.read(_editor.svg, target.path).size;
+      result =
+          SvgShapeSize.stretch(result.svg, result.selection ?? target.path, size: size * factor) ??
+          result;
+    }
+    _editor.apply(result);
   }
 
   @override

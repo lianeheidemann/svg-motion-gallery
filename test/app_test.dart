@@ -243,7 +243,12 @@ void main() {
     await tester.drag(find.byKey(const Key('resize-handle')), const Offset(30, 30));
     await tester.pumpAndSettle();
     await _tapTab(tester, 'Camadas');
-    expect(find.text('Ajuste do editor'), findsWidgets, reason: 'resizing adds a transform group');
+    expect(
+      find.text('Ajuste do editor'),
+      findsNothing,
+      reason: 'resizing changes the shape itself, with no transform group',
+    );
+    expect(save().onPressed, isNotNull);
     await tester.tap(find.byTooltip('Desfazer'));
     await tester.pumpAndSettle();
     await _tapTab(tester, 'Inserir');
@@ -519,7 +524,9 @@ void main() {
     await tester.pumpAndSettle();
     await _tapTab(tester, 'Código');
     final code = tester.widget<TextField>(find.byKey(const Key('code-field'))).controller!.text;
-    expect(code, contains('scale('), reason: 'the width is a stretch of the shape');
+    // The shape itself got wider (no scaling wrapper), so its outline keeps its width.
+    expect(code, contains('data-sm-w='));
+    expect(code, isNot(contains('data-sm-edit="element"')));
   });
 
   testWidgets('animation: a motion applies as soon as it is tapped and "None" removes it', (

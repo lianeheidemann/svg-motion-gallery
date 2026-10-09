@@ -85,11 +85,22 @@ class _InsertPanelState extends State<InsertPanel> {
 
   EditorController get editor => widget.editor;
 
-  SvgEditResult _scaled(ElementPath path, double scale) => SvgTransformEdit.apply(
-    editor.svg,
-    path,
-    SvgTransformEdit.read(editor.svg, path).copyWith(scale: scale),
-  );
+  /// Shapes are resized in their own geometry, so the outline keeps its
+  /// thickness; what cannot be (text, paths) is scaled instead.
+  SvgEditResult _scaled(ElementPath path, double scale) =>
+      SvgShapeSize.stretch(editor.svg, path, size: scale) ??
+      SvgTransformEdit.apply(
+        editor.svg,
+        path,
+        SvgTransformEdit.read(editor.svg, path).copyWith(scale: scale),
+      );
+
+  /// Size, width and height of [path] as factors (1 = as drawn).
+  SvgShapeFactors _factors(ElementPath path) {
+    if (SvgShapeSize.canStretch(editor.svg, path)) return SvgShapeSize.read(editor.svg, path);
+    final values = SvgTransformEdit.read(editor.svg, path);
+    return (size: values.scale, width: values.widthFactor, height: values.heightFactor);
+  }
 
   /// The smaller side of the canvas: outlines are a percentage of it, so the
   /// same slider suits a 24-unit icon and a 1000-unit drawing.
@@ -241,6 +252,12 @@ class _InsertPanelState extends State<InsertPanel> {
 
   /// The selected shape stretched to [width] x [height] percent.
   SvgEditResult _stretched(ElementPath path, {double? width, double? height}) =>
+      SvgShapeSize.stretch(
+        editor.svg,
+        path,
+        width: width == null ? null : width / 100,
+        height: height == null ? null : height / 100,
+      ) ??
       SvgTransformEdit.apply(
         editor.svg,
         path,
@@ -465,8 +482,7 @@ class _InsertPanelState extends State<InsertPanel> {
               SliderField(
                 key: const Key('selected-size'),
                 label: l10n.shapeSize,
-                value: (_liveScale ?? SvgTransformEdit.read(editor.svg, selectedShape).scale * 100)
-                    .clamp(5, 400),
+                value: (_liveScale ?? _factors(selectedShape).size * 100).clamp(5, 400),
                 min: 5,
                 max: 400,
                 unit: '%',
@@ -483,10 +499,7 @@ class _InsertPanelState extends State<InsertPanel> {
                 SliderField(
                   key: const Key('selected-width'),
                   label: l10n.width,
-                  value:
-                      (_liveWidth ??
-                              SvgTransformEdit.read(editor.svg, selectedShape).widthFactor * 100)
-                          .clamp(10, 400),
+                  value: (_liveWidth ?? _factors(selectedShape).width * 100).clamp(10, 400),
                   min: 10,
                   max: 400,
                   unit: '%',
@@ -502,10 +515,7 @@ class _InsertPanelState extends State<InsertPanel> {
                 SliderField(
                   key: const Key('selected-height'),
                   label: l10n.height,
-                  value:
-                      (_liveHeight ??
-                              SvgTransformEdit.read(editor.svg, selectedShape).heightFactor * 100)
-                          .clamp(10, 400),
+                  value: (_liveHeight ?? _factors(selectedShape).height * 100).clamp(10, 400),
                   min: 10,
                   max: 400,
                   unit: '%',
