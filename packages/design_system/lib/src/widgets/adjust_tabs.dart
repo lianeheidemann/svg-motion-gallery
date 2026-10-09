@@ -17,11 +17,15 @@ class AdjustTabs<T> extends StatefulWidget {
     required this.tabs,
     required this.selected,
     required this.onSelected,
+    this.trailing,
   });
 
   final List<AdjustTab<T>> tabs;
   final T selected;
   final ValueChanged<T> onSelected;
+
+  /// A widget after the last tab (e.g. a reset button).
+  final Widget? trailing;
 
   @override
   State<AdjustTabs<T>> createState() => _AdjustTabsState<T>();
@@ -43,8 +47,8 @@ class _AdjustTabsState<T> extends State<AdjustTabs<T>> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return SizedBox(
-      height: 86,
+    final row = ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
       child: ListView.separated(
         controller: _scroll,
         scrollDirection: Axis.horizontal,
@@ -92,6 +96,18 @@ class _AdjustTabsState<T> extends State<AdjustTabs<T>> {
           );
         },
       ),
+    );
+    return SizedBox(
+      height: 86,
+      child: widget.trailing == null
+          ? row
+          : Row(
+              children: [
+                Expanded(child: row),
+                // Stays at the end of the line, in view while the tabs scroll.
+                widget.trailing!,
+              ],
+            ),
     );
   }
 }

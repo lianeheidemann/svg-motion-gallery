@@ -283,6 +283,7 @@
   "adjustTemperature": "Temperatura",
   "adjustHighlights": "Realces",
   "adjustShadows": "Sombras",
+  "adjustReset": "Redefinir",
   "codeProblemGo": "Ir para o problema",
   "codeMoreProblems": "+{count}",
   "@codeMoreProblems": {

@@ -43,6 +43,16 @@ void main() {
   });
 
   group('buildHostHtml', () {
+    test('a view that starts paused goes back to the first frame once loaded', () {
+      final html = buildHostHtml(
+        svg: '<svg/>',
+        scheme: SvgColorScheme.light,
+        bridge: true,
+        autoplay: false,
+      );
+      expect(html, contains('if (paused) api.seek(0)'));
+    });
+
     test('embeds the svg and the color scheme', () {
       final html = buildHostHtml(svg: '<svg id="x"/>', scheme: SvgColorScheme.light);
       expect(html, contains('<div id="stage"><svg id="x"/></div>'));

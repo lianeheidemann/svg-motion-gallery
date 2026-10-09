@@ -206,7 +206,8 @@ String _bridgeScript({required bool autoplay, required String viewId}) =>
     if (d && d.smCall && api[d.smCall]) api[d.smCall].apply(null, d.args || []);
   });
   applyPause();
-  window.addEventListener('load', applyPause);
+  // Starting paused means the first frame, however long loading took.
+  window.addEventListener('load', function(){ if (paused) api.seek(0); applyPause(); });
   setInterval(report, 200);
 })();
 ''';

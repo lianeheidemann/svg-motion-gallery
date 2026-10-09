@@ -163,6 +163,7 @@
   "adjustTemperature": "Warmth",
   "adjustHighlights": "Highlights",
   "adjustShadows": "Shadows",
+  "adjustReset": "Reset",
   "codeProblemGo": "Go to the problem",
   "codeMoreProblems": "+{count}",
   "selectionNone": "Selected: All",
