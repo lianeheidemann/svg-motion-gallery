@@ -289,7 +289,7 @@ void main() {
     );
     bool enabled(String key) => tester.widget<IconButton>(find.byKey(Key(key))).onPressed != null;
     // Nothing selected: only "select all" works.
-    expect(find.text('Nenhuma camada selecionada'), findsOneWidget);
+    expect(find.textContaining('Selecionado: Todas'), findsOneWidget);
     expect(enabled('select-all-layers'), isTrue);
     for (final key in [
       'clear-selection',
@@ -311,7 +311,7 @@ void main() {
     // Several: ordering is for one layer only.
     await tester.tap(find.byKey(const Key('select-all-layers')));
     await tester.pumpAndSettle();
-    expect(find.text('2 camadas selecionadas'), findsWidgets);
+    expect(find.textContaining('2 camadas selecionadas'), findsOneWidget, reason: 'the line above');
     expect(enabled('layer-forward'), isFalse);
     expect(enabled('layer-delete'), isTrue);
     // The header keeps only the version and the corner box.

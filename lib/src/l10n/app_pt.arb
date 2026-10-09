@@ -283,7 +283,6 @@
   "adjustTemperature": "Temperatura",
   "adjustHighlights": "Realces",
   "adjustShadows": "Sombras",
-  "noLayerSelected": "Nenhuma camada selecionada",
   "codeProblemGo": "Ir para o problema",
   "codeMoreProblems": "+{count}",
   "@codeMoreProblems": {

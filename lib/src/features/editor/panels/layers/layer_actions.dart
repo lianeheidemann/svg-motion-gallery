@@ -5,19 +5,15 @@ import 'package:svg_core/svg_core.dart';
 import '../../../../l10n/l10n.dart';
 import '../../../../widgets/svg_actions_menu.dart';
 import '../../editor_controller.dart';
-import '../layers_panel.dart';
 
 /// The box at the top of the Layers tab, always there: select all, clear the
 /// selection, and the actions on what is selected (order, duplicate, show or
 /// hide, delete). An action that does not fit the current selection (nothing
 /// selected, several layers for ordering) stays on screen but greyed out.
 class LayerActionsCard extends StatelessWidget {
-  const LayerActionsCard({super.key, required this.editor, this.label});
+  const LayerActionsCard({super.key, required this.editor});
 
   final EditorController editor;
-
-  /// Name with its number of the selected layer, as the list shows it.
-  final String? label;
 
   Future<void> _delete(BuildContext context, int count) async {
     final l10n = context.l10n;
@@ -67,17 +63,8 @@ class LayerActionsCard extends StatelessWidget {
           icon: Icon(icon, size: 20),
         );
 
+    // No title: the line above the box already says what is selected.
     return SectionCard(
-      icon: single != null
-          ? LayersPanel.iconFor(single)
-          : has
-          ? Icons.checklist_rounded
-          : Icons.select_all_rounded,
-      title: single != null
-          ? (label ?? l10n.layer(single))
-          : has
-          ? l10n.multiSelectCount(count)
-          : l10n.noLayerSelected,
       children: [
         Wrap(
           spacing: 4,

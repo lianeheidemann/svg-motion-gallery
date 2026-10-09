@@ -118,7 +118,6 @@ class _LayersPanelState extends State<LayersPanel> {
       _layerCount = layers.length;
       _folded.clear();
     }
-    final selected = editor.selectedLayer;
     final multi = editor.multiMode;
     final ticked = editor.multiSelection.toSet();
     final scheme = Theme.of(context).colorScheme;
@@ -126,7 +125,7 @@ class _LayersPanelState extends State<LayersPanel> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
-        LayerActionsCard(editor: editor, label: selected == null ? null : labels[selected.path]),
+        LayerActionsCard(editor: editor),
         const SizedBox(height: AppSpacing.md),
         SectionCard(
           icon: Icons.layers_outlined,
