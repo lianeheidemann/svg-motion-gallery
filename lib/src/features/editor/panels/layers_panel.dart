@@ -125,7 +125,11 @@ class _LayersPanelState extends State<LayersPanel> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
-        LayerActionsCard(editor: editor),
+        LayerActionsCard(
+          editor: editor,
+          themeScheme: widget.themeScheme,
+          onToggleTheme: widget.onToggleTheme,
+        ),
         const SizedBox(height: AppSpacing.md),
         SectionCard(
           icon: Icons.layers_outlined,
@@ -135,20 +139,6 @@ class _LayersPanelState extends State<LayersPanel> {
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (widget.themeScheme != null)
-                IconButton(
-                  key: const Key('theme-variant'),
-                  tooltip: widget.themeScheme == SvgColorScheme.light
-                      ? l10n.editingLight
-                      : l10n.editingDark,
-                  visualDensity: VisualDensity.compact,
-                  onPressed: widget.onToggleTheme,
-                  icon: Icon(
-                    widget.themeScheme == SvgColorScheme.light
-                        ? Icons.light_mode_rounded
-                        : Icons.dark_mode_rounded,
-                  ),
-                ),
               Tooltip(
                 message: l10n.multiSelect,
                 child: Semantics(

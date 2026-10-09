@@ -321,7 +321,8 @@ class _EditorScreenState extends State<EditorScreen> {
   }
 
   /// Switches tab. Colors compares two previews, so both sit still at the
-  /// start (two live animations would never show the same frame).
+  /// start (two live animations would never show the same frame); the play
+  /// button still works there.
   void _switchTab(EditorTab next) {
     final was = _tab;
     _tab = next;

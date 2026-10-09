@@ -126,7 +126,7 @@ void main() {
 
     await _tapTab(tester, 'Cores');
     expect(stage()!.isPlaying, isFalse);
-    expect(tester.widget<IconButton>(find.byKey(const Key('stage-play'))).onPressed, isNull);
+    expect(tester.widget<IconButton>(find.byKey(const Key('stage-play'))).onPressed, isNotNull);
     final views = tester.widgetList<SvgView>(find.byType(SvgView)).toList();
     expect(views, hasLength(2));
     final before = views.firstWhere((v) => v.controller == null);

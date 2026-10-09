@@ -94,7 +94,7 @@ class _ResetButton extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(left: 6),
       child: SizedBox(
-        width: 64,
+        width: 84,
         child: Column(
           children: [
             IconButton.filled(

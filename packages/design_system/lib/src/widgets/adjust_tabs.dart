@@ -9,8 +9,8 @@ class AdjustTab<T> {
   final String label;
 }
 
-/// A scrolling row of round icon buttons (photo-editor style); the selected
-/// one is filled with the accent color.
+/// A row of round icon buttons (photo-editor style) that swipes sideways, with
+/// no scrollbar; the selected one is filled with the accent color.
 class AdjustTabs<T> extends StatefulWidget {
   const AdjustTabs({
     super.key,
@@ -24,7 +24,7 @@ class AdjustTabs<T> extends StatefulWidget {
   final T selected;
   final ValueChanged<T> onSelected;
 
-  /// A widget after the last tab (e.g. a reset button).
+  /// A widget after the last tab (e.g. a reset button); it scrolls with them.
   final Widget? trailing;
 
   @override
@@ -52,9 +52,11 @@ class _AdjustTabsState<T> extends State<AdjustTabs<T>> {
       child: ListView.separated(
         controller: _scroll,
         scrollDirection: Axis.horizontal,
-        itemCount: tabs.length,
+        itemCount: tabs.length + (widget.trailing == null ? 0 : 1),
         separatorBuilder: (context, index) => const SizedBox(width: 6),
         itemBuilder: (context, index) {
+          // The trailing widget is the last item, so it swipes with the rest.
+          if (index == tabs.length) return widget.trailing!;
           final tab = tabs[index];
           final on = tab.id == widget.selected;
           return Semantics(
@@ -64,9 +66,9 @@ class _AdjustTabsState<T> extends State<AdjustTabs<T>> {
             child: InkResponse(
               key: Key('adjust-${tab.id}'),
               onTap: () => widget.onSelected(tab.id),
-              radius: 32,
+              radius: 42,
               child: SizedBox(
-                width: 64,
+                width: 84,
                 child: Column(
                   children: [
                     Container(
@@ -82,7 +84,7 @@ class _AdjustTabsState<T> extends State<AdjustTabs<T>> {
                     Text(
                       tab.label,
                       maxLines: 1,
-                      overflow: TextOverflow.fade,
+                      overflow: TextOverflow.ellipsis,
                       softWrap: false,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: on ? scheme.primary : scheme.onSurfaceVariant,
@@ -97,17 +99,6 @@ class _AdjustTabsState<T> extends State<AdjustTabs<T>> {
         },
       ),
     );
-    return SizedBox(
-      height: 66,
-      child: widget.trailing == null
-          ? row
-          : Row(
-              children: [
-                Expanded(child: row),
-                // Stays at the end of the line, in view while the tabs scroll.
-                widget.trailing!,
-              ],
-            ),
-    );
+    return SizedBox(height: 66, child: row);
   }
 }
