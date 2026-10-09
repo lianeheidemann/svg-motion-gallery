@@ -209,9 +209,10 @@ void main() {
   testWidgets('the selection label has an icon that clears the selection', (tester) async {
     await _openRedInEditor(tester);
     expect(find.byKey(const Key('clear-selection')), findsNothing, reason: 'nothing selected');
-    await _tapTab(tester, 'Camadas');
     await tester.tap(find.text('Retângulo'));
+    await tester.pump(const Duration(milliseconds: 500));
     await tester.pumpAndSettle();
+    expect(find.textContaining('Selecionado: Retângulo'), findsOneWidget);
     expect(find.text('Limpar seleção'), findsNothing, reason: 'icon only');
     await tester.tap(find.byKey(const Key('clear-selection')));
     await tester.pumpAndSettle();
