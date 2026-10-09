@@ -739,6 +739,37 @@ void main() {
     expect(code, isNot(contains('data-sm-edit="element"')));
   });
 
+  testWidgets('animation: only the duration is shown, and it follows the speed bar', (
+    tester,
+  ) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('sun-moon.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Animação');
+
+    expect(find.textContaining('Sim ('), findsNothing, reason: 'no CSS / SMIL jargon');
+    final duration = find.textContaining('Duração:');
+    expect(duration, findsOneWidget);
+    double seconds() => double.parse(
+      tester.widget<Text>(duration).data!.replaceAll(RegExp(r'[^0-9,]'), '').replaceAll(',', '.'),
+    );
+    final before = seconds();
+
+    // Faster: the cycle gets shorter while the bar is still moving.
+    final bar = find.byType(Slider).first;
+    final gesture = await tester.startGesture(tester.getCenter(bar));
+    await gesture.moveBy(const Offset(60, 0));
+    await tester.pump();
+    expect(seconds(), lessThan(before));
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(seconds(), lessThan(before), reason: 'and it stays after the speed is applied');
+  });
+
   testWidgets('animation: a motion applies as soon as it is tapped and "None" removes it', (
     tester,
   ) async {

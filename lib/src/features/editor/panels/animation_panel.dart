@@ -36,6 +36,11 @@ class _AnimationPanelState extends State<AnimationPanel> {
 
   var _seconds = 2.0;
 
+  /// The cycle of [_base] (at speed 1), kept so the text under the title can
+  /// follow the speed bar without reading the document on every move.
+  Duration? _baseCycle;
+  String? _baseCycleOf;
+
   EditorController get _editor => widget.editor;
 
   /// Puts [preset] on the layer at [path] (replacing its motion), lasting
@@ -70,7 +75,14 @@ class _AnimationPanelState extends State<AnimationPanel> {
     final currentPreset = presetPath == null
         ? null
         : SvgAnimationEdit.presetAt(_editor.svg, presetPath);
-    final cycle = metadata.cycleDuration;
+    // The cycle at the speed on the bar: the document at speed 1 divided by it.
+    final baseText = _base ?? _editor.svg;
+    if (_baseCycleOf != baseText) {
+      _baseCycleOf = baseText;
+      _baseCycle = SvgMetadata.parse(baseText).cycleDuration;
+    }
+    final baseCycle = _baseCycle;
+    final seconds = baseCycle == null ? null : baseCycle.inMilliseconds / 1000 / _speed;
     // The chips show what the layer has; tapping one applies it right away.
     final chosen = currentPreset;
 
@@ -82,12 +94,11 @@ class _AnimationPanelState extends State<AnimationPanel> {
           title: l10n.animationsTitle,
           spacing: 8,
           children: [
-            Text(
-              metadata.isAnimated
-                  ? '${l10n.animationSummary(metadata)}'
-                        '${cycle == null ? '' : ' · ${l10n.cycleSeconds(l10n.decimal(cycle.inMilliseconds / 1000))}'}'
-                  : l10n.animationsNone,
-            ),
+            // Only the duration, which follows the speed bar while it moves.
+            if (!metadata.isAnimated)
+              Text(l10n.animationsNone)
+            else if (seconds != null)
+              Text(l10n.durationSeconds(l10n.decimal(seconds))),
             if (metadata.isAnimated) ...[
               SliderField(
                 label: l10n.speed,

@@ -306,8 +306,8 @@
   "lightness": "Luminosidade",
   "hex": "Hexadecimal",
   "animationsTitle": "Animações do arquivo",
-  "cycleSeconds": "ciclo de {seconds} s",
-  "@cycleSeconds": {
+  "durationSeconds": "Duração: {seconds} s",
+  "@durationSeconds": {
     "placeholders": {
       "seconds": {
         "type": "String"

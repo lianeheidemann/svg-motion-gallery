@@ -165,7 +165,7 @@
   "lightness": "Lightness",
   "hex": "Hex",
   "animationsTitle": "File animations",
-  "cycleSeconds": "{seconds} s cycle",
+  "durationSeconds": "Duration: {seconds} s",
   "speed": "Speed",
   "removeAnimations": "Remove all animations",
   "presetsTitle": "Add motion",
