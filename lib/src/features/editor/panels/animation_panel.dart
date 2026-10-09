@@ -99,8 +99,16 @@ class _AnimationPanelState extends State<AnimationPanel> {
   double _shownIntensity(ElementPath? path, SvgAnimationPreset? chosen) =>
       path == null || chosen == null ? _intensity : SvgAnimationEdit.intensityAt(_editor.svg, path);
 
+  /// The layers the speed bar applied to; a new selection starts it over.
+  List<ElementPath> _baseTargets = const [];
+
   void _syncBase() {
-    if (_editor.svg == (_applied ?? _base)) return;
+    final targets = _editor.targets;
+    final sameTargets =
+        targets.length == _baseTargets.length &&
+        [for (var i = 0; i < targets.length; i++) targets[i] == _baseTargets[i]].every((e) => e);
+    if (sameTargets && _editor.svg == (_applied ?? _base)) return;
+    _baseTargets = targets;
     _base = _editor.svg;
     _applied = null;
     _speed = 1;
@@ -157,7 +165,11 @@ class _AnimationPanelState extends State<AnimationPanel> {
                 },
                 onChanged: (v) => setState(() => _speed = v),
                 onChangeEnd: (v) {
-                  final result = SvgAnimationEdit.changeSpeed(_base ?? _editor.svg, v);
+                  final result = SvgAnimationEdit.changeSpeed(
+                    _base ?? _editor.svg,
+                    v,
+                    only: _editor.targets,
+                  );
                   _applied = result;
                   if (result != _editor.svg) _editor.commit(result);
                   setState(() => _speed = v);

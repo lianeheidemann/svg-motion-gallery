@@ -231,6 +231,33 @@ void main() {
       expect(SvgMetadata.parse(faster).cycleDuration, const Duration(seconds: 2));
     });
 
+    test('changes the speed of only the chosen elements', () {
+      const doc =
+          '<svg><style>.a{animation: spin 2s linear infinite}</style>'
+          '<rect class="a"/><rect class="a"/>'
+          '<circle style="animation: pulse 1.5s"/></svg>';
+      final out = SvgAnimationEdit.changeSpeed(
+        doc,
+        2,
+        only: [
+          const ElementPath([1]),
+        ],
+      );
+      // Shared rule untouched; only the first rect gets its own faster time.
+      expect(out, contains('.a{animation: spin 2s linear infinite}'));
+      expect(out, contains('class="a" style="animation:spin 1s linear infinite"'));
+      expect(out, contains('<circle style="animation: pulse 1.5s"/>'));
+      final inline = SvgAnimationEdit.changeSpeed(
+        doc,
+        2,
+        only: [
+          const ElementPath([3]),
+        ],
+      );
+      expect(inline, contains('animation: pulse 0.75s'));
+      expect(inline, isNot(contains('spin 1s')));
+    });
+
     test('removes every animation', () {
       final still = SvgAnimationEdit.removeAll(
         animated.replaceFirst('</style>', '@keyframes spin{to{transform:rotate(1turn)}}</style>'),

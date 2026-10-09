@@ -42,7 +42,12 @@ class SvgAnimationEdit {
 
   /// Plays every animation [factor] times faster (0.5 = half speed): SMIL
   /// `dur`/`begin`/`end`/`repeatDur` and CSS `animation*` times are divided.
-  static String changeSpeed(String svg, double factor) {
+  ///
+  /// With [only] (non-empty) just those elements change: each one, everything
+  /// inside it, and the animation wrappers around it. Animations that come
+  /// from a shared `<style>` rule are not edited there (other layers use them
+  /// too): the scaled times go on the element's own `style` instead.
+  static String changeSpeed(String svg, double factor, {List<ElementPath>? only}) {
     if (factor <= 0 || factor == 1) return svg;
     final document = tryParseSvg(svg);
     if (document == null) return svg;
@@ -51,7 +56,25 @@ class SvgAnimationEdit {
     String? scaleCss(String property, String value) =>
         property.startsWith('animation') ? scaleCssTimes(value, scale) : value;
 
-    for (final element in [root, ...root.descendantElements]) {
+    final scoped = only != null && only.isNotEmpty;
+    final Iterable<XmlElement> elements;
+    if (scoped) {
+      final chosen = <XmlElement>{};
+      for (final path in only) {
+        final target = path.isRoot ? root : path.resolve(root);
+        if (target == null) continue;
+        chosen.addAll([target, ...target.descendantElements]);
+        for (final up in target.ancestorElements) {
+          if (up.getAttribute(animationAttribute) != null) chosen.add(up);
+        }
+      }
+      elements = chosen;
+    } else {
+      elements = [root, ...root.descendantElements];
+    }
+
+    final sheetRules = scoped ? _sheetAnimations(root) : const <_SheetRule>[];
+    for (final element in elements) {
       if (smilTags.contains(element.localName)) {
         for (final name in _timingAttributes) {
           final raw = element.getAttribute(name);
@@ -66,13 +89,55 @@ class SvgAnimationEdit {
           element.setAttribute(name, scaled);
         }
       }
-      final style = element.getAttribute('style');
-      if (style != null) element.setAttribute('style', mapDeclarations(style, scaleCss));
-      if (element.localName == 'style') {
+      var style = element.getAttribute('style');
+      if (style != null) {
+        style = mapDeclarations(style, scaleCss);
+        element.setAttribute('style', style);
+      }
+      if (scoped) {
+        final own = {
+          for (final piece in splitTopLevel(style ?? '', ';'))
+            if (piece.contains(':')) piece.substring(0, piece.indexOf(':')).trim().toLowerCase(),
+        };
+        final inherited = <String, String>{};
+        for (final rule in sheetRules) {
+          if (rule.matches(element)) inherited.addAll(rule.declarations);
+        }
+        final extra = [
+          for (final entry in inherited.entries)
+            if (!own.contains(entry.key)) '${entry.key}:${scaleCssTimes(entry.value, scale)}',
+        ];
+        if (extra.isNotEmpty) {
+          final base = (style ?? '').trim();
+          final glue = base.isEmpty || base.endsWith(';') ? '' : ';';
+          element.setAttribute('style', '$base$glue${extra.join(';')}');
+        }
+      }
+      if (!scoped && element.localName == 'style') {
         setStyleText(element, mapStylesheetDeclarations(styleText(element), scaleCss));
       }
     }
     return document.toXmlString();
+  }
+
+  /// The `animation*` declarations of the simple rules (`.class`, `#id`, `tag`,
+  /// `tag.class`) of every `<style>`, in order.
+  static List<_SheetRule> _sheetAnimations(XmlElement root) {
+    final rules = <_SheetRule>[];
+    for (final style in root.descendantElements.where((e) => e.localName == 'style')) {
+      for (final match in RegExp(r'([^{}@;]+)\{([^{}]*)\}').allMatches(styleText(style))) {
+        final declarations = <String, String>{};
+        mapDeclarations(match.group(2)!, (property, value) {
+          if (property.startsWith('animation')) declarations[property] = value.trim();
+          return value;
+        });
+        if (declarations.isEmpty) continue;
+        for (final selector in match.group(1)!.split(',')) {
+          rules.add(_SheetRule(selector.trim(), declarations));
+        }
+      }
+    }
+    return rules;
   }
 
   /// Removes all SMIL elements, CSS `animation*` declarations and
@@ -192,5 +257,29 @@ class SvgAnimationEdit {
         children: [XmlText(_presetKeyframes)],
       ),
     );
+  }
+}
+
+/// A stylesheet rule's selector with its `animation*` declarations.
+class _SheetRule {
+  _SheetRule(this.selector, this.declarations);
+
+  final String selector;
+  final Map<String, String> declarations;
+
+  static final _simple = RegExp(r'^([A-Za-z][\w-]*)?(?:\.([\w-]+))?(?:#([\w-]+))?$');
+
+  /// Whether [element] is matched by this (simple) selector.
+  bool matches(XmlElement element) {
+    final match = _simple.firstMatch(selector);
+    if (match == null || selector.isEmpty) return false;
+    final tag = match.group(1);
+    final cls = match.group(2);
+    final id = match.group(3);
+    if (tag != null && tag != element.localName) return false;
+    if (cls != null && !(element.getAttribute('class') ?? '').split(RegExp(r'\s+')).contains(cls)) {
+      return false;
+    }
+    return id == null || element.getAttribute('id') == id;
   }
 }
