@@ -244,8 +244,8 @@ class EditorStage extends StatelessWidget {
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     tooltip: playback.isPlaying ? l10n.pause : l10n.play,
-                    // Colors compares two still previews.
-                    onPressed: tab == EditorTab.colors ? null : playback.toggle,
+                    // Colors starts still (see _switchTab) but can still be played.
+                    onPressed: playback.toggle,
                     icon: Icon(
                       playback.isPlaying ? Icons.pause_circle_rounded : Icons.play_circle_rounded,
                     ),
