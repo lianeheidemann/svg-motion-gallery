@@ -85,6 +85,28 @@ void main() {
     expect(find.byKey(const Key('preset-palette')), findsOneWidget);
   });
 
+  testWidgets('colors: the stage compares before and after with a draggable divider', (
+    tester,
+  ) async {
+    await _openRedInEditor(tester);
+    expect(find.byKey(const Key('before-after')), findsNothing);
+
+    await _tapTab(tester, 'Cores');
+    final compare = find.byKey(const Key('before-after'));
+    expect(compare, findsOneWidget);
+    expect(find.text('Antes'), findsOneWidget);
+    expect(find.text('Depois'), findsOneWidget);
+
+    final handle = find.byIcon(Icons.compare_arrows_rounded);
+    final before = tester.getCenter(handle).dx;
+    await tester.dragFrom(tester.getCenter(handle), const Offset(80, 0));
+    await tester.pump();
+    expect(tester.getCenter(handle).dx, greaterThan(before + 40));
+
+    await _tapTab(tester, 'Camadas');
+    expect(find.byKey(const Key('before-after')), findsNothing);
+  });
+
   testWidgets('the rainbow swatch opens a free picker that recolors the layer', (tester) async {
     final services = await _openRedInEditor(tester);
     await _selectLayerThenColors(tester, 'Retângulo');

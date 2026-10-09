@@ -12,6 +12,7 @@ import '../../l10n/l10n.dart';
 import '../../widgets/app_bar_toggles.dart';
 import '../../widgets/svg_actions_menu.dart';
 import '../../widgets/svg_preview.dart';
+import 'before_after.dart';
 import 'editor_controller.dart';
 import 'panels/align_panel.dart';
 import 'panels/animation_panel.dart';
@@ -326,14 +327,36 @@ class _EditorScreenState extends State<EditorScreen> {
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: SvgPreview(
-                    svg: editor.displaySvg,
-                    controller: _playback,
-                    showGrid: true,
-                    background: _background,
-                    padding: const EdgeInsets.all(16),
-                    semanticLabel: l10n.previewOf(_document!.name),
-                  ),
+                  child: _tab == _EditorTab.colors
+                      // Colors: the original on the left, the edit on the right.
+                      ? BeforeAfter(
+                          beforeLabel: l10n.compareBefore,
+                          afterLabel: l10n.compareAfter,
+                          handleLabel: l10n.compareHandle,
+                          before: SvgPreview(
+                            svg: editor.initialSvg,
+                            showGrid: true,
+                            background: _background,
+                            padding: const EdgeInsets.all(16),
+                            semanticLabel: l10n.compareBefore,
+                          ),
+                          after: SvgPreview(
+                            svg: editor.displaySvg,
+                            controller: _playback,
+                            showGrid: true,
+                            background: _background,
+                            padding: const EdgeInsets.all(16),
+                            semanticLabel: l10n.previewOf(_document!.name),
+                          ),
+                        )
+                      : SvgPreview(
+                          svg: editor.displaySvg,
+                          controller: _playback,
+                          showGrid: true,
+                          background: _background,
+                          padding: const EdgeInsets.all(16),
+                          semanticLabel: l10n.previewOf(_document!.name),
+                        ),
                 ),
                 Positioned.fill(
                   child: CanvasFrame(svg: editor.displaySvg, padding: const EdgeInsets.all(16)),
