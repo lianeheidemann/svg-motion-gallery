@@ -116,7 +116,10 @@ void main() {
     await tester.tap(find.text('butterfly.svg'));
     await tester.pumpAndSettle();
     expect(find.text('Versão clara e escura'), findsOneWidget);
-    await tester.tap(find.text('Lado a lado'));
+    // Light, dark and side by side are icons only; the name is the tooltip.
+    expect(find.text('Lado a lado'), findsNothing);
+    expect(find.text('Clara'), findsNothing);
+    await tester.tap(find.byTooltip('Lado a lado'));
     await tester.pumpAndSettle();
     expect(find.text('Clara'), findsWidgets);
     expect(find.text('Escura'), findsWidgets);
