@@ -199,12 +199,13 @@ class EditorController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Ticks every top-level layer (folders count as one), for [multiMode].
+  /// Ticks every drawn layer (not the folders around them), turning
+  /// multi-selection on when it is off.
   void selectAllLayers() {
-    if (!_multiMode) return;
+    if (!_multiMode) setMultiMode(true);
     _multi = [
       for (final layer in layers)
-        if (layer.depth == 0) layer.path,
+        if (layer.tag != 'g') layer.path,
     ];
     _selection = _multi.lastOrNull;
     notifyListeners();

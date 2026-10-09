@@ -220,19 +220,22 @@ void main() {
     expect(find.textContaining('Selecionado: Todas'), findsOneWidget);
   });
 
-  testWidgets('layers: with the corner box on, an icon ticks every layer', (tester) async {
+  testWidgets('layers: an icon ticks every shape and another clears the selection', (tester) async {
     await _openRedInEditor(
       tester,
       svg:
           '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
           '<rect width="4" height="4"/><circle r="2"/><g><rect width="1" height="1"/></g></svg>',
     );
-    expect(find.byKey(const Key('select-all-layers')), findsNothing, reason: 'box is off');
-    await tester.tap(find.byKey(const Key('multi-select')));
-    await tester.pumpAndSettle();
+    // Works from the start: it turns the corner box on and ticks every shape.
     await tester.tap(find.byKey(const Key('select-all-layers')));
     await tester.pumpAndSettle();
-    expect(find.text('3 camadas selecionadas'), findsWidgets, reason: 'three top-level layers');
+    expect(find.text('3 camadas selecionadas'), findsWidgets, reason: 'rect, circle, inner rect');
+    expect(tester.widget<Checkbox>(find.byKey(const Key('multi-select'))).value, isTrue);
+    expect(find.byKey(const Key('clear-selection')), findsOneWidget, reason: 'next to it');
+    await tester.tap(find.byKey(const Key('clear-selection')));
+    await tester.pumpAndSettle();
+    expect(find.text('3 camadas selecionadas'), findsNothing);
   });
 
   testWidgets('the rainbow swatch opens a free picker that recolors the layer', (tester) async {

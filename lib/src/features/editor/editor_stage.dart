@@ -249,18 +249,6 @@ class EditorStage extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (layer != null)
-                  IconButton(
-                    key: const Key('clear-selection'),
-                    tooltip: l10n.clearSelection,
-                    style: IconButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      fixedSize: const Size(32, 40),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    onPressed: () => editor.select(null),
-                    icon: const Icon(Icons.deselect_rounded),
-                  ),
                 PopupMenuButton<StageBackground>(
                   key: const Key('preview-bg'),
                   tooltip: l10n.previewBackground,

@@ -155,13 +155,20 @@ class _LayersPanelState extends State<LayersPanel> {
                         : Icons.dark_mode_rounded,
                   ),
                 ),
-              if (multi)
+              IconButton(
+                key: const Key('select-all-layers'),
+                tooltip: l10n.selectAllLayers,
+                visualDensity: VisualDensity.compact,
+                onPressed: editor.selectAllLayers,
+                icon: const Icon(Icons.select_all_rounded),
+              ),
+              if (editor.targets.isNotEmpty)
                 IconButton(
-                  key: const Key('select-all-layers'),
-                  tooltip: l10n.selectAllLayers,
+                  key: const Key('clear-selection'),
+                  tooltip: l10n.clearSelection,
                   visualDensity: VisualDensity.compact,
-                  onPressed: editor.selectAllLayers,
-                  icon: const Icon(Icons.select_all_rounded),
+                  onPressed: () => editor.select(null),
+                  icon: const Icon(Icons.deselect_rounded),
                 ),
               Tooltip(
                 message: l10n.multiSelect,
