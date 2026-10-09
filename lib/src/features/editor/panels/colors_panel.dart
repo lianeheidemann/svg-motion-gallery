@@ -47,7 +47,7 @@ class _ColorsPanelState extends State<ColorsPanel> {
   /// Paints every target. Outline-only shapes (fill none) stay that way when
   /// several are painted.
   String _paint(String svg, String? color) {
-    final targets = _editor.editTargets;
+    final targets = _editor.paintTargets;
     var out = svg;
     for (final target in targets) {
       if (targets.length > 1 && SvgPaintEdit.read(out, target).fill == 'none') continue;
@@ -66,7 +66,7 @@ class _ColorsPanelState extends State<ColorsPanel> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final hasSelection = _editor.editTargets.isNotEmpty;
+    final hasSelection = _editor.paintTargets.isNotEmpty;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
@@ -146,7 +146,7 @@ class _ColorsPanelState extends State<ColorsPanel> {
 
   Widget _layerColors(AppLocalizations l10n) {
     // Every ticked layer takes the change; the card shows the first one's paint.
-    final targets = _editor.editTargets;
+    final targets = _editor.paintTargets;
     final path = targets.first;
     final paint = SvgPaintEdit.read(_editor.svg, path);
     final hex = paint.fillColor;

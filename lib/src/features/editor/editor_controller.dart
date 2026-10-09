@@ -148,6 +148,36 @@ class EditorController extends ChangeNotifier {
     ];
   }
 
+  /// The shapes a paint edit covers: [editTargets] with every group replaced
+  /// by the shapes inside it (a group's own fill would be hidden by the fills
+  /// its children set). In document order, each shape once.
+  List<ElementPath> get paintTargets {
+    final out = <ElementPath>[];
+    void add(ElementPath path) {
+      if (!out.contains(path)) out.add(path);
+    }
+
+    for (final target in editTargets) {
+      final layer = layers.where((l) => l.path == target).firstOrNull;
+      if (layer == null || layer.tag != 'g') {
+        add(target);
+        continue;
+      }
+      for (final inner in layers) {
+        if (inner.tag != 'g' && _isInside(inner.path, target)) add(inner.path);
+      }
+    }
+    return out..sort(_compare);
+  }
+
+  static bool _isInside(ElementPath path, ElementPath ancestor) {
+    if (path.indices.length <= ancestor.indices.length) return false;
+    for (var i = 0; i < ancestor.indices.length; i++) {
+      if (path.indices[i] != ancestor.indices[i]) return false;
+    }
+    return true;
+  }
+
   static int _compare(ElementPath a, ElementPath b) {
     for (var i = 0; i < a.indices.length && i < b.indices.length; i++) {
       if (a.indices[i] != b.indices[i]) return a.indices[i].compareTo(b.indices[i]);
