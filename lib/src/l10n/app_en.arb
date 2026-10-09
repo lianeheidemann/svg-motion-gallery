@@ -151,6 +151,9 @@
     }
   },
   "codeConvertArgb": "Convert",
+  "eyedropper": "Eyedropper",
+  "eyedropperHint": "Tap the drawing to pick a color",
+  "eyedropperNoColor": "No solid color here",
   "codeProblemGo": "Go to the problem",
   "codeMoreProblems": "+{count}",
   "selectionNone": "Selected: All",

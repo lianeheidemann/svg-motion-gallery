@@ -23,6 +23,39 @@ class _ColorsPanelState extends State<ColorsPanel> {
 
   EditorController get _editor => widget.editor;
 
+  @override
+  void initState() {
+    super.initState();
+    _editor.onColorPicked = _picked;
+  }
+
+  @override
+  void dispose() {
+    _editor
+      ..onColorPicked = null
+      ..eyedropper = false;
+    super.dispose();
+  }
+
+  /// The eyedropper found [hex] on the stage: it becomes the paint.
+  void _picked(String hex) {
+    _editor
+      ..eyedropper = false
+      ..commit(_paint(_editor.svg, hex));
+  }
+
+  /// Paints every target. Outline-only shapes (fill none) stay that way when
+  /// several are painted.
+  String _paint(String svg, String? color) {
+    final targets = _editor.editTargets;
+    var out = svg;
+    for (final target in targets) {
+      if (targets.length > 1 && SvgPaintEdit.read(out, target).fill == 'none') continue;
+      out = SvgPaintEdit.setFill(out, target, color);
+    }
+    return out;
+  }
+
   HslLabels _labels(AppLocalizations l10n) => HslLabels(
     hue: l10n.hue,
     saturation: l10n.saturation,
@@ -90,6 +123,12 @@ class _ColorsPanelState extends State<ColorsPanel> {
               ),
               onTap: () => setState(() => _custom = !_custom),
             ),
+            _EyedropperButton(
+              key: const Key('eyedropper'),
+              active: _editor.eyedropper,
+              label: l10n.eyedropper,
+              onTap: () => _editor.eyedropper = !_editor.eyedropper,
+            ),
           ],
         ),
         if (_custom) ...[
@@ -111,15 +150,7 @@ class _ColorsPanelState extends State<ColorsPanel> {
     final path = targets.first;
     final paint = SvgPaintEdit.read(_editor.svg, path);
     final hex = paint.fillColor;
-    String apply(String svg, String? color) {
-      var out = svg;
-      for (final target in targets) {
-        // Outline-only shapes (fill none) stay that way when several are painted.
-        if (targets.length > 1 && SvgPaintEdit.read(out, target).fill == 'none') continue;
-        out = SvgPaintEdit.setFill(out, target, color);
-      }
-      return out;
-    }
+    String apply(String svg, String? color) => _paint(svg, color);
 
     return SectionCard(
       icon: Icons.format_color_fill_rounded,
@@ -141,6 +172,51 @@ class _ColorsPanelState extends State<ColorsPanel> {
           onChangeEnd: (color) => _editor.commit(apply(_editor.svg, colorToHex(color))),
         ),
       ],
+    );
+  }
+}
+
+/// The pipette next to the palette: tap it, then tap the drawing.
+class _EyedropperButton extends StatelessWidget {
+  const _EyedropperButton({
+    super.key,
+    required this.active,
+    required this.label,
+    required this.onTap,
+  });
+
+  final bool active;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      selected: active,
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: InkResponse(
+          onTap: onTap,
+          radius: 18,
+          child: Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: active ? scheme.primary : null,
+              border: Border.all(color: active ? scheme.primary : scheme.outline, width: 1.5),
+            ),
+            child: Icon(
+              Icons.colorize_rounded,
+              size: 14,
+              color: active ? scheme.onPrimary : scheme.onSurface,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

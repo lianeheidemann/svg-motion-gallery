@@ -67,6 +67,20 @@ class EditorController extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool _eyedropper = false;
+
+  /// Whether the next tap on the stage picks a color from the drawing.
+  bool get eyedropper => _eyedropper;
+
+  set eyedropper(bool value) {
+    if (_disposed || value == _eyedropper) return;
+    _eyedropper = value;
+    notifyListeners();
+  }
+
+  /// Set by the Colors tab: receives the `#RRGGBB` picked from the stage.
+  void Function(String hex)? onColorPicked;
+
   SvgValidation get validation => _validation;
   bool get canUndo => _history.canUndo;
   bool get canRedo => _history.canRedo;

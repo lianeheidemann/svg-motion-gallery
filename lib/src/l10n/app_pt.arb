@@ -271,6 +271,9 @@
     }
   },
   "codeConvertArgb": "Converter",
+  "eyedropper": "Conta-gotas",
+  "eyedropperHint": "Toque no desenho para pegar uma cor",
+  "eyedropperNoColor": "Não há uma cor sólida aqui",
   "codeProblemGo": "Ir para o problema",
   "codeMoreProblems": "+{count}",
   "@codeMoreProblems": {

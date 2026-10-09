@@ -143,6 +143,29 @@ void main() {
     expect(saved, contains('FILL="NONE"'));
   });
 
+  testWidgets('colors: the eyedropper takes the color of the shape that is tapped', (tester) async {
+    final services = await _openRedInEditor(
+      tester,
+      svg:
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+          '<rect width="5" height="10" fill="#0000FF"/>'
+          '<rect x="5" width="5" height="10" fill="#00FF00"/></svg>',
+    );
+    await _tapTab(tester, 'Cores');
+    await tester.tap(find.byKey(const Key('eyedropper')));
+    await tester.pumpAndSettle();
+    expect(find.text('Toque no desenho para pegar uma cor'), findsOneWidget);
+
+    final layer = find.byKey(const Key('eyedropper-layer'));
+    await tester.tapAt(tester.getCenter(layer) + const Offset(20, 0));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('eyedropper-layer')), findsNothing, reason: 'one pick per tap');
+
+    final saved = await _save(tester, services);
+    expect(saved, contains('#00FF00'));
+    expect(saved, isNot(contains('#0000FF')), reason: 'everything took the picked green');
+  });
+
   testWidgets('the rainbow swatch opens a free picker that recolors the layer', (tester) async {
     final services = await _openRedInEditor(tester);
     await _selectLayerThenColors(tester, 'Retângulo');

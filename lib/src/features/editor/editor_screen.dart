@@ -318,6 +318,7 @@ class _EditorScreenState extends State<EditorScreen> {
     final was = _tab;
     _tab = next;
     if (was == next) return;
+    if (was == _EditorTab.colors) _editor?.eyedropper = false;
     if (next == _EditorTab.colors) {
       _resumeAfterColors = _playback.isPlaying;
       _playback
@@ -327,6 +328,66 @@ class _EditorScreenState extends State<EditorScreen> {
       _resumeAfterColors = false;
       _playback.play();
     }
+  }
+
+  /// While the eyedropper is on, a tap on the drawing picks the color of the
+  /// shape under the finger (read from the document, so it is exact).
+  Widget _eyedropperLayer(BuildContext context, EditorController editor) {
+    final l10n = context.l10n;
+    const padding = EdgeInsets.all(16);
+    return LayoutBuilder(
+      builder: (context, constraints) => Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              key: const Key('eyedropper-layer'),
+              behavior: HitTestBehavior.opaque,
+              onTapUp: (d) {
+                final map = StageGeometry.of(editor.svg, constraints.biggest, padding);
+                final hit = map.isUsable
+                    ? SvgHitTest.at(
+                        editor.svg,
+                        (d.localPosition.dx - map.originX) / map.scale,
+                        (d.localPosition.dy - map.originY) / map.scale,
+                      )
+                    : null;
+                final hex = hit == null ? null : SvgPaintEdit.sampleFill(editor.svg, hit.path);
+                if (hex == null) {
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(SnackBar(content: Text(l10n.eyedropperNoColor)));
+                } else {
+                  editor.onColorPicked?.call(hex);
+                }
+              },
+              child: const MouseRegion(cursor: SystemMouseCursors.precise),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 8,
+            child: IgnorePointer(
+              child: Center(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: .65),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    child: Text(
+                      l10n.eyedropperHint,
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _stage(BuildContext context, EditorController editor) {
@@ -390,6 +451,8 @@ class _EditorScreenState extends State<EditorScreen> {
                       padding: const EdgeInsets.all(16),
                     ),
                   ),
+                if (_tab == _EditorTab.colors && editor.eyedropper)
+                  Positioned.fill(child: _eyedropperLayer(context, editor)),
                 if (_isInsertTab)
                   Positioned.fill(
                     child: StageDragLayer(editor: editor, padding: const EdgeInsets.all(16)),
