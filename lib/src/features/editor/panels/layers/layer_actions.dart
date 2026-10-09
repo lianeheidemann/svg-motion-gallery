@@ -7,88 +7,31 @@ import '../../../../widgets/svg_actions_menu.dart';
 import '../../editor_controller.dart';
 import '../layers_panel.dart';
 
-/// Actions on the one selected layer (order, duplicate, delete).
-class SelectedLayerActions extends StatelessWidget {
-  const SelectedLayerActions({super.key, required this.editor, required this.layer, this.label});
+/// The box at the top of the Layers tab, always there: select all, clear the
+/// selection, and the actions on what is selected (order, duplicate, show or
+/// hide, delete). An action that does not fit the current selection (nothing
+/// selected, several layers for ordering) stays on screen but greyed out.
+class LayerActionsCard extends StatelessWidget {
+  const LayerActionsCard({super.key, required this.editor, this.label});
 
   final EditorController editor;
-  final SvgLayer layer;
 
-  /// Name with its number, as the list shows it.
+  /// Name with its number of the selected layer, as the list shows it.
   final String? label;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final svg = editor.svg;
-    return SectionCard(
-      icon: LayersPanel.iconFor(layer),
-      title: label ?? l10n.layer(layer),
-      trailing: IconButton(
-        tooltip: l10n.clearSelection,
-        onPressed: () => editor.select(null),
-        icon: const Icon(Icons.close_rounded),
-      ),
-      children: [
-        Wrap(
-          spacing: 4,
-          runSpacing: 4,
-          children: [
-            _action(
-              Icons.flip_to_front_rounded,
-              l10n.bringForward,
-              () => editor.apply(SvgLayers.bringForward(svg, layer.path)),
-            ),
-            _action(
-              Icons.flip_to_back_rounded,
-              l10n.sendBackward,
-              () => editor.apply(SvgLayers.sendBackward(svg, layer.path)),
-            ),
-            _action(
-              Icons.copy_all_rounded,
-              l10n.actionDuplicate,
-              () => editor.apply(SvgLayers.duplicate(svg, layer.path)),
-            ),
-            _action(
-              Icons.delete_outline_rounded,
-              l10n.actionDelete,
-              () => editor.apply(SvgLayers.remove(svg, layer.path)),
-            ),
-          ],
-        ),
-        if (layer.tag == 'text')
-          TextFormField(
-            key: ValueKey('text-${layer.path}-${layer.text}'),
-            initialValue: layer.text ?? '',
-            decoration: InputDecoration(labelText: l10n.textContent),
-            onFieldSubmitted: (text) => editor.commit(SvgLayers.setText(svg, layer.path, text)),
-          ),
-      ],
-    );
-  }
-
-  /// Icon only (the meaning is in the tooltip).
-  Widget _action(IconData icon, String label, VoidCallback onPressed) =>
-      IconButton.outlined(tooltip: label, onPressed: onPressed, icon: Icon(icon, size: 20));
-}
-
-/// Actions on every ticked layer (multi-selection).
-/// Actions on every ticked layer at once.
-class MultiLayerActions extends StatelessWidget {
-  const MultiLayerActions({super.key, required this.editor});
-
-  final EditorController editor;
 
   Future<void> _delete(BuildContext context, int count) async {
     final l10n = context.l10n;
-    final confirmed = await showConfirmDialog(
-      context,
-      title: l10n.deleteLayersTitle,
-      message: l10n.deleteLayersMessage(count),
-      confirm: l10n.actionDelete,
-      destructive: true,
-    );
-    if (confirmed) editor.removeTargets();
+    if (count > 1) {
+      final confirmed = await showConfirmDialog(
+        context,
+        title: l10n.deleteLayersTitle,
+        message: l10n.deleteLayersMessage(count),
+        confirm: l10n.actionDelete,
+        destructive: true,
+      );
+      if (!confirmed) return;
+    }
+    editor.removeTargets();
   }
 
   /// Hides the visible ones; when they are all hidden already, shows them.
@@ -108,43 +51,93 @@ class MultiLayerActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final count = editor.multiSelection.length;
+    final targets = editor.targets;
+    final count = targets.length;
+    final has = count > 0;
+    final single = count == 1
+        ? editor.layers.where((l) => l.path == targets.first).firstOrNull
+        : null;
+    final svg = editor.svg;
+
+    Widget action(Key key, IconData icon, String tip, VoidCallback? onPressed) =>
+        IconButton.outlined(
+          key: key,
+          tooltip: tip,
+          onPressed: onPressed,
+          icon: Icon(icon, size: 20),
+        );
+
     return SectionCard(
-      icon: Icons.checklist_rounded,
-      title: l10n.multiSelectCount(count),
-      trailing: IconButton(
-        tooltip: l10n.clearSelection,
-        onPressed: () => editor.select(null),
-        icon: const Icon(Icons.close_rounded),
-      ),
+      icon: single != null
+          ? LayersPanel.iconFor(single)
+          : has
+          ? Icons.checklist_rounded
+          : Icons.select_all_rounded,
+      title: single != null
+          ? (label ?? l10n.layer(single))
+          : has
+          ? l10n.multiSelectCount(count)
+          : l10n.noLayerSelected,
       children: [
         Wrap(
           spacing: 4,
           runSpacing: 4,
           children: [
-            IconButton.outlined(
-              key: const Key('select-all-actions'),
-              tooltip: l10n.selectAllLayers,
-              onPressed: editor.selectAllLayers,
-              icon: const Icon(Icons.select_all_rounded, size: 20),
+            action(
+              const Key('select-all-layers'),
+              Icons.select_all_rounded,
+              l10n.selectAllLayers,
+              editor.selectAllLayers,
             ),
-            IconButton.outlined(
-              tooltip: l10n.actionDuplicate,
-              onPressed: editor.duplicateTargets,
-              icon: const Icon(Icons.copy_all_rounded, size: 20),
+            action(
+              const Key('clear-selection'),
+              Icons.deselect_rounded,
+              l10n.clearSelection,
+              has ? () => editor.select(null) : null,
             ),
-            IconButton.outlined(
-              tooltip: l10n.hideLayer,
-              onPressed: _toggleVisibility,
-              icon: const Icon(Icons.visibility_outlined, size: 20),
+            action(
+              const Key('layer-forward'),
+              Icons.flip_to_front_rounded,
+              l10n.bringForward,
+              single == null ? null : () => editor.apply(SvgLayers.bringForward(svg, single.path)),
             ),
-            IconButton.outlined(
-              tooltip: l10n.actionDelete,
-              onPressed: () => _delete(context, count),
-              icon: const Icon(Icons.delete_outline_rounded, size: 20),
+            action(
+              const Key('layer-backward'),
+              Icons.flip_to_back_rounded,
+              l10n.sendBackward,
+              single == null ? null : () => editor.apply(SvgLayers.sendBackward(svg, single.path)),
+            ),
+            action(
+              const Key('layer-duplicate'),
+              Icons.copy_all_rounded,
+              l10n.actionDuplicate,
+              !has
+                  ? null
+                  : single != null
+                  ? () => editor.apply(SvgLayers.duplicate(svg, single.path))
+                  : editor.duplicateTargets,
+            ),
+            action(
+              const Key('layer-visibility'),
+              Icons.visibility_outlined,
+              l10n.hideLayer,
+              has ? _toggleVisibility : null,
+            ),
+            action(
+              const Key('layer-delete'),
+              Icons.delete_outline_rounded,
+              l10n.actionDelete,
+              has ? () => _delete(context, count) : null,
             ),
           ],
         ),
+        if (single != null && single.tag == 'text')
+          TextFormField(
+            key: ValueKey('text-${single.path}-${single.text}'),
+            initialValue: single.text ?? '',
+            decoration: InputDecoration(labelText: l10n.textContent),
+            onFieldSubmitted: (text) => editor.commit(SvgLayers.setText(svg, single.path, text)),
+          ),
       ],
     );
   }

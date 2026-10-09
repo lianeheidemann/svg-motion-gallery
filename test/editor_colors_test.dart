@@ -210,7 +210,11 @@ void main() {
 
   testWidgets('the selection label has an icon that clears the selection', (tester) async {
     await _openRedInEditor(tester);
-    expect(find.byKey(const Key('clear-selection')), findsNothing, reason: 'nothing selected');
+    expect(
+      tester.widget<IconButton>(find.byKey(const Key('clear-selection'))).onPressed,
+      isNull,
+      reason: 'nothing selected: shown but greyed out',
+    );
     await tester.tap(find.text('Retângulo'));
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pumpAndSettle();
@@ -218,7 +222,7 @@ void main() {
     expect(find.text('Limpar seleção'), findsNothing, reason: 'icon only');
     await tester.tap(find.byKey(const Key('clear-selection')));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('clear-selection')), findsNothing);
+    expect(tester.widget<IconButton>(find.byKey(const Key('clear-selection'))).onPressed, isNull);
     expect(find.textContaining('Selecionado: Todas'), findsOneWidget);
   });
 
@@ -272,6 +276,46 @@ void main() {
     expect(saved, contains('#FF0000'), reason: 'the rect is untouched');
     expect(saved, contains('STROKE="#3B82F6"'));
     expect(saved, contains('FILL="NONE"'));
+  });
+
+  testWidgets('layers: the top box is always there; what does not fit is greyed out', (
+    tester,
+  ) async {
+    await _openRedInEditor(
+      tester,
+      svg:
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+          '<rect width="4" height="4"/><circle r="2"/></svg>',
+    );
+    bool enabled(String key) => tester.widget<IconButton>(find.byKey(Key(key))).onPressed != null;
+    // Nothing selected: only "select all" works.
+    expect(find.text('Nenhuma camada selecionada'), findsOneWidget);
+    expect(enabled('select-all-layers'), isTrue);
+    for (final key in [
+      'clear-selection',
+      'layer-forward',
+      'layer-backward',
+      'layer-duplicate',
+      'layer-visibility',
+      'layer-delete',
+    ]) {
+      expect(enabled(key), isFalse, reason: key);
+    }
+    // One layer: everything works.
+    await tester.tap(find.text('Retângulo'));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+    for (final key in ['clear-selection', 'layer-forward', 'layer-duplicate', 'layer-delete']) {
+      expect(enabled(key), isTrue, reason: key);
+    }
+    // Several: ordering is for one layer only.
+    await tester.tap(find.byKey(const Key('select-all-layers')));
+    await tester.pumpAndSettle();
+    expect(find.text('2 camadas selecionadas'), findsWidgets);
+    expect(enabled('layer-forward'), isFalse);
+    expect(enabled('layer-delete'), isTrue);
+    // The header keeps only the version and the corner box.
+    expect(find.byKey(const Key('multi-select')), findsOneWidget);
   });
 
   testWidgets('the rainbow swatch opens a free picker that recolors the layer', (tester) async {

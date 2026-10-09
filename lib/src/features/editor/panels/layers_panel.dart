@@ -126,13 +126,8 @@ class _LayersPanelState extends State<LayersPanel> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
-        if (multi && ticked.isNotEmpty) ...[
-          MultiLayerActions(editor: editor),
-          const SizedBox(height: AppSpacing.md),
-        ] else if (!multi && selected != null) ...[
-          SelectedLayerActions(editor: editor, layer: selected, label: labels[selected.path]),
-          const SizedBox(height: AppSpacing.md),
-        ],
+        LayerActionsCard(editor: editor, label: selected == null ? null : labels[selected.path]),
+        const SizedBox(height: AppSpacing.md),
         SectionCard(
           icon: Icons.layers_outlined,
           title: l10n.layersTitle(layers.length),
@@ -154,21 +149,6 @@ class _LayersPanelState extends State<LayersPanel> {
                         ? Icons.light_mode_rounded
                         : Icons.dark_mode_rounded,
                   ),
-                ),
-              IconButton(
-                key: const Key('select-all-layers'),
-                tooltip: l10n.selectAllLayers,
-                visualDensity: VisualDensity.compact,
-                onPressed: editor.selectAllLayers,
-                icon: const Icon(Icons.select_all_rounded),
-              ),
-              if (editor.targets.isNotEmpty)
-                IconButton(
-                  key: const Key('clear-selection'),
-                  tooltip: l10n.clearSelection,
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => editor.select(null),
-                  icon: const Icon(Icons.deselect_rounded),
                 ),
               Tooltip(
                 message: l10n.multiSelect,
