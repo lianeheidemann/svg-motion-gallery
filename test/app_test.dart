@@ -213,9 +213,7 @@ void main() {
     expect(find.byKey(const Key('code-hint')), findsNothing);
   });
 
-  testWidgets('transform: width and height keep the proportion until it is unlocked', (
-    tester,
-  ) async {
+  testWidgets('transform: the lock decides between Scale and Width/Height', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);
     await tester.tap(find.text('wave.svg'));
@@ -225,20 +223,28 @@ void main() {
     await tester.pumpAndSettle();
     await _tapTab(tester, 'Transformar');
 
-    double width() => tester.widget<Slider>(find.byType(Slider).at(3)).value;
-    double height() => tester.widget<Slider>(find.byType(Slider).at(4)).value;
-
-    await tester.drag(find.byType(Slider).at(3), const Offset(60, 0));
-    await tester.pumpAndSettle();
-    expect(width(), greaterThan(100));
-    expect(height(), closeTo(width(), 1), reason: 'locked: the height follows');
+    Slider bar(int i) => tester.widget<Slider>(find.byType(Slider).at(i));
+    // Locked (default): Scale is the one that moves; Width and Height are grey.
+    expect(bar(2).onChanged, isNotNull);
+    expect(bar(3).onChanged, isNull);
+    expect(bar(4).onChanged, isNull);
 
     await tester.tap(find.byKey(const Key('keep-proportion')));
     await tester.pumpAndSettle();
-    final heightBefore = height();
-    await tester.drag(find.byType(Slider).at(3), const Offset(-30, 0));
+    expect(bar(2).onChanged, isNull, reason: 'unlocked: Scale is grey');
+    expect(bar(3).onChanged, isNotNull);
+    expect(bar(4).onChanged, isNotNull);
+
+    final heightBefore = bar(4).value;
+    await tester.drag(find.byType(Slider).at(3), const Offset(60, 0));
     await tester.pumpAndSettle();
-    expect(height(), closeTo(heightBefore, 0.5), reason: 'unlocked: only the width moves');
+    expect(bar(3).value, greaterThan(100));
+    expect(bar(4).value, closeTo(heightBefore, 0.5), reason: 'only the width moves');
+
+    await tester.tap(find.byKey(const Key('keep-proportion')));
+    await tester.pumpAndSettle();
+    expect(bar(2).onChanged, isNotNull, reason: 'locked again');
+    expect(bar(3).onChanged, isNull);
   });
 
   testWidgets('dragging a shape moves it in every tab except Insert and Text', (tester) async {
@@ -599,6 +605,8 @@ void main() {
 
     FilledButton save() => tester.widget<FilledButton>(find.byKey(const Key('save')));
     expect(save().onPressed, isNull);
+    await tester.tap(find.byKey(const Key('keep-proportion'))); // unlock Width/Height
+    await tester.pumpAndSettle();
     await tester.drag(find.byType(Slider).at(3), const Offset(60, 0)); // Largura (%)
     await tester.pumpAndSettle();
     expect(save().onPressed, isNotNull, reason: 'stretching the width is an edit');
