@@ -11,12 +11,16 @@ class HslLabels {
     required this.saturation,
     required this.lightness,
     required this.hex,
+    this.ok = 'OK',
   });
 
   final String hue;
   final String saturation;
   final String lightness;
   final String hex;
+
+  /// Label of the button that applies the typed hex color.
+  final String ok;
 }
 
 /// Color editor made of hue/saturation/lightness sliders plus a hex field,
@@ -69,6 +73,17 @@ class _HslColorEditorState extends State<HslColorEditor> {
 
   void _commit() => widget.onChangeEnd?.call(_hsl.toColor());
 
+  /// Applies the typed hex color (the OK button and the keyboard's Done).
+  void _applyHex(String value) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    final parsed = colorFromHex(value);
+    if (parsed == null) {
+      _hex.text = colorToHex(_hsl.toColor());
+    } else {
+      _update(HSLColor.fromColor(parsed), end: true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final color = _hsl.toColor();
@@ -92,15 +107,14 @@ class _HslColorEditorState extends State<HslColorEditor> {
               child: TextField(
                 controller: _hex,
                 decoration: InputDecoration(labelText: widget.labels.hex),
-                onSubmitted: (value) {
-                  final parsed = colorFromHex(value);
-                  if (parsed == null) {
-                    _hex.text = colorToHex(color);
-                  } else {
-                    _update(HSLColor.fromColor(parsed), end: true);
-                  }
-                },
+                onSubmitted: _applyHex,
               ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            FilledButton(
+              key: const Key('hex-ok'),
+              onPressed: () => _applyHex(_hex.text),
+              child: Text(widget.labels.ok),
             ),
           ],
         ),

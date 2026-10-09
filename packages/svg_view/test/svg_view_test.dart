@@ -83,6 +83,25 @@ void main() {
       expect(controller.progress, 0);
     });
 
+    test('tracks one box per outlined element when several are selected', () {
+      final controller = SvgPlaybackController(cycle: const Duration(seconds: 2));
+      controller.selectElement(
+        [0],
+        also: [
+          [1, 0],
+        ],
+      );
+      controller.report(seconds: 0, paused: false, box: [0.1, 0.1, 0.2, 0.2, 0.5, 0.5, 0.9, 0.9]);
+      expect(controller.selectionBoxes, const [
+        Rect.fromLTRB(0.1, 0.1, 0.2, 0.2),
+        Rect.fromLTRB(0.5, 0.5, 0.9, 0.9),
+      ]);
+      expect(controller.selectionBounds, const Rect.fromLTRB(0.1, 0.1, 0.2, 0.2));
+
+      controller.selectElement(null);
+      expect(controller.selectionBoxes, isEmpty);
+    });
+
     test('tracks the box of the selected element reported by the renderer', () {
       final controller = SvgPlaybackController(cycle: const Duration(seconds: 2));
       controller.report(seconds: 0, paused: false, box: [0.1, 0.2, 0.5, 0.6]);
@@ -103,8 +122,8 @@ void main() {
 
     test('the host page can select an element and report its box', () {
       final html = buildHostHtml(svg: '<svg/>', scheme: SvgColorScheme.dark, bridge: true);
-      expect(html, contains('select: function(path)'));
-      expect(html, contains('b: boxOf()'));
+      expect(html, contains('select: function(path, extra)'));
+      expect(html, contains('b: boxesOf()'));
       expect(html, contains('measure: function(cycle, steps)'));
     });
 

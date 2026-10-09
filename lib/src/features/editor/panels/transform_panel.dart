@@ -23,23 +23,67 @@ class _TransformPanelState extends State<TransformPanel> {
 
   EditorController get _editor => widget.editor;
 
+  /// What the sliders show: the first ticked layer when several are ticked.
+  ElementPath? get _first => _editor.targets.firstOrNull;
+
+  /// Applies [next] to every ticked layer. Each one only takes the values the
+  /// user changed ([next] against the first layer's values), so layers keep
+  /// their own rotation, scale... When [full] (reset) they take all of [next].
+  /// Last layer first, so wrapping one never moves the path of another.
+  String _applyToTargets(SvgTransformValues next, {bool full = false}) {
+    final svg = _editor.svg;
+    final targets = _editor.targets;
+    if (targets.isEmpty) return SvgTransformEdit.apply(svg, null, next).svg;
+    final base = SvgTransformEdit.read(svg, targets.first);
+    var out = svg;
+    for (final path in targets.reversed) {
+      final own = SvgTransformEdit.read(out, path);
+      final merged = full
+          ? next
+          : SvgTransformValues(
+              translateX: next.translateX != base.translateX ? next.translateX : own.translateX,
+              translateY: next.translateY != base.translateY ? next.translateY : own.translateY,
+              rotation: next.rotation != base.rotation ? next.rotation : own.rotation,
+              scale: next.scale != base.scale ? next.scale : own.scale,
+              widthFactor: next.widthFactor != base.widthFactor
+                  ? next.widthFactor
+                  : own.widthFactor,
+              heightFactor: next.heightFactor != base.heightFactor
+                  ? next.heightFactor
+                  : own.heightFactor,
+              opacity: next.opacity != base.opacity ? next.opacity : own.opacity,
+            );
+      out = SvgTransformEdit.apply(out, path, merged).svg;
+    }
+    return out;
+  }
+
   void _preview(SvgTransformValues values) {
     setState(() => _live = values);
-    _editor.preview(SvgTransformEdit.apply(_editor.svg, _editor.selection, values).svg);
+    _editor.preview(
+      _editor.multiMode
+          ? _applyToTargets(values)
+          : SvgTransformEdit.apply(_editor.svg, _editor.selection, values).svg,
+    );
   }
 
   void _commit([SvgTransformValues? values]) {
     final next = values ?? _live;
     _live = null;
     if (next == null) return;
-    _editor.apply(SvgTransformEdit.apply(_editor.svg, _editor.selection, next));
+    if (_editor.multiMode) {
+      _editor.commit(_applyToTargets(next, full: values != null));
+    } else {
+      _editor.apply(SvgTransformEdit.apply(_editor.svg, _editor.selection, next));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final layer = _editor.selectedLayer;
-    final values = _live ?? SvgTransformEdit.read(_editor.svg, _editor.selection);
+    final values =
+        _live ?? SvgTransformEdit.read(_editor.svg, _editor.multiMode ? _first : _editor.selection);
     final metadata = _editor.metadata;
     final canvas = metadata.canvas;
     final range = math.max(canvas.width, canvas.height).roundToDouble();
@@ -49,9 +93,7 @@ class _TransformPanelState extends State<TransformPanel> {
       children: [
         SectionCard(
           icon: Icons.open_with_rounded,
-          title: layer == null
-              ? l10n.transformDocument
-              : l10n.transformLayer(l10n.layerLabel(layer, _editor.layers)),
+          title: l10n.tabTransform,
           spacing: 6,
           children: [
             if (layer == null)

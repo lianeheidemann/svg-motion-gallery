@@ -188,13 +188,27 @@ class VariantSelector extends StatelessWidget {
               (VariantMode.dark, l10n.variantDark, Icons.dark_mode_rounded),
               (VariantMode.sideBySide, l10n.variantBoth, Icons.compare_rounded),
             ])
-              ChoiceChip(
-                avatar: Icon(icon, size: 18, color: value == mode ? Colors.white : null),
-                label: Text(label, style: TextStyle(color: value == mode ? Colors.white : null)),
-                selected: value == mode,
-                onSelected: (_) => onChanged(value),
-                side: BorderSide(color: Theme.of(context).colorScheme.outline),
-              ),
+              // Only "App theme" keeps its words; the others are just an icon
+              // (the name is the tooltip and the screen reader label).
+              if (value == VariantMode.auto)
+                ChoiceChip(
+                  avatar: Icon(icon, size: 18, color: value == mode ? Colors.white : null),
+                  label: Text(label, style: TextStyle(color: value == mode ? Colors.white : null)),
+                  selected: value == mode,
+                  onSelected: (_) => onChanged(value),
+                  side: BorderSide(color: Theme.of(context).colorScheme.outline),
+                )
+              else
+                Tooltip(
+                  message: label,
+                  child: ChoiceChip(
+                    label: Icon(icon, size: 20, color: value == mode ? Colors.white : null),
+                    selected: value == mode,
+                    onSelected: (_) => onChanged(value),
+                    showCheckmark: false,
+                    side: BorderSide(color: Theme.of(context).colorScheme.outline),
+                  ),
+                ),
           ],
         ),
       ],

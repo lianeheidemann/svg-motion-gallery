@@ -216,9 +216,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(insertTab);
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byKey(const Key('insert-shape')));
+    await tester.ensureVisible(find.byKey(const Key('insert-rectangle')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('insert-shape')));
+    await tester.tap(find.byKey(const Key('insert-rectangle')));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('save')));

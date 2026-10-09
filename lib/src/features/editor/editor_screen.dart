@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:design_system/design_system.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:svg_core/svg_core.dart';
 import 'package:svg_view/svg_view.dart';
@@ -18,14 +19,13 @@ import 'panels/code_panel.dart';
 import 'panels/colors_panel.dart';
 import 'panels/insert_panel.dart';
 import 'panels/layers_panel.dart';
-import 'panels/size_panel.dart';
 import 'panels/transform_panel.dart';
 import 'panels/window_panel.dart';
 import 'selection_highlight.dart';
 import 'stage_drag_layer.dart';
 import 'stage_geometry.dart';
 
-enum _EditorTab { layers, transform, size, window, align, colors, animation, insert, text, code }
+enum _EditorTab { layers, transform, window, align, colors, animation, insert, text, code }
 
 /// The single editor: live stage on top, one tab per kind of edit, a
 /// validation/status line at the bottom and one Save button.
@@ -51,6 +51,7 @@ class _EditorScreenState extends State<EditorScreen> {
 
   /// Selection last sent to the renderer, which then reports where it is.
   ElementPath? _sentSelection;
+  List<ElementPath> _sentAlso = const [];
 
   /// The "valid SVG" banner only shows after a save, until the next edit.
   var _justSaved = false;
@@ -165,10 +166,19 @@ class _EditorScreenState extends State<EditorScreen> {
   /// the renderer's controller notifies listeners that are building now.
   void _syncSelection(EditorController editor) {
     final selection = editor.selection;
-    if (selection == _sentSelection) return;
+    // The other ticked layers (multi-selection) are outlined too.
+    final also = [
+      if (editor.multiMode)
+        for (final path in editor.multiSelection)
+          if (path != selection) path,
+    ];
+    if (selection == _sentSelection && listEquals(also, _sentAlso)) return;
     _sentSelection = selection;
+    _sentAlso = also;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _playback.selectElement(selection?.indices);
+      if (mounted) {
+        _playback.selectElement(selection?.indices, also: [for (final path in also) path.indices]);
+      }
     });
   }
 
@@ -204,7 +214,6 @@ class _EditorScreenState extends State<EditorScreen> {
                       accent: editor.selection == null ? GalleryColors.of(context).success : null,
                     ),
                     PillTab(l10n.tabTransform, icon: Icons.open_with_rounded),
-                    PillTab(l10n.tabSize, icon: Icons.aspect_ratio_rounded),
                     PillTab(l10n.tabWindow, icon: Icons.crop_rounded),
                     PillTab(l10n.tabAlign, icon: Icons.align_horizontal_center_rounded),
                     PillTab(l10n.tabColors, icon: Icons.palette_outlined),
@@ -275,6 +284,7 @@ class _EditorScreenState extends State<EditorScreen> {
         ? math.min(height * .22, 200.0)
         : math.min(height * .32, 320.0);
     final layer = editor.selectedLayer;
+    final ticked = editor.multiMode ? editor.multiSelection.length : 0;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
       child: Column(
@@ -317,14 +327,20 @@ class _EditorScreenState extends State<EditorScreen> {
             child: Row(
               children: [
                 Icon(
-                  layer == null ? Icons.select_all_rounded : LayersPanel.iconFor(layer),
+                  ticked > 1
+                      ? Icons.checklist_rounded
+                      : layer == null
+                      ? Icons.select_all_rounded
+                      : LayersPanel.iconFor(layer),
                   size: 18,
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    layer == null
+                    ticked > 1
+                        ? l10n.multiSelectCount(ticked)
+                        : layer == null
                         ? l10n.selectionNone
                         : l10n.selectionLayer(l10n.layerLabel(layer, editor.layers)),
                     overflow: TextOverflow.ellipsis,
@@ -367,7 +383,6 @@ class _EditorScreenState extends State<EditorScreen> {
 
   Widget _panel(EditorController editor) => switch (_tab) {
     _EditorTab.transform => TransformPanel(editor: editor),
-    _EditorTab.size => SizePanel(editor: editor),
     _EditorTab.window => WindowPanel(editor: editor, playback: _playback),
     _EditorTab.align => AlignPanel(editor: editor, playback: _playback),
     _EditorTab.colors => ColorsPanel(editor: editor),

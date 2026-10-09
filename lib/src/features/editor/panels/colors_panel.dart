@@ -8,8 +8,6 @@ import '../editor_controller.dart';
 
 enum _ColorScope { document, layer }
 
-enum _PaintTarget { fill, stroke }
-
 /// Recolors the whole document (palette) or paints the selected layer.
 /// Colors are picked from a palette of ready-made colors and fine-tuned with
 /// hue/saturation/lightness sliders.
@@ -24,9 +22,7 @@ class ColorsPanel extends StatefulWidget {
 
 class _ColorsPanelState extends State<ColorsPanel> {
   _ColorScope? _scope;
-  _PaintTarget _target = _PaintTarget.fill;
   String? _from;
-  double? _liveStrokeWidth;
   var _custom = false;
 
   EditorController get _editor => widget.editor;
@@ -179,13 +175,20 @@ class _ColorsPanelState extends State<ColorsPanel> {
   }
 
   Widget _layerColors(AppLocalizations l10n) {
-    final path = _editor.selection!;
+    // Every ticked layer takes the change; the card shows the first one's paint.
+    final targets = _editor.targets;
+    final path = targets.first;
     final paint = SvgPaintEdit.read(_editor.svg, path);
-    final isFill = _target == _PaintTarget.fill;
-    final raw = isFill ? paint.fill : paint.stroke;
-    final hex = isFill ? paint.fillColor : paint.strokeColor;
-    String apply(String svg, String? color) =>
-        isFill ? SvgPaintEdit.setFill(svg, path, color) : SvgPaintEdit.setStroke(svg, path, color);
+    final raw = paint.fill;
+    final hex = paint.fillColor;
+    String apply(String svg, String? color) {
+      var out = svg;
+      for (final target in targets) {
+        out = SvgPaintEdit.setFill(out, target, color);
+      }
+      return out;
+    }
+
     final current = switch (raw) {
       null => l10n.paintInherited,
       'none' => l10n.paintNone,
@@ -194,17 +197,10 @@ class _ColorsPanelState extends State<ColorsPanel> {
     };
     return SectionCard(
       icon: Icons.format_color_fill_rounded,
-      title: l10n.layerPaint(l10n.layerLabel(_editor.selectedLayer!, _editor.layers)),
+      title: targets.length > 1
+          ? l10n.multiSelectCount(targets.length)
+          : l10n.layerPaint(l10n.layerLabel(_editor.selectedLayer!, _editor.layers)),
       children: [
-        SegmentedButton<_PaintTarget>(
-          showSelectedIcon: false,
-          segments: [
-            ButtonSegment(value: _PaintTarget.fill, label: Text(l10n.fill)),
-            ButtonSegment(value: _PaintTarget.stroke, label: Text(l10n.stroke)),
-          ],
-          selected: {_target},
-          onSelectionChanged: (value) => setState(() => _target = value.single),
-        ),
         Text(l10n.currentPaint(current)),
         _presetPalette(
           l10n,
@@ -213,34 +209,18 @@ class _ColorsPanelState extends State<ColorsPanel> {
           commit: (to) => _editor.commit(apply(_editor.svg, to)),
         ),
         HslColorEditor(
-          key: ValueKey('paint-$path-$_target-$hex'),
+          key: ValueKey('paint-$path-$hex'),
           color: colorFromHex(hex ?? '') ?? Theme.of(context).colorScheme.primary,
           labels: _labels(l10n),
           onChanged: (color) => _editor.preview(apply(_editor.svg, colorToHex(color))),
           onChangeEnd: (color) => _editor.commit(apply(_editor.svg, colorToHex(color))),
         ),
-        if (!isFill)
-          SliderField(
-            label: l10n.strokeWidth,
-            value: (_liveStrokeWidth ?? paint.strokeWidth ?? 1).clamp(0, 50),
-            min: 0,
-            max: 50,
-            fractionDigits: 1,
-            onChanged: (v) {
-              setState(() => _liveStrokeWidth = v);
-              _editor.preview(SvgPaintEdit.setStrokeWidth(_editor.svg, path, v));
-            },
-            onChangeEnd: (v) {
-              _liveStrokeWidth = null;
-              _editor.commit(SvgPaintEdit.setStrokeWidth(_editor.svg, path, v));
-            },
-          ),
         Align(
           alignment: Alignment.centerRight,
           child: TextButton.icon(
             onPressed: raw == 'none' ? null : () => _editor.commit(apply(_editor.svg, null)),
             icon: const Icon(Icons.format_color_reset_rounded),
-            label: Text(isFill ? l10n.removeFill : l10n.removeStroke),
+            label: Text(l10n.removeFill),
           ),
         ),
       ],

@@ -58,16 +58,18 @@ String _bridgeScript({required bool autoplay, required String viewId}) =>
     return a && a.currentTime ? a.currentTime / 1000 : 0;
   }
   var sel = null;
+  // More elements to outline besides `sel` (multi-selection).
+  var more = [];
   // Box of the selected element (child indices from the <svg>) as fractions
   // of the page, so it does not depend on pixel density.
-  function selectedEl(){
-    if (!sel) return null;
+  function elAt(path){
+    if (!path) return null;
     var el = root();
-    for (var i = 0; el && i < sel.length; i++) { el = el.children[sel[i]]; }
+    for (var i = 0; el && i < path.length; i++) { el = el.children[path[i]]; }
     return el;
   }
-  function boxOf(){
-    var el = selectedEl();
+  function selectedEl(){ return elAt(sel); }
+  function boxOf(el){
     if (!el || !el.getBoundingClientRect) return null;
     var r = el.getBoundingClientRect();
     var w = document.documentElement.clientWidth || window.innerWidth;
@@ -75,7 +77,19 @@ String _bridgeScript({required bool autoplay, required String viewId}) =>
     if (!w || !h || (r.width === 0 && r.height === 0)) return null;
     return [r.left / w, r.top / h, r.right / w, r.bottom / h];
   }
-  function report(){ post({t: time(), p: paused, b: boxOf()}); }
+  // Boxes of the selected element and the extra ones, flattened (4 numbers
+  // each); null when the selected element itself is not drawn.
+  function boxesOf(){
+    var first = boxOf(selectedEl());
+    if (!first) return null;
+    var all = first;
+    for (var i = 0; i < more.length; i++) {
+      var b = boxOf(elAt(more[i]));
+      if (b) all = all.concat(b);
+    }
+    return all;
+  }
+  function report(){ post({t: time(), p: paused, b: boxesOf()}); }
   // Box of everything drawn right now, in the svg's user units: [x, y, w, h],
   // or null when nothing is drawn. Strokes count; filters and glows do not.
   function contentBox(){
@@ -121,7 +135,7 @@ String _bridgeScript({required bool autoplay, required String viewId}) =>
       anims().forEach(function(a){ try { a.currentTime = t * 1000; } catch (e) {} });
       report();
     },
-    select: function(path){ sel = path; report(); },
+    select: function(path, extra){ sel = path; more = extra || []; report(); },
     // Union of contentBox() over one animation cycle, so what moves counts
     // everywhere it goes. The playback position is put back afterwards.
     measure: function(cycle, steps){

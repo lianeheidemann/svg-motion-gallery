@@ -42,7 +42,13 @@ class _AnimationPanelState extends State<AnimationPanel> {
   /// [seconds] (the bar's value when not given).
   void _setPreset(ElementPath path, SvgAnimationPreset preset, [double? seconds]) {
     setState(() => _seconds = seconds ?? _seconds);
-    _editor.apply(SvgAnimationEdit.addPreset(_editor.svg, path, preset, seconds: _seconds));
+    if (_editor.multiMode) {
+      _editor.applyToTargets(
+        (svg, target) => SvgAnimationEdit.addPreset(svg, target, preset, seconds: _seconds).svg,
+      );
+    } else {
+      _editor.apply(SvgAnimationEdit.addPreset(_editor.svg, path, preset, seconds: _seconds));
+    }
   }
 
   void _syncBase() {
@@ -59,7 +65,11 @@ class _AnimationPanelState extends State<AnimationPanel> {
     final muted = TextStyle(color: GalleryColors.of(context).muted);
     final metadata = _editor.metadata;
     final layer = _editor.selectedLayer;
-    final currentPreset = layer == null ? null : SvgAnimationEdit.presetAt(_editor.svg, layer.path);
+    // With several layers ticked the chips show the first one's motion.
+    final presetPath = _editor.multiMode ? _editor.targets.firstOrNull : layer?.path;
+    final currentPreset = presetPath == null
+        ? null
+        : SvgAnimationEdit.presetAt(_editor.svg, presetPath);
     final cycle = metadata.cycleDuration;
     // The chips show what the layer has; tapping one applies it right away.
     final chosen = currentPreset;
@@ -130,7 +140,11 @@ class _AnimationPanelState extends State<AnimationPanel> {
                     selected: chosen == null,
                     // "None" takes the motion off the layer.
                     onSelected: (_) {
-                      if (currentPreset != null) {
+                      if (_editor.multiMode) {
+                        _editor.applyToTargets(
+                          (svg, target) => SvgAnimationEdit.removePreset(svg, target).svg,
+                        );
+                      } else if (currentPreset != null) {
                         _editor.apply(SvgAnimationEdit.removePreset(_editor.svg, layer.path));
                       }
                     },

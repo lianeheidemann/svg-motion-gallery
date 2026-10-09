@@ -33,21 +33,38 @@ class SvgPlaybackController extends ChangeNotifier {
   final _sinceSeek = Stopwatch();
 
   List<int>? _selection;
-  Rect? _selectionBounds;
+  List<List<int>> _also = const [];
+  List<Rect> _selectionBoxes = const [];
 
   /// Where the selected element is drawn, as fractions (0..1) of the rendered
   /// view, or null when nothing is selected or the renderer cannot tell
   /// (renderers without scripting never report it).
-  Rect? get selectionBounds => _selectionBounds;
+  Rect? get selectionBounds => _selectionBoxes.firstOrNull;
+
+  /// Where the selected element and the [selectElement] `also` ones are
+  /// drawn (the selected one first); the ones the renderer cannot find are
+  /// left out.
+  List<Rect> get selectionBoxes => _selectionBoxes;
 
   /// Asks the renderer to track the element at [indices] (child indices from
-  /// the `<svg>` root); null clears it.
-  void selectElement(List<int>? indices) {
-    if (listEquals(indices, _selection)) return;
+  /// the `<svg>` root); null clears it. [also] are more elements to outline
+  /// (multi-selection).
+  void selectElement(List<int>? indices, {List<List<int>> also = const []}) {
+    final extra = indices == null ? const <List<int>>[] : also;
+    if (listEquals(indices, _selection) && _sameElements(extra, _also)) return;
     _selection = indices == null ? null : List.unmodifiable(indices);
-    _selectionBounds = null;
-    _target?.invoke('select', [_selection]);
+    _also = [for (final path in extra) List.unmodifiable(path)];
+    _selectionBoxes = const [];
+    _target?.invoke('select', [_selection, _also]);
     notifyListeners();
+  }
+
+  static bool _sameElements(List<List<int>> a, List<List<int>> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (!listEquals(a[i], b[i])) return false;
+    }
+    return true;
   }
 
   Completer<Rect?>? _measuring;
@@ -166,7 +183,7 @@ class SvgPlaybackController extends ChangeNotifier {
   void attach(SvgPlaybackTarget target) {
     _target = target;
     target.invoke(_playing ? 'play' : 'pause');
-    if (_selection != null) target.invoke('select', [_selection]);
+    if (_selection != null) target.invoke('select', [_selection, _also]);
   }
 
   @internal
@@ -179,11 +196,15 @@ class SvgPlaybackController extends ChangeNotifier {
   void report({required double seconds, required bool paused, List<double>? box}) {
     final settling = _sinceSeek.isRunning && _sinceSeek.elapsed < _seekSettle;
     final next = settling ? _seconds : seconds;
-    final bounds = _selection == null || box == null || box.length != 4
-        ? null
-        : Rect.fromLTRB(box[0], box[1], box[2], box[3]);
-    final boundsChanged = bounds != _selectionBounds;
-    _selectionBounds = bounds;
+    // Four numbers (left, top, right, bottom) per outlined element.
+    final bounds = _selection == null || box == null || box.length < 4 || box.length % 4 != 0
+        ? const <Rect>[]
+        : [
+            for (var i = 0; i < box.length; i += 4)
+              Rect.fromLTRB(box[i], box[i + 1], box[i + 2], box[i + 3]),
+          ];
+    final boundsChanged = !listEquals(bounds, _selectionBoxes);
+    _selectionBoxes = bounds;
     final changed = (next - _seconds).abs() > 0.001 || paused == _playing || boundsChanged;
     _seconds = next;
     if (!settling) _sinceReport.reset();

@@ -111,25 +111,50 @@ class _LayersPanelState extends State<LayersPanel> {
       _folded.clear();
     }
     final selected = editor.selectedLayer;
+    final multi = editor.multiMode;
+    final ticked = editor.multiSelection.toSet();
     final scheme = Theme.of(context).colorScheme;
     final labels = l10n.layerLabels(layers);
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
-        if (selected != null) ...[
+        if (multi && ticked.isNotEmpty) ...[
+          _MultiLayerActions(editor: editor),
+          const SizedBox(height: AppSpacing.md),
+        ] else if (!multi && selected != null) ...[
           _SelectedLayerActions(editor: editor, layer: selected, label: labels[selected.path]),
           const SizedBox(height: AppSpacing.md),
         ],
         SectionCard(
           icon: Icons.layers_outlined,
           title: l10n.layersTitle(layers.length),
+          // Small box in the corner: ticked, a tap on a layer ticks it instead
+          // of selecting only it.
+          trailing: Tooltip(
+            message: l10n.multiSelect,
+            child: Semantics(
+              label: l10n.multiSelect,
+              child: Checkbox(
+                key: const Key('multi-select'),
+                value: multi,
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                onChanged: (value) => editor.setMultiMode(value ?? false),
+              ),
+            ),
+          ),
           // Two taps on the header fold every folder, or open them all again.
           onTitleDoubleTap: () => _toggleFoldAll(layers),
           spacing: 0,
           children: [
             if (layers.isEmpty) Text(l10n.layersEmpty),
+            if (multi && ticked.isEmpty && layers.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(l10n.multiSelectNone, style: TextStyle(color: scheme.outline)),
+              ),
             for (var i = 0; i < layers.length; i++)
-              if (!_hidden(layers[i])) _row(context, layers, i, selected, scheme, labels),
+              if (!_hidden(layers[i])) _row(context, layers, i, ticked, scheme, labels),
           ],
         ),
       ],
@@ -140,7 +165,7 @@ class _LayersPanelState extends State<LayersPanel> {
     BuildContext context,
     List<SvgLayer> layers,
     int index,
-    SvgLayer? selected,
+    Set<ElementPath> ticked,
     ColorScheme scheme,
     Map<ElementPath, String> labels,
   ) {
@@ -152,7 +177,8 @@ class _LayersPanelState extends State<LayersPanel> {
     for (var j = index + 1; j < layers.length && layers[j].depth > layer.depth; j++) {
       inside++;
     }
-    final isSelected = layer.path == selected?.path;
+    final multi = editor.multiMode;
+    final isSelected = multi ? ticked.contains(layer.path) : layer.path == editor.selection;
     // The arrow and the eye sit outside the InkWell: it waits for a possible
     // second tap (rename), which would make them feel slow.
     return Material(
@@ -181,10 +207,23 @@ class _LayersPanelState extends State<LayersPanel> {
               child: InkWell(
                 borderRadius: BorderRadius.circular(10),
                 onTap: () => editor.select(layer.path),
-                onDoubleTap: layer.isEditorGroup ? null : () => widget._rename(context, layer),
-                onLongPress: () => widget._confirmDelete(context, layer),
+                // Rename and delete are for one layer; skip them while ticking.
+                onDoubleTap: layer.isEditorGroup || multi
+                    ? null
+                    : () => widget._rename(context, layer),
+                onLongPress: multi ? null : () => widget._confirmDelete(context, layer),
                 child: Row(
                   children: [
+                    if (multi)
+                      IgnorePointer(
+                        child: Checkbox(
+                          key: ValueKey('tick-${layer.path}'),
+                          value: isSelected,
+                          visualDensity: VisualDensity.compact,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          onChanged: (_) {},
+                        ),
+                      ),
                     Icon(
                       LayersPanel.iconFor(layer),
                       size: 20,
@@ -297,4 +336,75 @@ class _SelectedLayerActions extends StatelessWidget {
   /// Icon only (the meaning is in the tooltip).
   Widget _action(IconData icon, String label, VoidCallback onPressed) =>
       IconButton.outlined(tooltip: label, onPressed: onPressed, icon: Icon(icon, size: 20));
+}
+
+/// Actions on every ticked layer (multi-selection).
+class _MultiLayerActions extends StatelessWidget {
+  const _MultiLayerActions({required this.editor});
+
+  final EditorController editor;
+
+  Future<void> _delete(BuildContext context, int count) async {
+    final l10n = context.l10n;
+    final confirmed = await showConfirmDialog(
+      context,
+      title: l10n.deleteLayersTitle,
+      message: l10n.deleteLayersMessage(count),
+      confirm: l10n.actionDelete,
+      destructive: true,
+    );
+    if (confirmed) editor.removeTargets();
+  }
+
+  /// Hides the visible ones; when they are all hidden already, shows them.
+  void _toggleVisibility() {
+    final targets = editor.targets.toSet();
+    final layers = editor.layers.where((layer) => targets.contains(layer.path)).toList();
+    final hide = layers.any((layer) => layer.visible);
+    final change = {
+      for (final layer in layers)
+        if (layer.visible == hide) layer.path,
+    };
+    editor.applyToTargets(
+      (svg, path) => change.contains(path) ? SvgLayers.toggleVisibility(svg, path) : svg,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final count = editor.multiSelection.length;
+    return SectionCard(
+      icon: Icons.checklist_rounded,
+      title: l10n.multiSelectCount(count),
+      trailing: IconButton(
+        tooltip: l10n.clearSelection,
+        onPressed: () => editor.select(null),
+        icon: const Icon(Icons.close_rounded),
+      ),
+      children: [
+        Wrap(
+          spacing: 4,
+          runSpacing: 4,
+          children: [
+            IconButton.outlined(
+              tooltip: l10n.actionDuplicate,
+              onPressed: editor.duplicateTargets,
+              icon: const Icon(Icons.copy_all_rounded, size: 20),
+            ),
+            IconButton.outlined(
+              tooltip: l10n.hideLayer,
+              onPressed: _toggleVisibility,
+              icon: const Icon(Icons.visibility_outlined, size: 20),
+            ),
+            IconButton.outlined(
+              tooltip: l10n.actionDelete,
+              onPressed: () => _delete(context, count),
+              icon: const Icon(Icons.delete_outline_rounded, size: 20),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }

@@ -16,7 +16,8 @@ class SvgInsertEdit {
   /// Adds a [kind] shape painted with [color] on top of the drawing and
   /// selects it. [size] is a fraction (0..1) of the smaller canvas side.
   ///
-  /// Shapes are hollow (just an outline in [color]) unless [filled]. The
+  /// Shapes are hollow (just an outline in [color]) unless [filled], in which
+  /// case they are filled with [fillColor] (default: [color]). The
   /// outline is [strokeWidth] units thick (a thin default scaled to the
   /// canvas); 0 leaves a filled shape without one. Lines are only an outline
   /// and text is only filled.
@@ -27,6 +28,7 @@ class SvgInsertEdit {
     double size = 0.3,
     String text = 'Text',
     bool filled = false,
+    String? fillColor,
     double? strokeWidth,
   }) {
     final document = tryParseSvg(svg);
@@ -39,7 +41,7 @@ class SvgInsertEdit {
     final outline = math.max(strokeWidth ?? math.min(canvas.width, canvas.height) * 0.015, 0.0);
     // fill + stroke attributes of a closed shape.
     final paint = <String, String>{
-      'fill': filled ? color : 'none',
+      'fill': filled ? (fillColor ?? color) : 'none',
       if (!filled || outline > 0) 'stroke': color,
       if (!filled || outline > 0) 'stroke-width': n(filled ? outline : math.max(outline, 0.1)),
       if (!filled || outline > 0) 'stroke-linejoin': 'round',

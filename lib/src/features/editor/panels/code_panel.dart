@@ -15,6 +15,44 @@ class SvgCodeController extends TextEditingController {
 
   GalleryColors? colors;
 
+  /// Where the search found its text (sorted, not overlapping), and which of
+  /// them is the current one (-1 for none). They get a colored background.
+  List<TextRange> matches = const [];
+  int current = -1;
+
+  static const _matchColor = Color(0x55FFC107);
+  static const _currentColor = Color(0xAAFFA000);
+
+  /// [text] from [start] to [end] in [color], with the matches marked.
+  List<InlineSpan> _segments(int start, int end, Color color) {
+    final spans = <InlineSpan>[];
+    var at = start;
+    TextSpan plain(int from, int to) => TextSpan(
+      text: text.substring(from, to),
+      style: TextStyle(color: color),
+    );
+    for (var i = 0; i < matches.length; i++) {
+      final match = matches[i];
+      if (match.end <= at) continue;
+      if (match.start >= end) break;
+      final from = math.max(match.start, at);
+      final to = math.min(match.end, end);
+      if (from > at) spans.add(plain(at, from));
+      spans.add(
+        TextSpan(
+          text: text.substring(from, to),
+          style: TextStyle(
+            color: color,
+            backgroundColor: i == current ? _currentColor : _matchColor,
+          ),
+        ),
+      );
+      at = to;
+    }
+    if (at < end) spans.add(plain(at, end));
+    return spans;
+  }
+
   @override
   TextSpan buildTextSpan({
     required BuildContext context,
@@ -38,10 +76,7 @@ class SvgCodeController extends TextEditingController {
       style: style,
       children: [
         for (final token in tokenizeSvg(text))
-          TextSpan(
-            text: text.substring(token.start, token.end),
-            style: TextStyle(color: colorOf(token.type)),
-          ),
+          ..._segments(token.start, token.end, colorOf(token.type)),
       ],
     );
   }
@@ -92,6 +127,11 @@ class _CodePanelState extends State<CodePanel> {
   var _wrap = false;
   var _fontSize = 11.0;
   var _checkedAuto = false;
+
+  /// The search bar under the buttons, its text and the match being shown.
+  var _searching = false;
+  final _query = TextEditingController();
+  var _matchIndex = 0;
 
   /// Width of the text area, in characters, used to break long lines.
   var _columns = 0;
@@ -156,6 +196,7 @@ class _CodePanelState extends State<CodePanel> {
     _code.dispose();
     _vertical.dispose();
     _horizontal.dispose();
+    _query.dispose();
     super.dispose();
   }
 
@@ -167,6 +208,65 @@ class _CodePanelState extends State<CodePanel> {
   );
 
   bool get _hasPending => _code.text != _view(widget.editor.code);
+
+  /// Every place the search text appears in the code (any letter case).
+  List<TextRange> _findMatches() {
+    final needle = _query.text.toLowerCase();
+    if (!_searching || needle.isEmpty) return const [];
+    final haystack = _code.text.toLowerCase();
+    final found = <TextRange>[];
+    var from = 0;
+    while (true) {
+      final at = haystack.indexOf(needle, from);
+      if (at < 0) break;
+      found.add(TextRange(start: at, end: at + needle.length));
+      from = at + needle.length;
+    }
+    return found;
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      _searching = !_searching;
+      _matchIndex = 0;
+    });
+    if (_searching) _scrollToMatch();
+  }
+
+  void _go(int step) {
+    final count = _findMatches().length;
+    if (count == 0) return;
+    setState(() => _matchIndex = (_matchIndex + step) % count);
+    _scrollToMatch();
+  }
+
+  /// Brings the current match into view (a third of the way down the box).
+  void _scrollToMatch() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final found = _findMatches();
+      if (found.isEmpty || !_vertical.hasClients) return;
+      final match = found[_matchIndex.clamp(0, found.length - 1)];
+      final before = _code.text.substring(0, match.start);
+      final line = '\n'.allMatches(before).length;
+      final column = match.start - (before.lastIndexOf('\n') + 1);
+      final lineHeight = _fontSize * 1.45;
+      final top = 10 + line * lineHeight - _vertical.position.viewportDimension / 3;
+      _vertical.animateTo(
+        top.clamp(0, _vertical.position.maxScrollExtent),
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+      if (!_wrap && _horizontal.hasClients) {
+        final x = column * _fontSize * 0.6 - _horizontal.position.viewportDimension / 3;
+        _horizontal.animateTo(
+          x.clamp(0, _horizontal.position.maxScrollExtent),
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
 
   void _apply() {
     if (_auto) {
@@ -202,6 +302,11 @@ class _CodePanelState extends State<CodePanel> {
       color: colors.codeText,
     );
     final lines = '\n'.allMatches(_code.text).length + 1;
+    final found = _findMatches();
+    if (_matchIndex >= found.length) _matchIndex = 0;
+    _code
+      ..matches = found
+      ..current = found.isEmpty ? -1 : _matchIndex;
 
     final field = TextField(
       key: const Key('code-field'),
@@ -221,8 +326,67 @@ class _CodePanelState extends State<CodePanel> {
         // Side padding 16 + 16, text padding 10 + 10, border 2; monospace
         // glyphs are about 0.6 em wide.
         _columns = math.max(((constraints.maxWidth - 54) / (_fontSize * 0.62)).floor(), 0);
-        return _body(context, l10n, colors, style, lines, field);
+        return _body(context, l10n, colors, style, lines, field, found);
       },
+    );
+  }
+
+  /// Search field with the match count and previous / next / close buttons.
+  Widget _searchBar(AppLocalizations l10n, List<TextRange> found) {
+    final hasQuery = _query.text.isNotEmpty;
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              key: const Key('code-search-field'),
+              controller: _query,
+              autofocus: true,
+              textInputAction: TextInputAction.search,
+              onChanged: (_) {
+                setState(() => _matchIndex = 0);
+                _scrollToMatch();
+              },
+              onSubmitted: (_) => _go(1),
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: l10n.searchCode,
+                prefixIcon: const Icon(Icons.search_rounded, size: 20),
+              ),
+            ),
+          ),
+          if (hasQuery)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                key: const Key('code-search-count'),
+                found.isEmpty ? '0' : '${_matchIndex + 1}/${found.length}',
+              ),
+            ),
+          IconButton(
+            key: const Key('code-search-previous'),
+            tooltip: l10n.searchPrevious,
+            visualDensity: VisualDensity.compact,
+            onPressed: found.isEmpty ? null : () => _go(-1 + found.length),
+            icon: const Icon(Icons.keyboard_arrow_up_rounded),
+          ),
+          IconButton(
+            key: const Key('code-search-next'),
+            tooltip: l10n.searchNext,
+            visualDensity: VisualDensity.compact,
+            onPressed: found.isEmpty ? null : () => _go(1),
+            icon: const Icon(Icons.keyboard_arrow_down_rounded),
+          ),
+          IconButton(
+            key: const Key('code-search-close'),
+            tooltip: l10n.searchClose,
+            visualDensity: VisualDensity.compact,
+            onPressed: _toggleSearch,
+            icon: const Icon(Icons.close_rounded),
+          ),
+        ],
+      ),
     );
   }
 
@@ -233,6 +397,7 @@ class _CodePanelState extends State<CodePanel> {
     TextStyle style,
     int lines,
     Widget field,
+    List<TextRange> found,
   ) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -271,6 +436,14 @@ class _CodePanelState extends State<CodePanel> {
                       side: BorderSide(color: Theme.of(context).colorScheme.outline),
                       onSelected: (value) => _relayout(() => _wrap = value),
                     ),
+                    IconButton(
+                      key: const Key('code-search'),
+                      tooltip: l10n.searchCode,
+                      visualDensity: VisualDensity.compact,
+                      isSelected: _searching,
+                      onPressed: _toggleSearch,
+                      icon: const Icon(Icons.search_rounded),
+                    ),
                   ],
                 ),
               ),
@@ -284,6 +457,7 @@ class _CodePanelState extends State<CodePanel> {
               ),
             ],
           ),
+          if (_searching) _searchBar(l10n, found),
           SliderField(
             label: l10n.fontSize,
             value: _fontSize,

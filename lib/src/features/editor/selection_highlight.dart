@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:svg_view/svg_view.dart';
 
@@ -21,17 +22,17 @@ class SelectionHighlight extends StatelessWidget {
         listenable: controller,
         builder: (context, _) => LayoutBuilder(
           builder: (context, constraints) {
-            final box = controller.selectionBounds;
             final inner = padding.deflateSize(constraints.biggest);
-            final rect = box == null
-                ? null
-                : Rect.fromLTRB(
-                    padding.left + box.left * inner.width,
-                    padding.top + box.top * inner.height,
-                    padding.left + box.right * inner.width,
-                    padding.top + box.bottom * inner.height,
-                  );
-            return CustomPaint(size: constraints.biggest, painter: _HighlightPainter(rect, color));
+            final rects = [
+              for (final box in controller.selectionBoxes)
+                Rect.fromLTRB(
+                  padding.left + box.left * inner.width,
+                  padding.top + box.top * inner.height,
+                  padding.left + box.right * inner.width,
+                  padding.top + box.bottom * inner.height,
+                ),
+            ];
+            return CustomPaint(size: constraints.biggest, painter: _HighlightPainter(rects, color));
           },
         ),
       ),
@@ -40,27 +41,28 @@ class SelectionHighlight extends StatelessWidget {
 }
 
 class _HighlightPainter extends CustomPainter {
-  const _HighlightPainter(this.rect, this.color);
+  const _HighlightPainter(this.rects, this.color);
 
-  final Rect? rect;
+  final List<Rect> rects;
   final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = this.rect;
-    if (rect == null) return;
-    final shape = RRect.fromRectAndRadius(rect.inflate(2), const Radius.circular(3));
-    canvas
-      ..drawRRect(shape, Paint()..color = color.withValues(alpha: .14))
-      ..drawRRect(
-        shape,
-        Paint()
-          ..color = color
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.5,
-      );
+    for (final rect in rects) {
+      final shape = RRect.fromRectAndRadius(rect.inflate(2), const Radius.circular(3));
+      canvas
+        ..drawRRect(shape, Paint()..color = color.withValues(alpha: .14))
+        ..drawRRect(
+          shape,
+          Paint()
+            ..color = color
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2.5,
+        );
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _HighlightPainter old) => old.rect != rect || old.color != color;
+  bool shouldRepaint(covariant _HighlightPainter old) =>
+      !listEquals(old.rects, rects) || old.color != color;
 }

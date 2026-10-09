@@ -177,6 +177,27 @@ void main() {
     expect(colorToHex(result!), '#FF0000');
   });
 
+  testWidgets('HslColorEditor applies the typed hex with the OK button', (tester) async {
+    Color? result;
+    await tester.pumpWidget(
+      _app(
+        SingleChildScrollView(
+          child: HslColorEditor(
+            color: const Color(0xFF000000),
+            labels: const HslLabels(hue: 'H', saturation: 'S', lightness: 'L', hex: 'Hex'),
+            onChangeEnd: (color) => result = color,
+          ),
+        ),
+        brightness: Brightness.light,
+      ),
+    );
+    await tester.enterText(find.widgetWithText(TextField, '#000000'), '#00FF00');
+    expect(result, isNull, reason: 'nothing happens until OK');
+    await tester.tap(find.byKey(const Key('hex-ok')));
+    await tester.pump();
+    expect(colorToHex(result!), '#00FF00');
+  });
+
   testWidgets('an emphasized PillTab keeps its label and uses its own accent', (tester) async {
     const accent = Color(0xFF22C55E);
     await tester.pumpWidget(

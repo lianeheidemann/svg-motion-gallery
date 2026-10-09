@@ -116,7 +116,10 @@ void main() {
     await tester.tap(find.text('butterfly.svg'));
     await tester.pumpAndSettle();
     expect(find.text('Versão clara e escura'), findsOneWidget);
-    await tester.tap(find.text('Lado a lado'));
+    // Light, dark and side by side are icons only; the name is the tooltip.
+    expect(find.text('Lado a lado'), findsNothing);
+    expect(find.text('Clara'), findsNothing);
+    await tester.tap(find.byTooltip('Lado a lado'));
     await tester.pumpAndSettle();
     expect(find.text('Clara'), findsWidgets);
     expect(find.text('Escura'), findsWidgets);
@@ -196,12 +199,16 @@ void main() {
     expect(save().onPressed, isNull);
 
     await _tapTab(tester, 'Inserir');
-    await tester.ensureVisible(find.byKey(const Key('insert-shape')));
+    expect(find.byKey(const Key('insert-shape')), findsNothing, reason: 'no Add button');
+    // Tapping a shape adds it right away.
+    await tester.ensureVisible(find.byKey(const Key('insert-rectangle')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('insert-shape')));
+    await tester.tap(find.byKey(const Key('insert-rectangle')));
     await tester.pumpAndSettle();
     expect(save().onPressed, isNotNull);
     expect(find.textContaining('Selecionado: Retângulo'), findsOneWidget);
+    expect(find.text('Contorno'), findsWidgets);
+    expect(find.text('Preenchimento'), findsNothing, reason: 'hollow: no fill color yet');
 
     // New shapes are hollow; the box fills them.
     CheckboxListTile filled() =>
@@ -212,6 +219,10 @@ void main() {
     await tester.tap(find.byKey(const Key('selected-filled')));
     await tester.pumpAndSettle();
     expect(filled().value, isTrue);
+    expect(find.text('Preenchimento'), findsOneWidget, reason: 'filled: pick the fill color too');
+    // The fill colors pushed the box down.
+    await tester.ensureVisible(find.byKey(const Key('selected-filled')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('selected-filled')));
     await tester.pumpAndSettle();
     expect(filled().value, isFalse);
@@ -232,7 +243,12 @@ void main() {
     await tester.drag(find.byKey(const Key('resize-handle')), const Offset(30, 30));
     await tester.pumpAndSettle();
     await _tapTab(tester, 'Camadas');
-    expect(find.text('Ajuste do editor'), findsWidgets, reason: 'resizing adds a transform group');
+    expect(
+      find.text('Ajuste do editor'),
+      findsNothing,
+      reason: 'resizing changes the shape itself, with no transform group',
+    );
+    expect(save().onPressed, isNotNull);
     await tester.tap(find.byTooltip('Desfazer'));
     await tester.pumpAndSettle();
     await _tapTab(tester, 'Inserir');
@@ -328,9 +344,9 @@ void main() {
     await tester.pumpAndSettle();
 
     await _tapTab(tester, 'Inserir');
-    await tester.ensureVisible(find.byKey(const Key('insert-shape')));
+    await tester.ensureVisible(find.byKey(const Key('insert-rectangle')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('insert-shape')));
+    await tester.tap(find.byKey(const Key('insert-rectangle')));
     await tester.pumpAndSettle();
 
     // The second swatch is purple (#A04BFF); the shape is hollow, so its
@@ -414,6 +430,44 @@ void main() {
     expect(circles.evaluate().length, shown);
   });
 
+  testWidgets('layers: the corner box ticks several layers, even from different folders', (
+    tester,
+  ) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('sun-moon.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+
+    final box = find.byKey(const Key('multi-select'));
+    await tester.ensureVisible(box);
+    await tester.pumpAndSettle();
+    expect(tester.widget<Checkbox>(box).value, isFalse);
+    await tester.tap(box);
+    await tester.pumpAndSettle();
+    expect(tester.widget<Checkbox>(box).value, isTrue);
+    expect(find.text('Toque nas camadas para selecioná-las'), findsOneWidget);
+
+    // Tapping a layer ticks it; tapping another one keeps the first ticked.
+    for (final name in ['Retângulo', 'Círculo']) {
+      final row = find.textContaining(name).first;
+      await tester.ensureVisible(row);
+      await tester.pumpAndSettle();
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+    }
+    expect(find.text('2 camadas selecionadas'), findsWidgets);
+
+    // Unticking the corner box goes back to a single selection.
+    await tester.ensureVisible(box);
+    await tester.pumpAndSettle();
+    await tester.tap(box);
+    await tester.pumpAndSettle();
+    expect(find.text('2 camadas selecionadas'), findsNothing);
+  });
+
   testWidgets('transform: width and height can be changed on their own', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);
@@ -436,15 +490,88 @@ void main() {
     await tester.pumpAndSettle();
     expect(save().onPressed, isNotNull, reason: 'stretching the width is an edit');
 
-    await tester.tap(find.byTooltip('Desfazer'));
+    // The card is just "Transformar", and the document size has no tab.
+    expect(find.text('Transformar'), findsWidgets);
+    expect(find.byTooltip('Tamanho'), findsNothing);
+  });
+
+  testWidgets('code: the magnifier opens a search that finds and steps through matches', (
+    tester,
+  ) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('sun-moon.svg'));
     await tester.pumpAndSettle();
-    await _tapTab(tester, 'Tamanho');
-    expect(find.text('Tamanho do documento'), findsOneWidget);
-    expect(find.text('Largura'), findsOneWidget);
-    expect(find.text('Altura'), findsOneWidget);
-    await tester.drag(find.byType(Slider).first, const Offset(40, 0));
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
     await tester.pumpAndSettle();
-    expect(save().onPressed, isNotNull, reason: 'changing the document width is an edit');
+    await _tapTab(tester, 'Código');
+
+    expect(find.byKey(const Key('code-search-field')), findsNothing);
+    await tester.tap(find.byKey(const Key('code-search')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('code-search-field')), findsOneWidget);
+
+    // Letter case does not matter, and every match is counted.
+    await tester.enterText(find.byKey(const Key('code-search-field')), 'CIRCLE');
+    await tester.pumpAndSettle();
+    final code = tester.widget<TextField>(find.byKey(const Key('code-field'))).controller!.text;
+    final total = RegExp('circle').allMatches(code).length;
+    expect(total, greaterThan(1));
+    final count = find.byKey(const Key('code-search-count'));
+    expect(tester.widget<Text>(count).data, '1/$total');
+
+    await tester.tap(find.byKey(const Key('code-search-next')));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(count).data, '2/$total');
+    await tester.tap(find.byKey(const Key('code-search-previous')));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(count).data, '1/$total');
+    await tester.tap(find.byKey(const Key('code-search-previous')));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(count).data, '$total/$total', reason: 'goes around');
+
+    await tester.enterText(find.byKey(const Key('code-search-field')), 'zzzz-not-there');
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(count).data, '0');
+
+    await tester.tap(find.byKey(const Key('code-search-close')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('code-search-field')), findsNothing);
+  });
+
+  testWidgets('insert: width and height stretch the selected shape', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+
+    await _tapTab(tester, 'Inserir');
+    await tester.ensureVisible(find.byKey(const Key('insert-circle')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('insert-circle')));
+    await tester.pumpAndSettle();
+
+    final width = find.byKey(const Key('selected-width'));
+    final height = find.byKey(const Key('selected-height'));
+    await tester.ensureVisible(width);
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: width, matching: find.text('Largura')), findsOneWidget);
+    expect(find.descendant(of: height, matching: find.text('Altura')), findsOneWidget);
+
+    await tester.drag(
+      find.descendant(of: width, matching: find.byType(Slider)),
+      const Offset(60, 0),
+    );
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Código');
+    final code = tester.widget<TextField>(find.byKey(const Key('code-field'))).controller!.text;
+    // The shape itself got wider (no scaling wrapper), so its outline keeps its width.
+    expect(code, contains('data-sm-w='));
+    expect(code, isNot(contains('data-sm-edit="element"')));
   });
 
   testWidgets('animation: a motion applies as soon as it is tapped and "None" removes it', (

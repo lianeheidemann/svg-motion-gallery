@@ -16,7 +16,6 @@
   "backgroundLight": "Claro",
   "backgroundDark": "Escuro",
   "backgroundChecker": "Quadriculado (transparência)",
-  "tabSize": "Tamanho",
   "presetNone": "Nenhum",
   "pauseAll": "Pausar animações",
   "resumeAll": "Retomar animações",
@@ -245,15 +244,6 @@
   },
   "clearSelection": "Limpar seleção",
   "selectLayerHint": "Selecione uma camada na aba Camadas para editar só ela.",
-  "transformDocument": "Transformar desenho inteiro",
-  "transformLayer": "Transformar {name}",
-  "@transformLayer": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "transformHint": "Sem seleção, os ajustes valem para todo o desenho.",
   "positionX": "Posição X",
   "positionY": "Posição Y",
@@ -261,7 +251,6 @@
   "rotation": "Rotação",
   "opacity": "Opacidade",
   "resetTransform": "Redefinir",
-  "documentSize": "Tamanho do documento",
   "width": "Largura",
   "height": "Altura",
   "lockAspect": "Manter proporção",
@@ -283,7 +272,6 @@
     }
   },
   "fill": "Preenchimento",
-  "stroke": "Traço",
   "currentPaint": "Atual: {value}",
   "@currentPaint": {
     "placeholders": {
@@ -295,9 +283,7 @@
   "paintInherited": "herdado",
   "paintNone": "nenhum",
   "paintGradient": "gradiente",
-  "strokeWidth": "Espessura",
   "removeFill": "Remover preenchimento",
-  "removeStroke": "Remover traço",
   "hue": "Matiz",
   "saturation": "Saturação",
   "lightness": "Luminosidade",
@@ -322,6 +308,25 @@
   "duration": "Duração",
   "layersTitle": "{count, plural, =0{Camadas} =1{1 camada} other{{count} camadas}}",
   "@layersTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "multiSelect": "Selecionar várias camadas",
+  "multiSelectCount": "{count, plural, =1{1 camada selecionada} other{{count} camadas selecionadas}}",
+  "@multiSelectCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "multiSelectNone": "Toque nas camadas para selecioná-las",
+  "deleteLayersTitle": "Excluir camadas?",
+  "deleteLayersMessage": "{count} camadas serão removidas do desenho. Você pode desfazer depois.",
+  "@deleteLayersMessage": {
     "placeholders": {
       "count": {
         "type": "int"
@@ -368,6 +373,10 @@
   "autoFormat": "Formatação automática",
   "formatCode": "Formatar",
   "wrapLines": "Quebrar linhas",
+  "searchCode": "Pesquisar no código",
+  "searchPrevious": "Resultado anterior",
+  "searchNext": "Próximo resultado",
+  "searchClose": "Fechar pesquisa",
   "fontSize": "Fonte",
   "playbackSection": "Reprodução",
   "autoplayTitle": "Reprodução automática",
@@ -495,11 +504,7 @@
   "windowRatio": "Proporção",
   "windowWidth": "Largura da janela",
   "windowHeight": "Altura da janela",
-  "windowAdjust": "Ajuste automático",
-  "windowAdjustHint": "Arraste a margem para enquadrar a janela no desenho, com a mesma folga proporcional em todos os lados.",
   "windowMargin": "Margem",
-  "windowMotion": "Considerar movimento",
-  "windowNoMotion": "Este desenho não tem animação.",
   "windowFitFailed": "Não foi possível medir o desenho.",
   "tabWindow": "Janela",
   "tabText": "Texto",

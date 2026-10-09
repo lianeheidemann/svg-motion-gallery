@@ -176,9 +176,9 @@ class _ViewerScreenState extends State<ViewerScreen> {
               ),
             ],
           ),
-          // Keeps the last button above the system navigation bar.
           body: SafeArea(
             top: false,
+            bottom: false,
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
               children: [
@@ -262,14 +262,19 @@ class _ViewerScreenState extends State<ViewerScreen> {
                 ],
                 const SizedBox(height: AppSpacing.md),
                 FileInfoCard(document: document, metadata: metadata),
-                const SizedBox(height: AppSpacing.lg),
-                FilledButton.icon(
-                  key: const Key('edit-svg'),
-                  onPressed: () => _edit(document),
-                  icon: const Icon(Icons.edit_rounded),
-                  label: Text(l10n.editSvg),
-                ),
               ],
+            ),
+          ),
+          // Pinned, so Edit is always in reach without scrolling to the end.
+          bottomNavigationBar: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: FilledButton.icon(
+                key: const Key('edit-svg'),
+                onPressed: () => _edit(document),
+                icon: const Icon(Icons.edit_rounded),
+                label: Text(l10n.editSvg),
+              ),
             ),
           ),
         );
