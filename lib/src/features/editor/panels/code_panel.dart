@@ -3,157 +3,16 @@ import 'dart:math' as math;
 
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:svg_core/svg_core.dart';
 
 import '../../../app_scope.dart';
 import '../../../l10n/l10n.dart';
 import '../editor_controller.dart';
+import 'code/code_controller.dart';
+import 'code/keep_indent_formatter.dart';
 
-/// A range of code with something wrong, to underline.
-class CodeProblem {
-  const CodeProblem(this.range, {required this.error});
-
-  final TextRange range;
-
-  /// Red when true (the SVG is broken), amber when false (only a hint).
-  final bool error;
-}
-
-/// How far the matches and problems have been read while building one span.
-class _Walk {
-  var match = 0;
-  var problem = 0;
-}
-
-/// Text controller that paints SVG source with syntax colors.
-class SvgCodeController extends TextEditingController {
-  SvgCodeController({super.text});
-
-  GalleryColors? colors;
-
-  /// Where the search found its text (sorted, not overlapping), and which of
-  /// them is the current one (-1 for none). They get a colored background.
-  List<TextRange> matches = const [];
-  int current = -1;
-
-  /// Places with a problem (sorted, not overlapping), underlined with a wavy
-  /// line: red for errors, amber for hints.
-  List<CodeProblem> problems = const [];
-
-  static const _matchColor = Color(0x55FFC107);
-  static const _currentColor = Color(0xAAFFA000);
-  static const _errorColor = Color(0xFFEF4444);
-  static const _hintColor = _errorColor;
-
-  /// [text] from [start] to [end] in [color], with the matches marked and the
-  /// problems underlined. [walk] remembers how far the lists have been read,
-  /// since the tokens come in order.
-  List<InlineSpan> _segments(int start, int end, Color color, _Walk walk) {
-    while (walk.match < matches.length && matches[walk.match].end <= start) {
-      walk.match++;
-    }
-    while (walk.problem < problems.length && problems[walk.problem].range.end <= start) {
-      walk.problem++;
-    }
-    final cuts = <int>{start, end};
-    for (var i = walk.match; i < matches.length && matches[i].start < end; i++) {
-      cuts
-        ..add(math.max(matches[i].start, start))
-        ..add(math.min(matches[i].end, end));
-    }
-    for (var i = walk.problem; i < problems.length && problems[i].range.start < end; i++) {
-      cuts
-        ..add(math.max(problems[i].range.start, start))
-        ..add(math.min(problems[i].range.end, end));
-    }
-    final points = cuts.toList()..sort();
-
-    final spans = <InlineSpan>[];
-    var m = walk.match;
-    var p = walk.problem;
-    for (var k = 0; k + 1 < points.length; k++) {
-      final from = points[k];
-      final to = points[k + 1];
-      while (m < matches.length && matches[m].end <= from) {
-        m++;
-      }
-      while (p < problems.length && problems[p].range.end <= from) {
-        p++;
-      }
-      final inMatch = m < matches.length && matches[m].start <= from;
-      final problem = p < problems.length && problems[p].range.start <= from ? problems[p] : null;
-      spans.add(
-        TextSpan(
-          text: text.substring(from, to),
-          style: TextStyle(
-            color: color,
-            backgroundColor: inMatch ? (m == current ? _currentColor : _matchColor) : null,
-            decoration: problem == null ? null : TextDecoration.underline,
-            decorationStyle: TextDecorationStyle.wavy,
-            decorationColor: problem == null ? null : (problem.error ? _errorColor : _hintColor),
-            decorationThickness: 1.6,
-          ),
-        ),
-      );
-    }
-    return spans;
-  }
-
-  @override
-  TextSpan buildTextSpan({
-    required BuildContext context,
-    TextStyle? style,
-    required bool withComposing,
-  }) {
-    final palette = colors;
-    if (palette == null || (withComposing && value.isComposingRangeValid)) {
-      return super.buildTextSpan(context: context, style: style, withComposing: withComposing);
-    }
-    Color colorOf(SvgTokenType type) => switch (type) {
-      SvgTokenType.text => palette.codeText,
-      SvgTokenType.comment => palette.codeComment,
-      SvgTokenType.tag => palette.codeTag,
-      SvgTokenType.punctuation => palette.codePunctuation,
-      SvgTokenType.attribute => palette.codeAttribute,
-      SvgTokenType.value => palette.codeValue,
-      SvgTokenType.entity => palette.codeValue,
-    };
-    final walk = _Walk();
-    return TextSpan(
-      style: style,
-      children: [
-        for (final token in tokenizeSvg(text))
-          ..._segments(token.start, token.end, colorOf(token.type), walk),
-      ],
-    );
-  }
-}
-
-/// Pressing Enter starts the new line with the indent of the line above.
-class KeepIndentFormatter extends TextInputFormatter {
-  const KeepIndentFormatter();
-
-  @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    final cursor = newValue.selection.baseOffset;
-    final typedOne =
-        newValue.selection.isCollapsed &&
-        newValue.text.length == oldValue.text.length + 1 &&
-        cursor > 0 &&
-        newValue.text[cursor - 1] == '\n' &&
-        newValue.text.replaceRange(cursor - 1, cursor, '') == oldValue.text;
-    if (!typedOne) return newValue;
-    final lineStart = newValue.text.lastIndexOf('\n', cursor - 2) + 1;
-    final line = newValue.text.substring(lineStart, cursor - 1);
-    final indent = line.substring(0, line.length - line.trimLeft().length);
-    if (indent.isEmpty) return newValue;
-    return TextEditingValue(
-      text: newValue.text.replaceRange(cursor, cursor, indent),
-      selection: TextSelection.collapsed(offset: cursor + indent.length),
-    );
-  }
-}
+export 'code/code_controller.dart';
+export 'code/keep_indent_formatter.dart';
 
 /// Source editor with highlighting, line numbers, optional wrapping, a font
 /// size slider and formatting. Typing is only validated and applied to the
@@ -169,6 +28,12 @@ class CodePanel extends StatefulWidget {
 
 class _CodePanelState extends State<CodePanel> {
   late final _code = SvgCodeController(text: widget.editor.code);
+
+  /// The text the field held when it was last loaded from the editor or
+  /// applied to it. Typing moves the field away from it; that is "pending".
+  /// (Comparing with the wrapped document instead would flag an edit whenever
+  /// the line width changes, and wrapping again can move a break.)
+  late String _loaded = widget.editor.code;
   final _vertical = ScrollController();
   final _horizontal = ScrollController();
   late int _revision;
@@ -214,7 +79,7 @@ class _CodePanelState extends State<CodePanel> {
     final pending = _hasPending;
     setState(change);
     if (!pending) {
-      _code.text = _view(widget.editor.code);
+      _load(_view(widget.editor.code));
       _check();
     }
   }
@@ -234,7 +99,10 @@ class _CodePanelState extends State<CodePanel> {
   void _flush() {
     if (!_hasPending) return;
     final text = _code.text;
-    if (validateSvg(text).isValid) widget.editor.updateCode(text);
+    if (validateSvg(text).isValid) {
+      widget.editor.updateCode(text);
+      _loaded = text;
+    }
     _check();
     if (mounted) setState(() {});
   }
@@ -253,7 +121,7 @@ class _CodePanelState extends State<CodePanel> {
     super.didUpdateWidget(oldWidget);
     if (widget.editor.revision != _revision) {
       _revision = widget.editor.revision;
-      _code.text = _view(widget.editor.code);
+      _load(_view(widget.editor.code));
       _check();
       _autoFormat();
     }
@@ -295,7 +163,13 @@ class _CodePanelState extends State<CodePanel> {
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
   );
 
-  bool get _hasPending => _code.text != _view(widget.editor.code);
+  bool get _hasPending => _code.text != _loaded;
+
+  /// Puts [text] in the field as the state the editor has.
+  void _load(String text) {
+    _code.text = text;
+    _loaded = text;
+  }
 
   /// Every place the search text appears in the code (any letter case).
   List<TextRange> _findMatches() {
@@ -471,6 +345,7 @@ class _CodePanelState extends State<CodePanel> {
       if (formatted != null) _code.text = _view(formatted);
     }
     widget.editor.updateCode(_code.text);
+    _loaded = _code.text;
     _checkTimer?.cancel();
     setState(_check);
     // Problems are told under the code; a clean apply shows in the button.

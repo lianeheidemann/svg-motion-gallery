@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:svg_core/svg_core.dart';
 
 import '../../../l10n/l10n.dart';
+import '../color_adjust.dart';
 import '../color_presets.dart';
 import '../editor_controller.dart';
+import 'colors/color_adjuster.dart';
 
 /// Paints the selected layers (all of them at once when several are ticked).
 /// Colors are picked from a palette of ready-made colors and fine-tuned with
@@ -48,20 +50,65 @@ class _ColorsPanelState extends State<ColorsPanel> {
       ..commit(_paint(_editor.svg, hex));
   }
 
-  /// Paints every target. Outline-only shapes (fill none) stay that way when
-  /// several are painted.
-  String _paint(String svg, String? color) {
-    final targets = _editor.paintTargets;
-    var out = svg;
+  /// What painting [target] sets: its fill, except that an outline-only shape
+  /// (fill none, with a stroke: an antenna, a smile) has its stroke painted,
+  /// since a fill would turn the line into a blob.
+  String _property(String svg, ElementPath target) {
     final scheme = widget.scheme;
-    for (final target in targets) {
-      final current = scheme == null
-          ? SvgPaintEdit.read(out, target).fill
-          : SvgThemeEdit.fillFor(out, target, scheme);
-      if (targets.length > 1 && current == 'none') continue;
-      out = scheme == null || color == null
-          ? SvgPaintEdit.setFill(out, target, color)
-          : SvgThemeEdit.setFill(out, target, color, scheme);
+    final fill = scheme == null
+        ? SvgPaintEdit.read(svg, target).fill
+        : SvgThemeEdit.fillFor(svg, target, scheme);
+    if (fill != 'none') return 'fill';
+    final stroke = scheme == null
+        ? SvgPaintEdit.read(svg, target).stroke
+        : SvgThemeEdit.paintFor(svg, target, scheme, 'stroke');
+    return stroke != null && stroke != 'none' ? 'stroke' : 'fill';
+  }
+
+  /// The `#RRGGBB` [property] of [target] as it shows, or null (no plain color).
+  String? _colorOf(String svg, ElementPath target, String property) {
+    final scheme = widget.scheme;
+    final String? value;
+    if (scheme != null) {
+      value = SvgThemeEdit.paintFor(svg, target, scheme, property);
+    } else {
+      final paint = SvgPaintEdit.read(svg, target);
+      value = property == 'stroke' ? paint.strokeColor : paint.fillColor;
+    }
+    return value != null && value.startsWith('#') ? value : null;
+  }
+
+  String _setColor(String svg, ElementPath target, String? color, String property) {
+    final scheme = widget.scheme;
+    if (scheme != null && color != null) {
+      return SvgThemeEdit.setPaint(svg, target, color, scheme, property);
+    }
+    return property == 'stroke'
+        ? SvgPaintEdit.setStroke(svg, target, color)
+        : SvgPaintEdit.setFill(svg, target, color);
+  }
+
+  /// Paints every target: fills get the color, and so do the strokes of
+  /// outline-only shapes, so everything ends up the same color.
+  String _paint(String svg, String? color) {
+    var out = svg;
+    for (final target in _editor.paintTargets) {
+      out = _setColor(out, target, color, _property(out, target));
+    }
+    return out;
+  }
+
+  /// [svg] with every target's own color moved by [amount] of [kind]: each
+  /// shape keeps its place in the palette, they are not all set to one color.
+  /// Shapes with no plain fill color (a gradient, none) are left alone.
+  String _adjust(String svg, ColorAdjustment kind, double amount) {
+    var out = svg;
+    for (final target in _editor.paintTargets) {
+      final property = _property(out, target);
+      final shown = _colorOf(out, target, property);
+      final base = shown == null ? null : colorFromHex(shown);
+      if (base == null) continue;
+      out = _setColor(out, target, colorToHex(adjustColor(base, kind, amount)), property);
     }
     return out;
   }
@@ -158,10 +205,7 @@ class _ColorsPanelState extends State<ColorsPanel> {
     // Every ticked layer takes the change; the card shows the first one's paint.
     final targets = _editor.paintTargets;
     final path = targets.first;
-    final scheme = widget.scheme;
-    final paint = SvgPaintEdit.read(_editor.svg, path);
-    final shown = scheme == null ? null : SvgThemeEdit.fillFor(_editor.svg, path, scheme);
-    final hex = scheme == null ? paint.fillColor : (shown?.startsWith('#') ?? false ? shown : null);
+    final hex = _colorOf(_editor.svg, path, _property(_editor.svg, path));
     String apply(String svg, String? color) => _paint(svg, color);
 
     return SectionCard(
@@ -180,8 +224,16 @@ class _ColorsPanelState extends State<ColorsPanel> {
           key: ValueKey('paint-$path-$hex'),
           color: colorFromHex(hex ?? '') ?? Theme.of(context).colorScheme.primary,
           labels: _labels(l10n),
+          showSliders: false,
           onChanged: (color) => _editor.preview(apply(_editor.svg, colorToHex(color))),
           onChangeEnd: (color) => _editor.commit(apply(_editor.svg, colorToHex(color))),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        ColorAdjuster(
+          onPreview: (kind, amount) => _editor.preview(_adjust(_editor.svg, kind, amount)),
+          onCommit: (kind, amount) {
+            if (amount != 0) _editor.commit(_adjust(_editor.svg, kind, amount));
+          },
         ),
       ],
     );

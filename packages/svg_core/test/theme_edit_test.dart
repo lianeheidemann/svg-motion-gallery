@@ -59,5 +59,17 @@ void main() {
         const ElementPath([1]),
       );
     });
+
+    test('stroke can be edited per version too, leaving the fill alone', () {
+      const doc =
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+          '<style>@media (prefers-color-scheme: light){.x{fill:#EEE}}</style>'
+          '<path d="M0 0L5 5" fill="none" stroke="#FF00FF"/></svg>';
+      const path = ElementPath([1]);
+      final out = SvgThemeEdit.setPaint(doc, path, '#00FF00', SvgColorScheme.dark, 'stroke');
+      expect(SvgThemeEdit.paintFor(out, path, SvgColorScheme.dark, 'stroke'), '#00FF00');
+      expect(SvgThemeEdit.paintFor(out, path, SvgColorScheme.light, 'stroke'), '#FF00FF');
+      expect(SvgThemeEdit.fillFor(out, path, SvgColorScheme.dark), 'none');
+    });
   });
 }

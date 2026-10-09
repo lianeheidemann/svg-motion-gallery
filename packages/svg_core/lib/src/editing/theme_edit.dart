@@ -2,6 +2,7 @@ import 'package:xml/xml.dart';
 
 import '../colors.dart';
 import '../css.dart';
+import '../css_rules.dart';
 import '../theme/color_scheme.dart';
 import '../theme/theme_resolver.dart';
 import '../theme/theme_support.dart';
@@ -30,13 +31,17 @@ class SvgThemeEdit {
   /// when nothing sets one. Looks at the element's inline style, the
   /// stylesheet rules that apply in that variant, its attribute, then its
   /// ancestors.
-  static String? fillFor(String svg, ElementPath path, SvgColorScheme scheme) {
+  static String? fillFor(String svg, ElementPath path, SvgColorScheme scheme) =>
+      paintFor(svg, path, scheme, 'fill');
+
+  /// Same as [fillFor] for [property] (`fill` or `stroke`).
+  static String? paintFor(String svg, ElementPath path, SvgColorScheme scheme, String property) {
     final document = tryParseSvg(SvgThemeResolver.resolve(svg, scheme));
     var element = _target(document, path);
     if (document == null || element == null) return null;
-    final rules = _rules(document.rootElement, 'fill');
+    final rules = simpleRules(document.rootElement, (p) => p == property);
     while (element != null) {
-      final value = _valueOf(element, rules, 'fill') ?? element.getAttribute('fill');
+      final value = cssValueOf(element, rules, property);
       if (value != null) return SvgColorValue.normalize(value) ?? value.trim();
       element = element.parentElement;
     }
@@ -86,9 +91,9 @@ class SvgThemeEdit {
     if (document == null) return true;
     var element = path.isRoot ? null : path.resolve(document.rootElement);
     if (element == null) return true;
-    final rules = _rules(document.rootElement, 'display');
+    final rules = simpleRules(document.rootElement, (p) => p == 'display');
     while (element != null) {
-      final value = _valueOf(element, rules, 'display');
+      final value = cssValueOf(element, rules, 'display');
       if (value != null && value.trim() == 'none') return false;
       element = element.parentElement;
     }
@@ -97,8 +102,18 @@ class SvgThemeEdit {
 
   /// Sets the fill of the element at [path] to [color] in the [scheme] variant
   /// only; the other variant keeps the paint it has now.
-  static String setFill(String svg, ElementPath path, String color, SvgColorScheme scheme) {
-    final keep = fillFor(svg, path, scheme.opposite) ?? '#000000';
+  static String setFill(String svg, ElementPath path, String color, SvgColorScheme scheme) =>
+      setPaint(svg, path, color, scheme, 'fill');
+
+  /// Same as [setFill] for [property] (`fill` or `stroke`).
+  static String setPaint(
+    String svg,
+    ElementPath path,
+    String color,
+    SvgColorScheme scheme,
+    String property,
+  ) {
+    final keep = paintFor(svg, path, scheme.opposite, property) ?? '#000000';
     final document = tryParseSvg(svg);
     final element = _target(document, path);
     if (document == null || element == null) return svg;
@@ -108,7 +123,7 @@ class SvgThemeEdit {
     element.setAttribute(_attribute, id);
     final style = element.getAttribute('style');
     if (style != null) {
-      final cleaned = mapDeclarations(style, (name, old) => name == 'fill' ? null : old);
+      final cleaned = mapDeclarations(style, (name, old) => name == property ? null : old);
       element.setAttribute('style', cleaned.trim().isEmpty ? null : cleaned);
     }
 
@@ -120,20 +135,21 @@ class SvgThemeEdit {
         final which = rule.prelude.contains('dark') ? SvgColorScheme.dark : SvgColorScheme.light;
         final inner = text.substring(rule.blockStart + 1, rule.blockEnd);
         for (final match in RegExp(
-          r'\[data-sm-t="(\d+)"\]\s*\{\s*fill\s*:\s*([^;}!]+)',
+          r'\[data-sm-t="(\d+)"\]\s*\{\s*(fill|stroke)\s*:\s*([^;}!]+)',
         ).allMatches(inner)) {
-          values[which]![match.group(1)!] = match.group(2)!.trim();
+          values[which]!['${match.group(2)}|${match.group(1)}'] = match.group(3)!.trim();
         }
       }
     }
-    values[scheme]![id] = color;
-    values[scheme.opposite]![id] = keep;
+    values[scheme]!['$property|$id'] = color;
+    values[scheme.opposite]!['$property|$id'] = keep;
 
     final css = StringBuffer();
     for (final s in SvgColorScheme.values) {
       css.write('@media (prefers-color-scheme: ${s.name}){');
       for (final entry in values[s]!.entries) {
-        css.write('[$_attribute="${entry.key}"]{fill:${entry.value} !important}');
+        final parts = entry.key.split('|');
+        css.write('[$_attribute="${parts[1]}"]{${parts[0]}:${entry.value} !important}');
       }
       css.write('}');
     }
@@ -160,60 +176,5 @@ class SvgThemeEdit {
       if (n != null && n > highest) highest = n;
     }
     return '${highest + 1}';
-  }
-
-  static final _ruleText = RegExp(r'([^{}@;]+)\{([^{}]*)\}');
-  static final _simple = RegExp(
-    r'^([A-Za-z][\w-]*)?(?:\.([\w-]+))?(?:#([\w-]+))?(?:\[data-sm-t="(\d+)"\])?$',
-  );
-
-  /// The `fill` declarations of the simple rules of every `<style>`, in order.
-  static List<(String, String)> _rules(XmlElement root, String property) {
-    final out = <(String, String)>[];
-    for (final style in root.descendantElements.where((e) => e.localName == 'style')) {
-      for (final match in _ruleText.allMatches(styleText(style))) {
-        String? found;
-        mapDeclarations(match.group(2)!, (name, value) {
-          if (name == property) found = value.replaceAll('!important', '').trim();
-          return value;
-        });
-        if (found == null) continue;
-        for (final selector in match.group(1)!.split(',')) {
-          out.add((selector.trim(), found!));
-        }
-      }
-    }
-    return out;
-  }
-
-  static bool _matches(String selector, XmlElement element) {
-    final match = _simple.firstMatch(selector);
-    if (match == null || selector.isEmpty) return false;
-    final tag = match.group(1);
-    final cls = match.group(2);
-    final id = match.group(3);
-    final key = match.group(4);
-    if (tag != null && tag != element.localName) return false;
-    if (cls != null && !(element.getAttribute('class') ?? '').split(RegExp(r'\s+')).contains(cls)) {
-      return false;
-    }
-    if (id != null && element.getAttribute('id') != id) return false;
-    return key == null || element.getAttribute(_attribute) == key;
-  }
-
-  /// The value of [property] for [element]: its inline style, else the last
-  /// matching stylesheet rule; null when neither sets it.
-  static String? _valueOf(XmlElement element, List<(String, String)> rules, String property) {
-    String? inline;
-    mapDeclarations(element.getAttribute('style') ?? '', (name, value) {
-      if (name == property) inline = value.trim();
-      return value;
-    });
-    if (inline != null) return inline;
-    String? fromRule;
-    for (final (selector, value) in rules) {
-      if (_matches(selector, element)) fromRule = value;
-    }
-    return fromRule ?? element.getAttribute(property);
   }
 }

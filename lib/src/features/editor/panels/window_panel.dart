@@ -162,7 +162,11 @@ class _WindowPanelState extends State<WindowPanel> {
       max: max,
       fractionDigits: 1,
       onChanged: (v) => _preview(edit(v)),
-      onChangeEnd: (_) => _commit(),
+      // Let go: the drawing refits the new proportion, like the buttons do.
+      onChangeEnd: (_) {
+        final live = _live ?? _window;
+        _setRatio(live.width / live.height);
+      },
     );
 
     return ListView(

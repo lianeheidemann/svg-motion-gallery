@@ -22,6 +22,7 @@ class SliderField extends StatefulWidget {
     this.fractionDigits = 0,
     this.unit = '',
     this.labelWidth = 92,
+    this.labelTrailing,
   });
 
   final String label;
@@ -34,6 +35,9 @@ class SliderField extends StatefulWidget {
   /// Suffix shown after the number, e.g. `%`, `°`, `s`, `px`.
   final String unit;
   final double labelWidth;
+
+  /// A small widget right after the label (e.g. a lock icon).
+  final Widget? labelTrailing;
   final ValueChanged<double>? onChanged;
   final ValueChanged<double>? onChangeEnd;
 
@@ -98,12 +102,21 @@ class _SliderFieldState extends State<SliderField> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final value = _clamp(widget.value);
-    final label = Text(
+    final text = Text(
       widget.label,
       style: theme.textTheme.bodyMedium,
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
     );
+    final label = widget.labelTrailing == null
+        ? text
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(child: text),
+              widget.labelTrailing!,
+            ],
+          );
     final field = SizedBox(
       width: _fieldWidth,
       child: TextField(

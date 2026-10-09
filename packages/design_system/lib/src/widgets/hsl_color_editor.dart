@@ -32,12 +32,16 @@ class HslColorEditor extends StatefulWidget {
     required this.labels,
     this.onChanged,
     this.onChangeEnd,
+    this.showSliders = true,
   });
 
   final Color color;
   final HslLabels labels;
   final ValueChanged<Color>? onChanged;
   final ValueChanged<Color>? onChangeEnd;
+
+  /// False: only the swatch and the hex field (the caller adjusts otherwise).
+  final bool showSliders;
 
   @override
   State<HslColorEditor> createState() => _HslColorEditorState();
@@ -118,34 +122,36 @@ class _HslColorEditorState extends State<HslColorEditor> {
             ),
           ],
         ),
-        const SizedBox(height: AppSpacing.sm),
-        SliderField(
-          label: widget.labels.hue,
-          value: _hsl.hue,
-          min: 0,
-          max: 360,
-          unit: '°',
-          onChanged: (v) => _update(_hsl.withHue(v)),
-          onChangeEnd: (_) => _commit(),
-        ),
-        SliderField(
-          label: widget.labels.saturation,
-          value: _hsl.saturation * 100,
-          min: 0,
-          max: 100,
-          unit: '%',
-          onChanged: (v) => _update(_hsl.withSaturation(v / 100)),
-          onChangeEnd: (_) => _commit(),
-        ),
-        SliderField(
-          label: widget.labels.lightness,
-          value: _hsl.lightness * 100,
-          min: 0,
-          max: 100,
-          unit: '%',
-          onChanged: (v) => _update(_hsl.withLightness(v / 100)),
-          onChangeEnd: (_) => _commit(),
-        ),
+        if (widget.showSliders) ...[
+          const SizedBox(height: AppSpacing.sm),
+          SliderField(
+            label: widget.labels.hue,
+            value: _hsl.hue,
+            min: 0,
+            max: 360,
+            unit: '°',
+            onChanged: (v) => _update(_hsl.withHue(v)),
+            onChangeEnd: (_) => _commit(),
+          ),
+          SliderField(
+            label: widget.labels.saturation,
+            value: _hsl.saturation * 100,
+            min: 0,
+            max: 100,
+            unit: '%',
+            onChanged: (v) => _update(_hsl.withSaturation(v / 100)),
+            onChangeEnd: (_) => _commit(),
+          ),
+          SliderField(
+            label: widget.labels.lightness,
+            value: _hsl.lightness * 100,
+            min: 0,
+            max: 100,
+            unit: '%',
+            onChanged: (v) => _update(_hsl.withLightness(v / 100)),
+            onChangeEnd: (_) => _commit(),
+          ),
+        ],
       ],
     );
   }

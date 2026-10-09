@@ -21,10 +21,9 @@ class TransformPanel extends StatefulWidget {
 class _TransformPanelState extends State<TransformPanel> {
   SvgTransformValues? _live;
 
-  /// While on, Width and Height move together and keep the proportion the
-  /// object had when the bar was grabbed, so nothing gets distorted.
-  var _keepProportion = true;
-  var _ratio = 1.0;
+  /// Locked (the default): only Scale can be changed, so the object keeps
+  /// its proportion. Unlocked: Width and Height are free and Scale is not.
+  var _locked = true;
 
   EditorController get _editor => widget.editor;
 
@@ -120,22 +119,25 @@ class _TransformPanelState extends State<TransformPanel> {
               onChangeEnd: (_) => _commit(),
             ),
             SliderField(
+              key: const Key('transform-scale'),
               label: l10n.scale,
+              labelTrailing: IconButton(
+                key: const Key('keep-proportion'),
+                tooltip: l10n.keepProportion,
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+                onPressed: () => setState(() => _locked = !_locked),
+                icon: Icon(_locked ? Icons.lock_rounded : Icons.lock_open_rounded, size: 18),
+              ),
               value: (values.scale * 100).clamp(10, 400),
               min: 10,
               max: 400,
               unit: '%',
-              onChanged: (v) => _preview(values.copyWith(scale: v.roundToDouble() / 100)),
-              onChangeEnd: (_) => _commit(),
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                key: const Key('keep-proportion'),
-                onPressed: () => setState(() => _keepProportion = !_keepProportion),
-                icon: Icon(_keepProportion ? Icons.lock_rounded : Icons.lock_open_rounded),
-                label: Text(l10n.keepProportion),
-              ),
+              onChanged: _locked
+                  ? (v) => _preview(values.copyWith(scale: v.roundToDouble() / 100))
+                  : null,
+              onChangeEnd: _locked ? (_) => _commit() : null,
             ),
             SliderField(
               key: const Key('transform-width'),
@@ -144,17 +146,10 @@ class _TransformPanelState extends State<TransformPanel> {
               min: 10,
               max: 400,
               unit: '%',
-              onChangeStart: (_) => _ratio = values.heightFactor / values.widthFactor,
-              onChanged: (v) {
-                final w = v.roundToDouble() / 100;
-                _preview(
-                  values.copyWith(
-                    widthFactor: w,
-                    heightFactor: _keepProportion ? (w * _ratio).clamp(.1, 4) : null,
-                  ),
-                );
-              },
-              onChangeEnd: (_) => _commit(),
+              onChanged: _locked
+                  ? null
+                  : (v) => _preview(values.copyWith(widthFactor: v.roundToDouble() / 100)),
+              onChangeEnd: _locked ? null : (_) => _commit(),
             ),
             SliderField(
               key: const Key('transform-height'),
@@ -163,17 +158,10 @@ class _TransformPanelState extends State<TransformPanel> {
               min: 10,
               max: 400,
               unit: '%',
-              onChangeStart: (_) => _ratio = values.heightFactor / values.widthFactor,
-              onChanged: (v) {
-                final h = v.roundToDouble() / 100;
-                _preview(
-                  values.copyWith(
-                    heightFactor: h,
-                    widthFactor: _keepProportion ? (h / _ratio).clamp(.1, 4) : null,
-                  ),
-                );
-              },
-              onChangeEnd: (_) => _commit(),
+              onChanged: _locked
+                  ? null
+                  : (v) => _preview(values.copyWith(heightFactor: v.roundToDouble() / 100)),
+              onChangeEnd: _locked ? null : (_) => _commit(),
             ),
             SliderField(
               label: l10n.rotation,

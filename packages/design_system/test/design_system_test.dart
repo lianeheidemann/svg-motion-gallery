@@ -252,4 +252,31 @@ void main() {
     expect(opacity('pill-tabs-more-after'), 0);
     expect(opacity('pill-tabs-more-before'), 0);
   });
+
+  testWidgets('RulerSlider moves with a sideways drag and reports the end', (tester) async {
+    var value = 0.0;
+    double? ended;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) => RulerSlider(
+              value: value,
+              min: -100,
+              max: 100,
+              onChanged: (v) => setState(() => value = v),
+              onChangeEnd: (v) => ended = v,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.drag(find.byKey(const Key('ruler')), const Offset(-64, 0));
+    await tester.pumpAndSettle();
+    expect(value, closeTo(20, 3), reason: 'drag left raises the value');
+    expect(ended, value);
+    await tester.drag(find.byKey(const Key('ruler')), const Offset(4000, 0));
+    await tester.pumpAndSettle();
+    expect(value, -100, reason: 'stops at the end of the ruler');
+  });
 }

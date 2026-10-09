@@ -213,9 +213,7 @@ void main() {
     expect(find.byKey(const Key('code-hint')), findsNothing);
   });
 
-  testWidgets('transform: width and height keep the proportion until it is unlocked', (
-    tester,
-  ) async {
+  testWidgets('transform: the lock decides between Scale and Width/Height', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);
     await tester.tap(find.text('wave.svg'));
@@ -225,23 +223,77 @@ void main() {
     await tester.pumpAndSettle();
     await _tapTab(tester, 'Transformar');
 
-    double width() => tester.widget<Slider>(find.byType(Slider).at(3)).value;
-    double height() => tester.widget<Slider>(find.byType(Slider).at(4)).value;
-
-    await tester.drag(find.byType(Slider).at(3), const Offset(60, 0));
-    await tester.pumpAndSettle();
-    expect(width(), greaterThan(100));
-    expect(height(), closeTo(width(), 1), reason: 'locked: the height follows');
+    Slider bar(int i) => tester.widget<Slider>(find.byType(Slider).at(i));
+    // Locked (default): Scale is the one that moves; Width and Height are grey.
+    expect(bar(2).onChanged, isNotNull);
+    expect(bar(3).onChanged, isNull);
+    expect(bar(4).onChanged, isNull);
 
     await tester.tap(find.byKey(const Key('keep-proportion')));
     await tester.pumpAndSettle();
-    final heightBefore = height();
-    await tester.drag(find.byType(Slider).at(3), const Offset(-30, 0));
+    expect(bar(2).onChanged, isNull, reason: 'unlocked: Scale is grey');
+    expect(bar(3).onChanged, isNotNull);
+    expect(bar(4).onChanged, isNotNull);
+
+    final heightBefore = bar(4).value;
+    await tester.drag(find.byType(Slider).at(3), const Offset(60, 0));
     await tester.pumpAndSettle();
-    expect(height(), closeTo(heightBefore, 0.5), reason: 'unlocked: only the width moves');
+    expect(bar(3).value, greaterThan(100));
+    expect(bar(4).value, closeTo(heightBefore, 0.5), reason: 'only the width moves');
+
+    await tester.tap(find.byKey(const Key('keep-proportion')));
+    await tester.pumpAndSettle();
+    expect(bar(2).onChanged, isNotNull, reason: 'locked again');
+    expect(bar(3).onChanged, isNull);
   });
 
-  testWidgets('dragging a shape moves it in every tab except Insert and Text', (tester) async {
+  testWidgets('the viewer has the light/dark toggle in its bar', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('theme-toggle')), findsOneWidget);
+  });
+
+  testWidgets(
+    'insert: only shapes added there are resized; a new stretched one keeps its outline',
+    (tester) async {
+      final services = await _services(tester);
+      await pumpApp(tester, services);
+      await tester.tap(find.text('wave.svg'));
+      await tester.pumpAndSettle();
+      await _scrollToEdit(tester);
+      await tester.tap(find.byKey(const Key('edit-svg')));
+      await tester.pumpAndSettle();
+
+      // A layer of the file selected in Layers is not resized from Insert.
+      await tester.tap(find.text('Retângulo').first);
+      await tester.pumpAndSettle();
+      await _tapTab(tester, 'Inserir');
+      expect(find.byKey(const Key('selected-size')), findsNothing);
+      expect(find.byKey(const Key('new-width')), findsOneWidget);
+
+      // A new shape stretched while it is added keeps the outline's thickness.
+      await tester.drag(
+        find.descendant(of: find.byKey(const Key('new-width')), matching: find.byType(Slider)),
+        const Offset(80, 0),
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('insert-rectangle')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('insert-rectangle')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('selected-size')), findsOneWidget, reason: 'its own shape');
+      await _tapTab(tester, 'Código');
+      final code = tester.widget<TextField>(find.byKey(const Key('code-field'))).controller!.text;
+      expect(code, contains('data-sm-ins'));
+      expect(code, isNot(contains('data-sm-edit="element"')), reason: 'no scaling wrapper');
+    },
+  );
+
+  testWidgets('dragging a shape moves it in every tab; Insert and Text only move their own', (
+    tester,
+  ) async {
     final services = await _services(tester);
     await pumpApp(tester, services);
     await tester.tap(find.text('wave.svg'));
@@ -266,7 +318,7 @@ void main() {
       await _tapTab(tester, tab);
       await dragShape();
       await _tapTab(tester, 'Camadas');
-      expect(find.text('Ajuste do editor'), findsNothing, reason: 'no move from $tab');
+      expect(find.text('Ajuste do editor'), findsWidgets, reason: 'moved from $tab');
       await tester.tap(find.byTooltip('Desfazer').first);
       await tester.pumpAndSettle();
     }
@@ -274,6 +326,36 @@ void main() {
     // Layers: the same drag moves it (inside an editor transform group).
     await dragShape();
     expect(find.text('Ajuste do editor'), findsWidgets, reason: 'moved in Layers');
+  });
+
+  testWidgets('code tab: with wrapping on, an applied edit is no longer pending and saves', (
+    tester,
+  ) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('sun-moon.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Código');
+    await tester.tap(find.text('Quebrar linhas'));
+    await tester.pumpAndSettle();
+
+    final field = find.byKey(const Key('code-field'));
+    final text = tester.widget<TextField>(field).controller!.text;
+    await tester.enterText(field, text.replaceFirst('#0B1533', '#112233'));
+    await tester.pump(const Duration(seconds: 1));
+    FilledButton apply() => tester.widget<FilledButton>(find.byKey(const Key('apply-code')));
+    expect(apply().onPressed, isNotNull, reason: 'typed, not applied yet');
+
+    await tester.tap(find.byKey(const Key('apply-code')));
+    await tester.pump(const Duration(seconds: 1));
+    expect(apply().onPressed, isNull, reason: 'applied: nothing pending any more');
+
+    await tester.tap(find.byKey(const Key('save')));
+    await tester.pumpAndSettle();
+    expect(find.text('Alterações salvas'), findsOneWidget);
   });
 
   testWidgets('editor inserts a shape, undoes, validates code and saves', (tester) async {
@@ -599,6 +681,8 @@ void main() {
 
     FilledButton save() => tester.widget<FilledButton>(find.byKey(const Key('save')));
     expect(save().onPressed, isNull);
+    await tester.tap(find.byKey(const Key('keep-proportion'))); // unlock Width/Height
+    await tester.pumpAndSettle();
     await tester.drag(find.byType(Slider).at(3), const Offset(60, 0)); // Largura (%)
     await tester.pumpAndSettle();
     expect(save().onPressed, isNotNull, reason: 'stretching the width is an edit');

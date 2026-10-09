@@ -11,7 +11,7 @@ const _svg =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'
     '<rect x="40" y="40" width="20" height="20" stroke="#000" stroke-width="2"/></svg>';
 
-Future<EditorController> _pump(WidgetTester tester) async {
+Future<EditorController> _pump(WidgetTester tester, {bool Function(SvgMovable)? canTouch}) async {
   final editor = EditorController(_svg);
   addTearDown(editor.dispose);
   editor.select(const ElementPath([0]));
@@ -26,7 +26,8 @@ Future<EditorController> _pump(WidgetTester tester) async {
           height: 200,
           child: ListenableBuilder(
             listenable: editor,
-            builder: (context, _) => StageDragLayer(editor: editor, padding: EdgeInsets.zero),
+            builder: (context, _) =>
+                StageDragLayer(editor: editor, padding: EdgeInsets.zero, canTouch: canTouch),
           ),
         ),
       ),
@@ -41,6 +42,18 @@ SvgTransformValues _values(EditorController editor) =>
 double _size(EditorController editor) => SvgShapeSize.read(editor.svg, editor.selection!).size;
 
 void main() {
+  testWidgets('a shape the layer may not touch is neither selected nor moved', (tester) async {
+    final editor = await _pump(tester, canTouch: (_) => false);
+    editor.select(null);
+    final origin = tester.getTopLeft(find.byType(StageDragLayer));
+    await tester.tapAt(origin + const Offset(100, 100));
+    await tester.pumpAndSettle();
+    expect(editor.selection, isNull, reason: 'tap does not select it');
+    await tester.dragFrom(origin + const Offset(100, 100), const Offset(40, 0));
+    await tester.pumpAndSettle();
+    expect(editor.svg, _svg, reason: 'drag does not move it');
+  });
+
   testWidgets('moving, resizing and turning in a row keep what was done before', (tester) async {
     final editor = await _pump(tester);
     final origin = tester.getTopLeft(find.byType(StageDragLayer));
