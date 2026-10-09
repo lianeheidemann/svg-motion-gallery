@@ -258,6 +258,17 @@ void main() {
       expect(inline, isNot(contains('spin 1s')));
     });
 
+    test('adding motions never shifts the paths of the other layers', () {
+      const doc = '<svg><style>.a{fill:red}</style><rect/><circle/><path/></svg>';
+      var out = doc;
+      for (final i in [3, 2, 1]) {
+        out = SvgAnimationEdit.addPreset(out, ElementPath([i]), SvgAnimationPreset.pulse).svg;
+      }
+      for (final i in [1, 2, 3]) {
+        expect(SvgAnimationEdit.presetAt(out, ElementPath([i])), SvgAnimationPreset.pulse);
+      }
+    });
+
     test('removes every animation', () {
       final still = SvgAnimationEdit.removeAll(
         animated.replaceFirst('</style>', '@keyframes spin{to{transform:rotate(1turn)}}</style>'),

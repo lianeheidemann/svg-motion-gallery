@@ -73,12 +73,12 @@ class _AnimationPanelState extends State<AnimationPanel> {
     if (_editor.multiMode || _editor.selection == null) {
       if (preview) {
         var out = _editor.svg;
-        for (final target in _editor.editTargets.reversed) {
+        for (final target in _motionTargets().reversed) {
           out = edit(out, target);
         }
         _editor.preview(out);
       } else {
-        _editor.applyToTargets(edit, paths: _editor.editTargets);
+        _editor.applyToTargets(edit, paths: _motionTargets());
       }
     } else if (preview) {
       _editor.preview(edit(_editor.svg, path));
@@ -103,6 +103,21 @@ class _AnimationPanelState extends State<AnimationPanel> {
   /// The layers the speed bar applied to; a new selection starts it over.
   List<ElementPath> _baseTargets = const [];
 
+  /// The layers a motion goes on: the edit targets, but a layer that already
+  /// sits inside its motion wrapper stands for the wrapper (so the motion is
+  /// replaced there instead of being wrapped again).
+  List<ElementPath> _motionTargets() {
+    final out = <ElementPath>[];
+    for (final path in _editor.editTargets) {
+      final parent = path.parent;
+      final owner = parent != null && SvgAnimationEdit.presetAt(_editor.svg, parent) != null
+          ? parent
+          : path;
+      if (!out.contains(owner)) out.add(owner);
+    }
+    return out;
+  }
+
   void _syncBase() {
     final targets = _editor.targets;
     final sameTargets =
@@ -124,7 +139,7 @@ class _AnimationPanelState extends State<AnimationPanel> {
     final layer = _editor.selectedLayer;
     // With several layers ticked the chips show the first one's motion.
     final presetPath = _editor.multiMode || layer == null
-        ? _editor.editTargets.firstOrNull
+        ? _motionTargets().firstOrNull
         : layer.path;
     final currentPreset = presetPath == null
         ? null
@@ -212,7 +227,7 @@ class _AnimationPanelState extends State<AnimationPanel> {
                       if (_editor.multiMode || layer == null) {
                         _editor.applyToTargets(
                           (svg, target) => SvgAnimationEdit.removePreset(svg, target).svg,
-                          paths: _editor.editTargets,
+                          paths: _motionTargets(),
                         );
                       } else if (currentPreset != null) {
                         _editor.apply(SvgAnimationEdit.removePreset(_editor.svg, layer.path));

@@ -820,6 +820,37 @@ void main() {
     expect(seconds(), lessThan(before), reason: 'and it stays after the speed is applied');
   });
 
+  testWidgets('animation: with nothing selected a motion applies to all and the chip follows', (
+    tester,
+  ) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('sun-moon.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Animação');
+
+    bool chosen(String label) => tester
+        .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, label, skipOffstage: false))
+        .selected;
+    Future<void> tap(String label) async {
+      final chip = find.widgetWithText(ChoiceChip, label, skipOffstage: false);
+      await tester.ensureVisible(chip);
+      await tester.tap(chip);
+      await tester.pumpAndSettle();
+    }
+
+    await tap('Girar');
+    expect(chosen('Girar'), isTrue);
+    await tap('Pulsar');
+    expect(chosen('Pulsar'), isTrue);
+    expect(chosen('Girar'), isFalse);
+    await tap('Nenhum');
+    expect(chosen('Nenhum'), isTrue);
+  });
+
   testWidgets('animation: a motion applies as soon as it is tapped and "None" removes it', (
     tester,
   ) async {

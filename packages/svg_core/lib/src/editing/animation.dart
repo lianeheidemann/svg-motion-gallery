@@ -249,8 +249,9 @@ class SvgAnimationEdit {
       setStyleText(existing, _presetKeyframes);
       return;
     }
-    root.children.insert(
-      0,
+    // Appended, so no element changes its path (several layers are edited in
+    // a row by path).
+    root.children.add(
       buildElement(
         'style',
         attributes: {animationAttribute: 'keyframes'},
