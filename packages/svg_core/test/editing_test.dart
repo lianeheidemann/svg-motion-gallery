@@ -340,8 +340,26 @@ void main() {
         expect(SvgLayers.list(result.svg).last.path, result.selection, reason: kind.name);
         expect(SvgColors.palette(result.svg), contains('#FF00AA'), reason: kind.name);
       }
-      final circle = SvgInsertEdit.insert(base, SvgShapeKind.circle, color: '#FFFFFF', size: .5);
+      final circle = SvgInsertEdit.insert(
+        base,
+        SvgShapeKind.circle,
+        color: '#FFFFFF',
+        size: .5,
+        filled: true,
+        strokeWidth: 0,
+      );
       expect(circle.svg, contains('<circle cx="50" cy="25" r="12.5" fill="#FFFFFF"/>'));
+      // Hollow by default: an outline, no fill.
+      final hollow = SvgInsertEdit.insert(base, SvgShapeKind.rectangle, color: '#112233');
+      expect(hollow.svg, contains('fill="none"'));
+      expect(hollow.svg, contains('stroke="#112233"'));
+      final ring = SvgInsertEdit.insert(
+        base,
+        SvgShapeKind.ellipse,
+        color: '#112233',
+        strokeWidth: 3,
+      );
+      expect(ring.svg, contains('stroke-width="3"'));
       final text = SvgInsertEdit.insert(base, SvgShapeKind.text, color: '#FFFFFF', text: 'Oi');
       expect(text.svg, contains('>Oi</text>'));
     });

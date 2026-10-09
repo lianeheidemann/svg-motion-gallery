@@ -1,6 +1,7 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:svg_core/svg_core.dart';
 import 'package:svg_motion_gallery/src/app_scope.dart';
 
 import 'helpers.dart';
@@ -202,6 +203,23 @@ void main() {
     expect(save().onPressed, isNotNull);
     expect(find.textContaining('Selecionado: Retângulo'), findsOneWidget);
 
+    // New shapes are hollow; the box fills them.
+    CheckboxListTile filled() =>
+        tester.widget<CheckboxListTile>(find.byKey(const Key('selected-filled')));
+    await tester.ensureVisible(find.byKey(const Key('selected-filled')));
+    await tester.pumpAndSettle();
+    expect(filled().value, isFalse);
+    await tester.tap(find.byKey(const Key('selected-filled')));
+    await tester.pumpAndSettle();
+    expect(filled().value, isTrue);
+    await tester.tap(find.byKey(const Key('selected-filled')));
+    await tester.pumpAndSettle();
+    expect(filled().value, isFalse);
+    // Back to the state right after inserting (two undoable steps).
+    await tester.tap(find.byTooltip('Desfazer'));
+    await tester.tap(find.byTooltip('Desfazer'));
+    await tester.pumpAndSettle();
+
     await tester.ensureVisible(find.byKey(const Key('delete-shape')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('delete-shape')));
@@ -297,12 +315,42 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Alterações salvas'), findsOneWidget);
     expect(find.text('SVG válido'), findsOneWidget);
-    expect(services.library.contentOf(services.library.byId(wave.id)!), _valid);
+    expect(services.library.contentOf(services.library.byId(wave.id)!), formatSvg(_valid));
   });
 
-  testWidgets('layers: arrow folds a folder, double tap renames, header selects all', (
-    tester,
-  ) async {
+  testWidgets('insert: a color picked in the row repaints the selected shape', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('wave.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+
+    await _tapTab(tester, 'Inserir');
+    await tester.ensureVisible(find.byKey(const Key('insert-shape')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('insert-shape')));
+    await tester.pumpAndSettle();
+
+    // The second swatch is purple (#A04BFF); the shape is hollow, so its
+    // outline changes.
+    final swatch = find.descendant(
+      of: find.byKey(const Key('insert-colors')),
+      matching: find.byType(ColorDot),
+    );
+    await tester.ensureVisible(swatch.at(1));
+    await tester.pumpAndSettle();
+    await tester.tap(swatch.at(1));
+    await tester.pumpAndSettle();
+
+    await _tapTab(tester, 'Código');
+    final code = tester.widget<TextField>(find.byKey(const Key('code-field'))).controller!.text;
+    expect(code, contains('stroke="#A04BFF"'));
+    expect(code, contains('fill="none"'), reason: 'still hollow');
+  });
+
+  testWidgets('layers: arrow folds a folder, double tap renames, header folds all', (tester) async {
     final services = await _services(tester);
     await pumpApp(tester, services);
 
@@ -346,15 +394,24 @@ void main() {
     expect(find.text('Fundo da lua'), findsWidgets);
     expect(find.text('Selecionado: Fundo da lua'), findsOneWidget);
 
-    // Two taps on the "N camadas" header select every layer again.
+    // Two taps on the "N camadas" header fold every folder, and again open them.
     final header = find.textContaining(RegExp(r'^\d+ camadas$'));
     await tester.ensureVisible(header);
     await tester.pumpAndSettle();
-    await tester.tap(header);
-    await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(header);
-    await tester.pumpAndSettle();
-    expect(find.text('Selecionado: Todas'), findsOneWidget);
+    Future<void> twoTaps() async {
+      await tester.tap(header);
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(header);
+      await tester.pumpAndSettle();
+    }
+
+    final shown = circles.evaluate().length;
+    await twoTaps();
+    expect(find.byTooltip('Dobrar pasta'), findsNothing, reason: 'every folder is folded');
+    expect(circles.evaluate().length, lessThan(shown));
+    await twoTaps();
+    expect(find.byTooltip('Abrir pasta'), findsNothing, reason: 'every folder is open');
+    expect(circles.evaluate().length, shown);
   });
 
   testWidgets('transform: width and height can be changed on their own', (tester) async {
@@ -390,7 +447,9 @@ void main() {
     expect(save().onPressed, isNotNull, reason: 'changing the document width is an edit');
   });
 
-  testWidgets('animation: "None" is the starting motion and cannot be applied', (tester) async {
+  testWidgets('animation: a motion applies as soon as it is tapped and "None" removes it', (
+    tester,
+  ) async {
     final services = await _services(tester);
     await pumpApp(tester, services);
     await tester.tap(find.text('sun-moon.svg'));
@@ -403,23 +462,22 @@ void main() {
     await tester.tap(find.text('Retângulo').first);
     await tester.pumpAndSettle();
     await _tapTab(tester, 'Animação');
-    await tester.ensureVisible(find.byKey(const Key('apply-preset')));
+    await tester.ensureVisible(find.byKey(const Key('preset-none')));
     await tester.pumpAndSettle();
 
-    FilledButton apply() => tester.widget<FilledButton>(find.byKey(const Key('apply-preset')));
+    expect(find.byKey(const Key('apply-preset')), findsNothing, reason: 'no apply button');
     ChoiceChip none() => tester.widget<ChoiceChip>(find.byKey(const Key('preset-none')));
     expect(none().selected, isTrue);
-    expect(apply().onPressed, isNull, reason: 'nothing to apply');
 
     await tester.tap(find.text('Girar'));
     await tester.pumpAndSettle();
-    expect(none().selected, isFalse);
-    expect(apply().onPressed, isNotNull);
+    expect(none().selected, isFalse, reason: 'the layer now has a motion');
+    expect(tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, 'Girar')).selected, isTrue);
 
+    await tester.ensureVisible(find.byKey(const Key('preset-none')));
     await tester.tap(find.byKey(const Key('preset-none')));
     await tester.pumpAndSettle();
-    expect(none().selected, isTrue);
-    expect(apply().onPressed, isNull);
+    expect(none().selected, isTrue, reason: '"None" took the motion off');
   });
 
   testWidgets('editor: the preview background can be switched', (tester) async {

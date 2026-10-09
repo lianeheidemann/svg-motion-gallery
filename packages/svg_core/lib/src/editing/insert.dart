@@ -15,12 +15,19 @@ class SvgInsertEdit {
 
   /// Adds a [kind] shape painted with [color] on top of the drawing and
   /// selects it. [size] is a fraction (0..1) of the smaller canvas side.
+  ///
+  /// Shapes are hollow (just an outline in [color]) unless [filled]. The
+  /// outline is [strokeWidth] units thick (a thin default scaled to the
+  /// canvas); 0 leaves a filled shape without one. Lines are only an outline
+  /// and text is only filled.
   static SvgEditResult insert(
     String svg,
     SvgShapeKind kind, {
     required String color,
     double size = 0.3,
     String text = 'Text',
+    bool filled = false,
+    double? strokeWidth,
   }) {
     final document = tryParseSvg(svg);
     if (document == null) return SvgEditResult(svg);
@@ -29,6 +36,14 @@ class SvgInsertEdit {
     final cy = canvas.centerY;
     final side = math.min(canvas.width, canvas.height) * size.clamp(0.02, 1.0);
     final n = formatNumber;
+    final outline = math.max(strokeWidth ?? math.min(canvas.width, canvas.height) * 0.015, 0.0);
+    // fill + stroke attributes of a closed shape.
+    final paint = <String, String>{
+      'fill': filled ? color : 'none',
+      if (!filled || outline > 0) 'stroke': color,
+      if (!filled || outline > 0) 'stroke-width': n(filled ? outline : math.max(outline, 0.1)),
+      if (!filled || outline > 0) 'stroke-linejoin': 'round',
+    };
 
     final element = switch (kind) {
       SvgShapeKind.rectangle => _element('rect', {
@@ -37,20 +52,20 @@ class SvgInsertEdit {
         'width': n(side),
         'height': n(side),
         'rx': n(side * 0.12),
-        'fill': color,
+        ...paint,
       }),
       SvgShapeKind.circle => _element('circle', {
         'cx': n(cx),
         'cy': n(cy),
         'r': n(side / 2),
-        'fill': color,
+        ...paint,
       }),
       SvgShapeKind.ellipse => _element('ellipse', {
         'cx': n(cx),
         'cy': n(cy),
         'rx': n(side * 0.7),
         'ry': n(side * 0.4),
-        'fill': color,
+        ...paint,
       }),
       SvgShapeKind.line => _element('line', {
         'x1': n(cx - side / 2),
@@ -58,13 +73,10 @@ class SvgInsertEdit {
         'x2': n(cx + side / 2),
         'y2': n(cy),
         'stroke': color,
-        'stroke-width': n(math.max(side * 0.04, 1)),
+        'stroke-width': n(strokeWidth == null ? math.max(side * 0.04, 1) : math.max(outline, 0.1)),
         'stroke-linecap': 'round',
       }),
-      SvgShapeKind.star => _element('polygon', {
-        'points': _starPoints(cx, cy, side / 2),
-        'fill': color,
-      }),
+      SvgShapeKind.star => _element('polygon', {'points': _starPoints(cx, cy, side / 2), ...paint}),
       SvgShapeKind.text => _element('text', {
         'x': n(cx),
         'y': n(cy),

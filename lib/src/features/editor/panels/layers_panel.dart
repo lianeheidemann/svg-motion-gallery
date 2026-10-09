@@ -7,7 +7,8 @@ import '../../../widgets/svg_actions_menu.dart';
 import '../editor_controller.dart';
 
 /// Layer list (select, show/hide) and actions on the selected layer. Double
-/// tap a layer to rename it; the arrow on a folder folds it. Layers with the
+/// tap a layer to rename it; the arrow on a folder folds it, and two taps on
+/// the header fold or open every folder. Layers with the
 /// same name next to each other are numbered.
 class LayersPanel extends StatefulWidget {
   const LayersPanel({super.key, required this.editor});
@@ -84,6 +85,23 @@ class _LayersPanelState extends State<LayersPanel> {
   void _toggleFold(ElementPath path) =>
       setState(() => _folded.contains(path) ? _folded.remove(path) : _folded.add(path));
 
+  /// Folds every folder; when they are all folded already, opens them all.
+  void _toggleFoldAll(List<SvgLayer> layers) {
+    final folders = <ElementPath>{
+      for (var i = 0; i + 1 < layers.length; i++)
+        if (layers[i + 1].depth > layers[i].depth) layers[i].path,
+    };
+    setState(() {
+      if (folders.isNotEmpty && folders.every(_folded.contains)) {
+        _folded.clear();
+      } else {
+        _folded
+          ..clear()
+          ..addAll(folders);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -105,8 +123,8 @@ class _LayersPanelState extends State<LayersPanel> {
         SectionCard(
           icon: Icons.layers_outlined,
           title: l10n.layersTitle(layers.length),
-          // Two taps on the header select every layer: the whole drawing.
-          onTitleDoubleTap: () => editor.select(null),
+          // Two taps on the header fold every folder, or open them all again.
+          onTitleDoubleTap: () => _toggleFoldAll(layers),
           spacing: 0,
           children: [
             if (layers.isEmpty) Text(l10n.layersEmpty),
@@ -276,6 +294,7 @@ class _SelectedLayerActions extends StatelessWidget {
     );
   }
 
+  /// Icon only (the meaning is in the tooltip).
   Widget _action(IconData icon, String label, VoidCallback onPressed) =>
-      OutlinedButton.icon(onPressed: onPressed, icon: Icon(icon, size: 18), label: Text(label));
+      IconButton.outlined(tooltip: label, onPressed: onPressed, icon: Icon(icon, size: 20));
 }

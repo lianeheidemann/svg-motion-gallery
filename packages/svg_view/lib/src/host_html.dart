@@ -60,10 +60,14 @@ String _bridgeScript({required bool autoplay, required String viewId}) =>
   var sel = null;
   // Box of the selected element (child indices from the <svg>) as fractions
   // of the page, so it does not depend on pixel density.
-  function boxOf(){
+  function selectedEl(){
     if (!sel) return null;
     var el = root();
     for (var i = 0; el && i < sel.length; i++) { el = el.children[sel[i]]; }
+    return el;
+  }
+  function boxOf(){
+    var el = selectedEl();
     if (!el || !el.getBoundingClientRect) return null;
     var r = el.getBoundingClientRect();
     var w = document.documentElement.clientWidth || window.innerWidth;
@@ -148,6 +152,37 @@ String _bridgeScript({required bool autoplay, required String viewId}) =>
         applyPause();
       }
       post({m: union});
+    },
+    // How far the selected element must move to line up with a side or the
+    // middle of the canvas: h is 'start' | 'center' | 'end' | '' and v is the
+    // same for the vertical axis. Answers [dx, dy, 0, 0] in the units of the
+    // element's parent, which is where its translate applies.
+    alignSelection: function(h, v){
+      var s = root();
+      var el = selectedEl();
+      var r = el && el.getBoundingClientRect && el.getBoundingClientRect();
+      var ctm = s && s.getScreenCTM && s.getScreenCTM();
+      if (!r || !ctm || (!r.width && !r.height)) { post({m: null}); return; }
+      var vb = s.viewBox && s.viewBox.baseVal;
+      var vx = 0, vy = 0, vw = 0, vh = 0;
+      if (vb && vb.width) { vx = vb.x; vy = vb.y; vw = vb.width; vh = vb.height; }
+      else if (s.width && s.height) { vw = s.width.baseVal.value; vh = s.height.baseVal.value; }
+      if (!vw || !vh) { post({m: null}); return; }
+      var a = new DOMPoint(vx, vy).matrixTransform(ctm);
+      var b = new DOMPoint(vx + vw, vy + vh).matrixTransform(ctm);
+      var left = Math.min(a.x, b.x), right = Math.max(a.x, b.x);
+      var top = Math.min(a.y, b.y), bottom = Math.max(a.y, b.y);
+      var dx = 0, dy = 0;
+      if (h === 'start') dx = left - r.left;
+      else if (h === 'center') dx = (left + right) / 2 - (r.left + r.right) / 2;
+      else if (h === 'end') dx = right - r.right;
+      if (v === 'start') dy = top - r.top;
+      else if (v === 'center') dy = (top + bottom) / 2 - (r.top + r.bottom) / 2;
+      else if (v === 'end') dy = bottom - r.bottom;
+      var parent = el.parentNode;
+      var pm = (parent && parent.getScreenCTM && parent.getScreenCTM()) || ctm;
+      var inv = pm.inverse();
+      post({m: [inv.a * dx + inv.c * dy, inv.b * dx + inv.d * dy, 0, 0]});
     },
     restart: function(){ api.seek(0); api.play(); }
   };

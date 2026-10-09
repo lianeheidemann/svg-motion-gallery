@@ -88,7 +88,7 @@ class _CodePanelState extends State<CodePanel> {
   late final _code = SvgCodeController(text: widget.editor.code);
   final _vertical = ScrollController();
   final _horizontal = ScrollController();
-  late int _revision = widget.editor.revision;
+  late int _revision;
   var _wrap = false;
   var _fontSize = 11.0;
   var _checkedAuto = false;
@@ -109,6 +109,12 @@ class _CodePanelState extends State<CodePanel> {
   }
 
   bool get _auto => AppScope.of(context).settings.value.autoFormatCode;
+
+  @override
+  void initState() {
+    super.initState();
+    _revision = widget.editor.revision;
+  }
 
   @override
   void didChangeDependencies() {
@@ -140,11 +146,6 @@ class _CodePanelState extends State<CodePanel> {
     });
   }
 
-  void _toggleAuto(bool value) {
-    AppScope.of(context).settings.setAutoFormatCode(value);
-    if (value) _autoFormat();
-  }
-
   @override
   void dispose() {
     // Keep typing that has not reached the editor yet (e.g. when switching
@@ -157,6 +158,13 @@ class _CodePanelState extends State<CodePanel> {
     _horizontal.dispose();
     super.dispose();
   }
+
+  /// Tight buttons so Format, Wrap and Apply share one row when they fit.
+  static const _compact = ButtonStyle(
+    visualDensity: VisualDensity.compact,
+    padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 10)),
+    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+  );
 
   bool get _hasPending => _code.text != _view(widget.editor.code);
 
@@ -236,31 +244,20 @@ class _CodePanelState extends State<CodePanel> {
             children: [
               Expanded(
                 child: Wrap(
-                  spacing: 8,
+                  spacing: 6,
                   runSpacing: 4,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    OutlinedButton.icon(
+                    OutlinedButton(
+                      style: _compact,
                       onPressed: _format,
-                      icon: const Icon(Icons.format_align_left_rounded, size: 18),
-                      label: Text(l10n.formatCode),
+                      child: Text(l10n.formatCode),
                     ),
                     FilterChip(
-                      key: const Key('auto-format'),
-                      avatar: Icon(
-                        Icons.auto_fix_high_rounded,
-                        size: 18,
-                        color: _auto ? Colors.white : null,
-                      ),
-                      label: Text(
-                        l10n.autoFormat,
-                        style: TextStyle(color: _auto ? Colors.white : null),
-                      ),
-                      selected: _auto,
-                      side: BorderSide(color: Theme.of(context).colorScheme.outline),
-                      onSelected: _toggleAuto,
-                    ),
-                    FilterChip(
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      labelPadding: const EdgeInsets.only(right: 4),
                       avatar: Icon(
                         Icons.wrap_text_rounded,
                         size: 18,
@@ -277,9 +274,10 @@ class _CodePanelState extends State<CodePanel> {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               FilledButton.icon(
                 key: const Key('apply-code'),
+                style: _compact,
                 onPressed: _hasPending ? _apply : null,
                 icon: const Icon(Icons.check_rounded, size: 18),
                 label: Text(l10n.applyCode),

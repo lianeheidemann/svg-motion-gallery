@@ -314,22 +314,12 @@
   "speed": "Velocidade",
   "removeAnimations": "Remover todas as animações",
   "presetsTitle": "Adicionar movimento",
-  "presetTarget": "Aplicar em: {name}",
-  "@presetTarget": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "presetSpin": "Girar",
   "presetPulse": "Pulsar",
   "presetFloat": "Flutuar",
   "presetSway": "Balançar",
   "presetFade": "Esmaecer",
   "duration": "Duração",
-  "applyPreset": "Aplicar movimento",
-  "removePreset": "Remover movimento",
   "layersTitle": "{count, plural, =0{Camadas} =1{1 camada} other{{count} camadas}}",
   "@layersTitle": {
     "placeholders": {
@@ -503,18 +493,27 @@
   "windowTitle": "Janela",
   "windowRestore": "Restaurar janela",
   "windowRatio": "Proporção",
-  "windowX": "Posição X",
-  "windowY": "Posição Y",
   "windowWidth": "Largura da janela",
   "windowHeight": "Altura da janela",
   "windowAdjust": "Ajuste automático",
-  "windowAdjustHint": "Enquadra a janela no que foi desenhado, sem as bordas vazias.",
+  "windowAdjustHint": "Arraste a margem para enquadrar a janela no desenho, com a mesma folga proporcional em todos os lados.",
   "windowMargin": "Margem",
   "windowMotion": "Considerar movimento",
   "windowNoMotion": "Este desenho não tem animação.",
   "windowFitFailed": "Não foi possível medir o desenho.",
-  "windowFit": "Ajustar ao conteúdo",
   "tabWindow": "Janela",
   "tabText": "Texto",
-  "insertTextTitle": "Inserir texto"
+  "insertTextTitle": "Inserir texto",
+  "autoFormatSubtitle": "Organiza o código do editor sozinho (uma tag por linha). O botão Formatar faz isso na hora, quando está desligada.",
+  "tabAlign": "Alinhar",
+  "alignTitle": "Alinhar à área do desenho",
+  "alignLeft": "Alinhar à esquerda",
+  "alignCenterH": "Centralizar na horizontal",
+  "alignRight": "Alinhar à direita",
+  "alignTop": "Alinhar ao topo",
+  "alignCenterV": "Centralizar na vertical",
+  "alignBottom": "Alinhar à base",
+  "alignCenter": "Centralizar no meio",
+  "alignFailed": "Não foi possível medir a camada.",
+  "filledShape": "Preenchida"
 }

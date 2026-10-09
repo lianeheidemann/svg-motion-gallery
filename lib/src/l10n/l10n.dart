@@ -132,7 +132,13 @@ extension AppLocalizationsFormat on AppLocalizations {
         continue;
       }
       final index = seen.putIfAbsent(owner, () => {}).update(base, (n) => n + 1, ifAbsent: () => 1);
-      final prefix = numbers[owner];
+      // The number of the nearest numbered ancestor leads, so a layer inside
+      // unnumbered folders still shows where it belongs (Retângulo 2.1).
+      String? prefix;
+      for (var up = owner; ; up = up.parent ?? ElementPath.root) {
+        prefix = numbers[up];
+        if (prefix != null || up.isRoot) break;
+      }
       final number = prefix == null ? '$index' : '$prefix.$index';
       numbers[l.path] = number;
       labels[l.path] = '$base $number';
