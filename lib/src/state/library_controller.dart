@@ -8,9 +8,9 @@ import '../data/svg_document.dart';
 import '../data/svg_repository.dart';
 import '../data/svg_storage.dart';
 import '../services/device_storage.dart';
+import 'gallery_filter.dart';
 
-/// Gallery filters (chips on the home screen).
-enum GalleryFilter { all, favorites, recent, adaptive, device }
+export 'gallery_filter.dart';
 
 /// A file picked for import.
 typedef ImportedSvg = ({String name, String content});
