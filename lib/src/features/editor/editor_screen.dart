@@ -74,6 +74,7 @@ class _EditorScreenState extends State<EditorScreen> {
 
   Future<bool> _save() async {
     final editor = _editor!;
+    editor.flushCode?.call(); // typed code that works goes in first
     if (!editor.canSave || _saving) return editor.canSave;
     setState(() => _saving = true);
     final services = AppScope.of(context);
@@ -115,6 +116,7 @@ class _EditorScreenState extends State<EditorScreen> {
     final l10n = context.l10n;
     final navigator = Navigator.of(context);
     final editor = _editor!;
+    editor.flushCode?.call();
     if (editor.validation.isValid && editor.canSave) {
       final choice = await showDialog<bool>(
         context: context,
@@ -185,7 +187,7 @@ class _EditorScreenState extends State<EditorScreen> {
   Widget _scaffold(BuildContext context, EditorController editor) {
     final l10n = context.l10n;
     return PopScope(
-      canPop: !editor.hasUnsavedChanges,
+      canPop: !(editor.hasUnsavedChanges || editor.codePending),
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _confirmLeave();
       },
@@ -262,14 +264,43 @@ class _EditorScreenState extends State<EditorScreen> {
         ),
         Padding(
           padding: const EdgeInsets.only(right: 12, left: 4),
-          child: FilledButton(
-            key: const Key('save'),
-            onPressed: editor.canSave && !_saving ? _save : null,
-            child: Text(l10n.save),
-          ),
+          child: _saveButton(context, editor),
         ),
       ],
     );
+  }
+
+  /// Save. When it cannot save because of the code (an error, or typed text
+  /// that was not applied), it looks off but a tap says why, instead of doing
+  /// nothing.
+  Widget _saveButton(BuildContext context, EditorController editor) {
+    final l10n = context.l10n;
+    // Typed code that works is applied by Save itself; broken code is not.
+    final liveError = editor.codeError;
+    final typedOk = editor.codePending && liveError == null;
+    final canSave = !_saving && liveError == null && (typedOk || editor.canSave);
+    final blocked = !_saving && !canSave && (liveError ?? editor.validation.issue) != null;
+    final scheme = Theme.of(context).colorScheme;
+    return FilledButton(
+      key: const Key('save'),
+      onPressed: canSave ? _save : (blocked ? () => _explainBlockedSave(editor) : null),
+      style: blocked
+          ? FilledButton.styleFrom(
+              backgroundColor: scheme.onSurface.withValues(alpha: .12),
+              foregroundColor: scheme.onSurface.withValues(alpha: .38),
+            )
+          : null,
+      child: Text(l10n.save),
+    );
+  }
+
+  void _explainBlockedSave(EditorController editor) {
+    final l10n = context.l10n;
+    final error = editor.codeError ?? editor.validation.issue;
+    if (error == null) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(l10n.saveBlockedError(l10n.issueMessage(error)))));
   }
 
   bool _selectedIsShape(EditorController editor) {
@@ -398,8 +429,16 @@ class _EditorScreenState extends State<EditorScreen> {
     final issue = editor.validation.issue;
     final metadata = editor.metadata;
     final warning = editor.validation.warning;
-    final showValid = _justSaved && !editor.hasUnsavedChanges;
+    // Typed code that is waiting, or broken, makes "valid" untrue: the Code
+    // tab says what is going on.
+    final showValid =
+        _justSaved && !editor.hasUnsavedChanges && !editor.codePending && editor.codeError == null;
     if (issue == null && warning == null && !showValid) return const SizedBox.shrink();
+    // The Code tab says what is wrong right under the code, with a button to
+    // go there; saying it again down here would only repeat it.
+    if (_tab == _EditorTab.code && (issue != null || warning != null)) {
+      return const SizedBox.shrink();
+    }
     if (issue == null && warning != null) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),

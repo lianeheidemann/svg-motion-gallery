@@ -44,6 +44,29 @@ class EditorController extends ChangeNotifier {
   int get revision => _revision;
 
   ElementPath? get selection => _selection;
+
+  bool _codePending = false;
+  SvgIssue? _codeError;
+
+  /// Whether the Code tab holds typed text that is not in [svg] yet.
+  bool get codePending => _codePending;
+
+  /// The error the Code tab found in what is typed (null when there is none),
+  /// even before the text is applied.
+  SvgIssue? get codeError => _codeError;
+
+  /// Set by the Code tab while it is open: applies the typed text, if it is
+  /// valid. Called before saving or leaving, so typing is never left behind.
+  VoidCallback? flushCode;
+
+  /// Reported by the Code tab, so Save can say why it cannot save yet.
+  void setCodeState({required bool pending, SvgIssue? error}) {
+    if (_disposed || (pending == _codePending && identical(error, _codeError))) return;
+    _codePending = pending;
+    _codeError = error;
+    notifyListeners();
+  }
+
   SvgValidation get validation => _validation;
   bool get canUndo => _history.canUndo;
   bool get canRedo => _history.canRedo;

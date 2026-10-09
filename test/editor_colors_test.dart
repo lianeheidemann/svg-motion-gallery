@@ -1,4 +1,3 @@
-import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:svg_motion_gallery/src/app_scope.dart';
@@ -38,13 +37,12 @@ Future<void> _tapTab(WidgetTester tester, String label) async {
   await tester.pumpAndSettle();
 }
 
-/// Selects the SVG's own color in the document palette.
-Future<void> _pickDocumentColor(WidgetTester tester) async {
-  final dot = find.descendant(of: find.byType(ColorSwatchPicker), matching: find.byType(ColorDot));
-  await tester.ensureVisible(dot);
+/// Selects the layer named [label] in the Layers tab, then opens Colors.
+Future<void> _selectLayerThenColors(WidgetTester tester, String label) async {
+  await _tapTab(tester, 'Camadas');
+  await tester.tap(find.text(label));
   await tester.pumpAndSettle();
-  await tester.tap(dot);
-  await tester.pumpAndSettle();
+  await _tapTab(tester, 'Cores');
 }
 
 /// Taps a swatch of the ready-made palette by its hex code.
@@ -69,32 +67,27 @@ Future<String> _save(WidgetTester tester, AppServices services) async {
 }
 
 void main() {
-  testWidgets('document palette: pick a SVG color, then its new color from the palette', (
+  testWidgets('colors: only the selected layers are painted, no document / layer switch', (
     tester,
   ) async {
-    final services = await _openRedInEditor(tester);
+    await _openRedInEditor(tester);
     await _tapTab(tester, 'Cores');
 
-    expect(
-      find.byKey(const Key('preset-palette')),
-      findsNothing,
-      reason: 'nothing to replace yet: a color of the SVG must be picked first',
-    );
-    await _pickDocumentColor(tester);
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('preset-palette')), findsOneWidget);
+    // Nothing selected: a hint, no switch and no palette to paint with.
+    expect(find.text('Documento'), findsNothing);
+    expect(find.text('Camada'), findsNothing);
+    expect(find.textContaining('Selecione uma camada'), findsOneWidget);
+    expect(find.byKey(const Key('preset-palette')), findsNothing);
 
-    await _pickPreset(tester, '#22C55E');
-    final saved = await _save(tester, services);
-    expect(saved, contains('#22C55E'));
-    expect(saved, isNot(contains('#FF0000')));
+    await _selectLayerThenColors(tester, 'Retângulo');
+    expect(find.textContaining('Selecione uma camada'), findsNothing);
+    expect(find.text('Documento'), findsNothing);
+    expect(find.byKey(const Key('preset-palette')), findsOneWidget);
   });
 
-  testWidgets('the rainbow swatch opens a free picker that recolors the SVG', (tester) async {
+  testWidgets('the rainbow swatch opens a free picker that recolors the layer', (tester) async {
     final services = await _openRedInEditor(tester);
-    await _tapTab(tester, 'Cores');
-    await _pickDocumentColor(tester);
-    await tester.pumpAndSettle();
+    await _selectLayerThenColors(tester, 'Retângulo');
 
     expect(find.byKey(const Key('color-area')), findsNothing);
     final custom = find.byKey(const Key('custom-color'));

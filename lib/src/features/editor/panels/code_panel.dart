@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:design_system/design_system.dart';
@@ -8,6 +9,22 @@ import 'package:svg_core/svg_core.dart';
 import '../../../app_scope.dart';
 import '../../../l10n/l10n.dart';
 import '../editor_controller.dart';
+
+/// A range of code with something wrong, to underline.
+class CodeProblem {
+  const CodeProblem(this.range, {required this.error});
+
+  final TextRange range;
+
+  /// Red when true (the SVG is broken), amber when false (only a hint).
+  final bool error;
+}
+
+/// How far the matches and problems have been read while building one span.
+class _Walk {
+  var match = 0;
+  var problem = 0;
+}
 
 /// Text controller that paints SVG source with syntax colors.
 class SvgCodeController extends TextEditingController {
@@ -20,36 +37,66 @@ class SvgCodeController extends TextEditingController {
   List<TextRange> matches = const [];
   int current = -1;
 
+  /// Places with a problem (sorted, not overlapping), underlined with a wavy
+  /// line: red for errors, amber for hints.
+  List<CodeProblem> problems = const [];
+
   static const _matchColor = Color(0x55FFC107);
   static const _currentColor = Color(0xAAFFA000);
+  static const _errorColor = Color(0xFFEF4444);
+  static const _hintColor = _errorColor;
 
-  /// [text] from [start] to [end] in [color], with the matches marked.
-  List<InlineSpan> _segments(int start, int end, Color color) {
+  /// [text] from [start] to [end] in [color], with the matches marked and the
+  /// problems underlined. [walk] remembers how far the lists have been read,
+  /// since the tokens come in order.
+  List<InlineSpan> _segments(int start, int end, Color color, _Walk walk) {
+    while (walk.match < matches.length && matches[walk.match].end <= start) {
+      walk.match++;
+    }
+    while (walk.problem < problems.length && problems[walk.problem].range.end <= start) {
+      walk.problem++;
+    }
+    final cuts = <int>{start, end};
+    for (var i = walk.match; i < matches.length && matches[i].start < end; i++) {
+      cuts
+        ..add(math.max(matches[i].start, start))
+        ..add(math.min(matches[i].end, end));
+    }
+    for (var i = walk.problem; i < problems.length && problems[i].range.start < end; i++) {
+      cuts
+        ..add(math.max(problems[i].range.start, start))
+        ..add(math.min(problems[i].range.end, end));
+    }
+    final points = cuts.toList()..sort();
+
     final spans = <InlineSpan>[];
-    var at = start;
-    TextSpan plain(int from, int to) => TextSpan(
-      text: text.substring(from, to),
-      style: TextStyle(color: color),
-    );
-    for (var i = 0; i < matches.length; i++) {
-      final match = matches[i];
-      if (match.end <= at) continue;
-      if (match.start >= end) break;
-      final from = math.max(match.start, at);
-      final to = math.min(match.end, end);
-      if (from > at) spans.add(plain(at, from));
+    var m = walk.match;
+    var p = walk.problem;
+    for (var k = 0; k + 1 < points.length; k++) {
+      final from = points[k];
+      final to = points[k + 1];
+      while (m < matches.length && matches[m].end <= from) {
+        m++;
+      }
+      while (p < problems.length && problems[p].range.end <= from) {
+        p++;
+      }
+      final inMatch = m < matches.length && matches[m].start <= from;
+      final problem = p < problems.length && problems[p].range.start <= from ? problems[p] : null;
       spans.add(
         TextSpan(
           text: text.substring(from, to),
           style: TextStyle(
             color: color,
-            backgroundColor: i == current ? _currentColor : _matchColor,
+            backgroundColor: inMatch ? (m == current ? _currentColor : _matchColor) : null,
+            decoration: problem == null ? null : TextDecoration.underline,
+            decorationStyle: TextDecorationStyle.wavy,
+            decorationColor: problem == null ? null : (problem.error ? _errorColor : _hintColor),
+            decorationThickness: 1.6,
           ),
         ),
       );
-      at = to;
     }
-    if (at < end) spans.add(plain(at, end));
     return spans;
   }
 
@@ -72,11 +119,12 @@ class SvgCodeController extends TextEditingController {
       SvgTokenType.value => palette.codeValue,
       SvgTokenType.entity => palette.codeValue,
     };
+    final walk = _Walk();
     return TextSpan(
       style: style,
       children: [
         for (final token in tokenizeSvg(text))
-          ..._segments(token.start, token.end, colorOf(token.type)),
+          ..._segments(token.start, token.end, colorOf(token.type), walk),
       ],
     );
   }
@@ -133,6 +181,26 @@ class _CodePanelState extends State<CodePanel> {
   final _query = TextEditingController();
   var _matchIndex = 0;
 
+  /// What the live check found in the text: an error (the SVG is broken, red)
+  /// or hints (it works but a value looks wrong, amber). Re-checked a moment
+  /// after typing stops, which is cheap: one read of the text.
+  SvgIssue? _error;
+  List<SvgIssue> _hints = const [];
+  var _hintIndex = 0;
+  Timer? _checkTimer;
+  static const _checkDelay = Duration(milliseconds: 500);
+
+  /// True from an edit until the next check: what [_error] says is old.
+  var _stale = false;
+
+  /// Shows "Applied" in the button for a moment after text is applied.
+  var _justApplied = false;
+  Timer? _appliedTimer;
+
+  /// What was last reported to the editor, so Save can explain itself.
+  bool _reportedPending = false;
+  SvgIssue? _reportedError;
+
   /// Width of the text area, in characters, used to break long lines.
   var _columns = 0;
 
@@ -145,7 +213,10 @@ class _CodePanelState extends State<CodePanel> {
   void _relayout(VoidCallback change) {
     final pending = _hasPending;
     setState(change);
-    if (!pending) _code.text = _view(widget.editor.code);
+    if (!pending) {
+      _code.text = _view(widget.editor.code);
+      _check();
+    }
   }
 
   bool get _auto => AppScope.of(context).settings.value.autoFormatCode;
@@ -154,6 +225,18 @@ class _CodePanelState extends State<CodePanel> {
   void initState() {
     super.initState();
     _revision = widget.editor.revision;
+    widget.editor.flushCode = _flush;
+    _check();
+  }
+
+  /// Applies the typed text when it is valid (nothing happens when it is
+  /// broken: it is never applied). Used before saving and when leaving.
+  void _flush() {
+    if (!_hasPending) return;
+    final text = _code.text;
+    if (validateSvg(text).isValid) widget.editor.updateCode(text);
+    _check();
+    if (mounted) setState(() {});
   }
 
   @override
@@ -171,6 +254,7 @@ class _CodePanelState extends State<CodePanel> {
     if (widget.editor.revision != _revision) {
       _revision = widget.editor.revision;
       _code.text = _view(widget.editor.code);
+      _check();
       _autoFormat();
     }
   }
@@ -192,11 +276,15 @@ class _CodePanelState extends State<CodePanel> {
     // tabs). Deferred because listeners must not rebuild during disposal.
     final pending = _code.text;
     final editor = widget.editor;
+    if (editor.flushCode == _flush) editor.flushCode = null;
     if (_hasPending) Future.microtask(() => editor.updateCode(pending));
     _code.dispose();
     _vertical.dispose();
     _horizontal.dispose();
     _query.dispose();
+    _checkTimer?.cancel();
+    _appliedTimer?.cancel();
+    Future.microtask(() => editor.setCodeState(pending: false));
     super.dispose();
   }
 
@@ -225,6 +313,93 @@ class _CodePanelState extends State<CodePanel> {
     return found;
   }
 
+  /// Tells the editor whether typed text is waiting and what is wrong with it,
+  /// so the Save button can say why it will not save. Done after the frame:
+  /// the editor must not notify while this panel is building.
+  void _reportToEditor() {
+    final pending = _hasPending;
+    final error = _stale ? null : _error;
+    if (pending == _reportedPending && identical(error, _reportedError)) return;
+    _reportedPending = pending;
+    _reportedError = error;
+    final editor = widget.editor;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) editor.setCodeState(pending: pending, error: error);
+    });
+  }
+
+  /// Checks the text now: parser errors, then values that look wrong.
+  void _check() {
+    final text = _code.text;
+    final validation = validateSvg(text);
+    final hints = [?validation.warning, ...lintSvgValues(text)];
+    _error = validation.issue;
+    _hints = hints;
+    _hintIndex = 0;
+    _stale = false;
+    _underline();
+  }
+
+  /// Underlines every problem in the text, errors first when they overlap.
+  void _underline() {
+    final text = _code.text;
+    final found = <CodeProblem>[];
+    for (final (issue, error) in [
+      if (_error != null) (_error!, true),
+      for (final hint in _hints) (hint, false),
+    ]) {
+      final range = svgIssueRange(text, issue);
+      if (range == null || range.$2 <= range.$1) continue;
+      found.add(
+        CodeProblem(
+          TextRange(start: range.$1, end: range.$2.clamp(0, text.length)),
+          error: error,
+        ),
+      );
+    }
+    found.sort((a, b) => a.range.start.compareTo(b.range.start));
+    final clean = <CodeProblem>[];
+    for (final problem in found) {
+      if (clean.isEmpty || problem.range.start >= clean.last.range.end) clean.add(problem);
+    }
+    _code.problems = clean;
+  }
+
+  /// Called on every edit: the old underlines no longer sit where the
+  /// problems are, so they go at once; the check runs when typing pauses.
+  void _typed() {
+    _code.problems = const [];
+    _stale = true;
+    _justApplied = false;
+    _checkTimer?.cancel();
+    _checkTimer = Timer(_checkDelay, () {
+      if (mounted) setState(_check);
+    });
+  }
+
+  /// "Applied" in the button for a moment.
+  void _flashApplied() {
+    _appliedTimer?.cancel();
+    setState(() => _justApplied = true);
+    _appliedTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _justApplied = false);
+    });
+  }
+
+  /// The issue the bar under the code talks about: the error, else a hint.
+  SvgIssue? get _shown => _error ?? (_hints.isEmpty ? null : _hints[_hintIndex % _hints.length]);
+
+  /// Jumps to the problem in the bar; for hints, each tap goes to the next.
+  void _goToProblem() {
+    final issue = _shown;
+    if (issue == null) return;
+    final range = svgIssueRange(_code.text, issue);
+    if (range != null) _scrollToOffset(range.$1);
+    if (_error == null && _hints.length > 1) {
+      setState(() => _hintIndex = (_hintIndex + 1) % _hints.length);
+    }
+  }
+
   void _toggleSearch() {
     setState(() {
       _searching = !_searching;
@@ -240,16 +415,24 @@ class _CodePanelState extends State<CodePanel> {
     _scrollToMatch();
   }
 
-  /// Brings the current match into view (a third of the way down the box).
+  /// Brings the current match into view.
   void _scrollToMatch() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final found = _findMatches();
-      if (found.isEmpty || !_vertical.hasClients) return;
-      final match = found[_matchIndex.clamp(0, found.length - 1)];
-      final before = _code.text.substring(0, match.start);
+      if (found.isEmpty) return;
+      _scrollToOffset(found[_matchIndex.clamp(0, found.length - 1)].start);
+    });
+  }
+
+  /// Scrolls the code so the character at [offset] sits a third of the way
+  /// down the box (and a third across, when lines are not wrapped).
+  void _scrollToOffset(int offset) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_vertical.hasClients) return;
+      final before = _code.text.substring(0, offset.clamp(0, _code.text.length));
       final line = '\n'.allMatches(before).length;
-      final column = match.start - (before.lastIndexOf('\n') + 1);
+      final column = before.length - (before.lastIndexOf('\n') + 1);
       final lineHeight = _fontSize * 1.45;
       final top = 10 + line * lineHeight - _vertical.position.viewportDimension / 3;
       _vertical.animateTo(
@@ -275,13 +458,10 @@ class _CodePanelState extends State<CodePanel> {
       if (formatted != null) _code.text = _view(formatted);
     }
     widget.editor.updateCode(_code.text);
-    final validation = widget.editor.validation;
-    // Errors and warnings have their own banner; confirm only a clean apply.
-    if (validation.isValid && validation.warning == null) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(context.l10n.codeApplied)));
-    }
+    _checkTimer?.cancel();
+    setState(_check);
+    // Problems are told under the code; a clean apply shows in the button.
+    if (widget.editor.validation.isValid) _flashApplied();
   }
 
   void _format() {
@@ -302,6 +482,7 @@ class _CodePanelState extends State<CodePanel> {
       color: colors.codeText,
     );
     final lines = '\n'.allMatches(_code.text).length + 1;
+    _reportToEditor();
     final found = _findMatches();
     if (_matchIndex >= found.length) _matchIndex = 0;
     _code
@@ -312,7 +493,10 @@ class _CodePanelState extends State<CodePanel> {
       key: const Key('code-field'),
       controller: _code,
       inputFormatters: const [KeepIndentFormatter()],
-      onChanged: (_) => setState(() {}),
+      onChanged: (_) {
+        setState(() {});
+        _typed();
+      },
       maxLines: null,
       style: style,
       keyboardType: TextInputType.multiline,
@@ -328,6 +512,57 @@ class _CodePanelState extends State<CodePanel> {
         _columns = math.max(((constraints.maxWidth - 54) / (_fontSize * 0.62)).floor(), 0);
         return _body(context, l10n, colors, style, lines, field, found);
       },
+    );
+  }
+
+  /// Apply: waiting (a dot), applied (a check), or, with an error, a button
+  /// that takes you to it.
+  Widget _applyButton(AppLocalizations l10n) {
+    final pending = _hasPending;
+    final error = _error != null && !_stale;
+    final success = GalleryColors.of(context).success;
+    final button = error
+        ? FilledButton.icon(
+            key: const Key('apply-code'),
+            style: _compact.merge(FilledButton.styleFrom(backgroundColor: const Color(0xFFEF4444))),
+            onPressed: _goToProblem,
+            icon: const Icon(Icons.error_outline_rounded, size: 18),
+            label: Text(l10n.codeShowError),
+          )
+        : FilledButton.icon(
+            key: const Key('apply-code'),
+            style: _compact.merge(
+              _justApplied && !pending
+                  ? FilledButton.styleFrom(
+                      disabledBackgroundColor: success.withValues(alpha: .22),
+                      disabledForegroundColor: success,
+                    )
+                  : null,
+            ),
+            onPressed: pending ? _apply : null,
+            icon: const Icon(Icons.check_rounded, size: 18),
+            label: Text(_justApplied && !pending ? l10n.codeApplied : l10n.applyCode),
+          );
+    if (!pending || error) return button;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        button,
+        Positioned(
+          top: -3,
+          right: -3,
+          child: Container(
+            key: const Key('code-pending-dot'),
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFA000),
+              shape: BoxShape.circle,
+              border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 1.5),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -390,6 +625,59 @@ class _CodePanelState extends State<CodePanel> {
     );
   }
 
+  /// The message under the code: red for an error, amber for a hint, with a
+  /// button that scrolls to the problem. Several hints: "+N" and each tap of
+  /// the button goes to the next.
+  Widget _problemBar(AppLocalizations l10n) {
+    final issue = _shown!;
+    final error = _error != null;
+    // Both are red: a wrong value is as much a mistake as broken XML, the
+    // difference is only that it does not stop Apply.
+    const color = Color(0xFFEF4444);
+    final more = error ? 0 : _hints.length - 1;
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Container(
+        key: Key(error ? 'code-error' : 'code-hint'),
+        padding: const EdgeInsets.fromLTRB(10, 2, 2, 2),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .12),
+          border: Border.all(color: color.withValues(alpha: .6)),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.error_outline_rounded, size: 20, color: color),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                l10n.issueMessage(issue),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 13),
+              ),
+            ),
+            if (more > 0)
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Text(
+                  l10n.codeMoreProblems(more),
+                  style: const TextStyle(color: color, fontWeight: FontWeight.w700),
+                ),
+              ),
+            IconButton(
+              key: const Key('code-problem-go'),
+              tooltip: l10n.codeProblemGo,
+              visualDensity: VisualDensity.compact,
+              onPressed: _goToProblem,
+              icon: const Icon(Icons.my_location_rounded, size: 20),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _body(
     BuildContext context,
     AppLocalizations l10n,
@@ -448,13 +736,7 @@ class _CodePanelState extends State<CodePanel> {
                 ),
               ),
               const SizedBox(width: 6),
-              FilledButton.icon(
-                key: const Key('apply-code'),
-                style: _compact,
-                onPressed: _hasPending ? _apply : null,
-                icon: const Icon(Icons.check_rounded, size: 18),
-                label: Text(l10n.applyCode),
-              ),
+              _applyButton(l10n),
             ],
           ),
           if (_searching) _searchBar(l10n, found),
@@ -518,6 +800,7 @@ class _CodePanelState extends State<CodePanel> {
               ),
             ),
           ),
+          if (_shown != null) _problemBar(l10n),
         ],
       ),
     );

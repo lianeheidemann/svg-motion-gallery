@@ -220,7 +220,16 @@
     }
   },
   "svgWarning": "SVG válido, com um aviso",
-  "codeApplied": "Código aplicado",
+  "codeApplied": "Aplicado",
+  "codeShowError": "Ver erro",
+  "saveBlockedError": "Não dá para salvar: {message}",
+  "@saveBlockedError": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "issueMalformed": "XML malformado.",
   "issueMalformedAt": "XML malformado na linha {line}, coluna {column}.",
   "@issueMalformedAt": {
@@ -229,6 +238,29 @@
         "type": "int"
       },
       "column": {
+        "type": "int"
+      }
+    }
+  },
+  "issueValue": "Valor inválido “{value}” em {attribute}, na linha {line}.",
+  "@issueValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "attribute": {
+        "type": "String"
+      },
+      "line": {
+        "type": "int"
+      }
+    }
+  },
+  "codeProblemGo": "Ir para o problema",
+  "codeMoreProblems": "+{count}",
+  "@codeMoreProblems": {
+    "placeholders": {
+      "count": {
         "type": "int"
       }
     }
@@ -255,10 +287,6 @@
   "height": "Altura",
   "lockAspect": "Manter proporção",
   "unlockAspect": "Liberar proporção",
-  "colorsDocument": "Documento",
-  "colorsLayer": "Camada",
-  "paletteTitle": "Paleta do documento",
-  "paletteHint": "Toque em uma cor do SVG e escolha a nova cor na paleta ou ajuste pelos controles.",
   "presetPalette": "Paleta de cores",
   "eyedropper": "Conta-gotas",
   "customColor": "Cor personalizada",
@@ -272,17 +300,6 @@
     }
   },
   "fill": "Preenchimento",
-  "currentPaint": "Atual: {value}",
-  "@currentPaint": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
-  "paintInherited": "herdado",
-  "paintNone": "nenhum",
-  "paintGradient": "gradiente",
   "removeFill": "Remover preenchimento",
   "hue": "Matiz",
   "saturation": "Saturação",

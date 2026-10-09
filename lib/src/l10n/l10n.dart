@@ -21,8 +21,17 @@ extension AppLocalizationsFormat on AppLocalizations {
       SvgIssueCode.malformedXml =>
         issue.line == null ? issueMalformed : issueMalformedAt(issue.line!, issue.column ?? 0),
       SvgIssueCode.malformedCss => issue.line == null ? issueCss : issueCssAt(issue.line!),
+      SvgIssueCode.invalidValue => issueValue(
+        issue.detail ?? '',
+        issue.attribute ?? '',
+        issue.line ?? 0,
+      ),
     };
-    return issue.detail == null ? base : '$base — ${issue.detail}';
+    // Only a CSS problem adds its detail (the snippet): the parser's own text
+    // for XML errors is English and technical, and a bad value already names
+    // itself.
+    final showsDetail = issue.detail != null && issue.code == SvgIssueCode.malformedCss;
+    return showsDetail ? '$base — ${issue.detail}' : base;
   }
 
   String bytes(int bytes) {
