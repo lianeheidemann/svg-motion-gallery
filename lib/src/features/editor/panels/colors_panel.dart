@@ -1,4 +1,5 @@
 import 'package:design_system/design_system.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:svg_core/svg_core.dart';
 
@@ -26,6 +27,12 @@ class ColorsPanel extends StatefulWidget {
 
 class _ColorsPanelState extends State<ColorsPanel> {
   var _custom = false;
+
+  /// The drawing before the ruler first changed anything, so its changes can
+  /// be put back; dropped when something else is edited or the selection moves.
+  String? _adjustBase;
+  String? _adjustResult;
+  List<ElementPath> _adjustTargets = const [];
 
   EditorController get _editor => widget.editor;
 
@@ -202,6 +209,12 @@ class _ColorsPanelState extends State<ColorsPanel> {
   }
 
   Widget _layerColors(AppLocalizations l10n) {
+    // Another edit, undo or a new selection: the ruler's changes are no
+    // longer the last thing done, so there is nothing to put back.
+    if (_adjustBase != null &&
+        (_editor.svg != _adjustResult || !listEquals(_editor.paintTargets, _adjustTargets))) {
+      _adjustBase = null;
+    }
     // Every ticked layer takes the change; the card shows the first one's paint.
     final targets = _editor.paintTargets;
     final path = targets.first;
@@ -228,12 +241,21 @@ class _ColorsPanelState extends State<ColorsPanel> {
           onChanged: (color) => _editor.preview(apply(_editor.svg, colorToHex(color))),
           onChangeEnd: (color) => _editor.commit(apply(_editor.svg, colorToHex(color))),
         ),
-        const SizedBox(height: AppSpacing.sm),
         ColorAdjuster(
           onPreview: (kind, amount) => _editor.preview(_adjust(_editor.svg, kind, amount)),
           onCommit: (kind, amount) {
-            if (amount != 0) _editor.commit(_adjust(_editor.svg, kind, amount));
+            if (amount == 0) return;
+            _adjustBase ??= _editor.svg;
+            _editor.commit(_adjust(_editor.svg, kind, amount));
+            _adjustResult = _editor.svg;
+            _adjustTargets = _editor.paintTargets;
           },
+          onReset: _adjustBase == null
+              ? null
+              : () {
+                  _editor.commit(_adjustBase!);
+                  _adjustBase = null;
+                },
         ),
       ],
     );

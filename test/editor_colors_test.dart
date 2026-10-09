@@ -262,6 +262,30 @@ void main() {
     expect(saved, contains('FILL="#'));
   });
 
+  testWidgets('colors: the reset button puts back what the ruler changed', (tester) async {
+    final services = await _openRedInEditor(tester);
+    await _tapTab(tester, 'Cores');
+    IconButton reset() => tester.widget<IconButton>(find.byKey(const Key('adjust-reset')));
+    expect(reset().onPressed, isNull, reason: 'nothing changed yet');
+
+    final ruler = find.byKey(const Key('ruler'));
+    await tester.ensureVisible(ruler);
+    await tester.pumpAndSettle();
+    await tester.drag(ruler, const Offset(-120, 0));
+    await tester.pumpAndSettle();
+    expect(reset().onPressed, isNotNull);
+
+    await tester.tap(find.byKey(const Key('adjust-reset')));
+    await tester.pumpAndSettle();
+    expect(reset().onPressed, isNull, reason: 'done');
+    expect(
+      tester.widget<FilledButton>(find.byKey(const Key('save'))).onPressed,
+      isNull,
+      reason: 'back to the original: nothing to save',
+    );
+    expect(services.library.documents.any((d) => d.name == 'red.svg'), isTrue);
+  });
+
   testWidgets('colors: the line alone changes only its stroke, never gets a fill', (tester) async {
     final services = await _openRedInEditor(
       tester,
@@ -276,6 +300,26 @@ void main() {
     expect(saved, contains('#FF0000'), reason: 'the rect is untouched');
     expect(saved, contains('STROKE="#3B82F6"'));
     expect(saved, contains('FILL="NONE"'));
+  });
+
+  testWidgets('light/dark: the app theme button does not change the version being edited', (
+    tester,
+  ) async {
+    await _openRedInEditor(
+      tester,
+      svg:
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+          '<style>.bg{fill:#000011}@media (prefers-color-scheme: light){.bg{fill:#EEEEFF}}</style>'
+          '<rect class="bg" width="10" height="10"/></svg>',
+    );
+    expect(find.byTooltip('Editando a versão escura — toque para a clara'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('theme-toggle')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byTooltip('Editando a versão escura — toque para a clara'),
+      findsOneWidget,
+      reason: 'still the dark version, though the app is light now',
+    );
   });
 
   testWidgets('layers: the top box is always there; what does not fit is greyed out', (

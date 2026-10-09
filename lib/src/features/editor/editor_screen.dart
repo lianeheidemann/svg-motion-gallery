@@ -39,14 +39,18 @@ class _EditorScreenState extends State<EditorScreen> {
   SvgDocument? _document;
   final _playback = SvgPlaybackController();
 
-  /// The variant (light/dark) chosen with the Layers tab icon; null follows
-  /// the app's theme.
+  /// The variant (light/dark) being edited; chosen with the Layers tab icon.
+  /// Null until the first read, which takes the app's theme once.
   SvgColorScheme? _variant;
 
   /// The variant being viewed and edited, or null when the file has no
   /// light/dark versions in its code.
-  SvgColorScheme? _editScheme(BuildContext context, EditorController editor) =>
-      SvgThemeEdit.canEdit(editor.svg) ? (_variant ?? schemeOf(context)) : null;
+  SvgColorScheme? _editScheme(BuildContext context, EditorController editor) {
+    if (!SvgThemeEdit.canEdit(editor.svg)) return null;
+    // The version is fixed when editing starts (the app's theme then); the
+    // theme button in the bar changes the app, not the version being edited.
+    return _variant ??= schemeOf(context);
+  }
 
   /// Switches between the light and the dark version. What is selected moves
   /// to its twin in the other version (the "night" group to the "day" one),
