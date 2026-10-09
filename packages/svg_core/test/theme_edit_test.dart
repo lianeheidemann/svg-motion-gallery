@@ -37,5 +37,27 @@ void main() {
       expect(SvgThemeEdit.fillFor(out, circle, SvgColorScheme.dark), '#00FF00');
       expect(SvgThemeEdit.fillFor(out, circle, SvgColorScheme.light), '#FF0000');
     });
+
+    test('a group hidden in the other version is replaced by its twin', () {
+      const doc =
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+          '<style>.sun{display:none}.night{display:inline}'
+          '@media (prefers-color-scheme: light){.sun{display:inline}.night{display:none}}</style>'
+          '<rect width="10" height="10"/>'
+          '<g class="night"><circle r="1"/></g><g class="sun"><circle r="2"/></g></svg>';
+      const night = ElementPath([2]);
+      const sun = ElementPath([3]);
+      const dark = SvgColorScheme.dark;
+      const light = SvgColorScheme.light;
+      expect(SvgThemeEdit.isShown(doc, night, dark), isTrue);
+      expect(SvgThemeEdit.isShown(doc, night, light), isFalse);
+      expect(SvgThemeEdit.counterpart(doc, night, dark, light), sun);
+      expect(SvgThemeEdit.counterpart(doc, sun, light, dark), night);
+      // Drawn in both versions: it stays.
+      expect(
+        SvgThemeEdit.counterpart(doc, const ElementPath([1]), dark, light),
+        const ElementPath([1]),
+      );
+    });
   });
 }

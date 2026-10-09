@@ -154,6 +154,14 @@ class _LayersPanelState extends State<LayersPanel> {
                         : Icons.dark_mode_rounded,
                   ),
                 ),
+              if (multi)
+                IconButton(
+                  key: const Key('select-all-layers'),
+                  tooltip: l10n.selectAllLayers,
+                  visualDensity: VisualDensity.compact,
+                  onPressed: editor.selectAllLayers,
+                  icon: const Icon(Icons.select_all_rounded),
+                ),
               Tooltip(
                 message: l10n.multiSelect,
                 child: Semantics(
@@ -413,6 +421,12 @@ class _MultiLayerActions extends StatelessWidget {
           spacing: 4,
           runSpacing: 4,
           children: [
+            IconButton.outlined(
+              key: const Key('select-all-actions'),
+              tooltip: l10n.selectAllLayers,
+              onPressed: editor.selectAllLayers,
+              icon: const Icon(Icons.select_all_rounded, size: 20),
+            ),
             IconButton.outlined(
               tooltip: l10n.actionDuplicate,
               onPressed: editor.duplicateTargets,

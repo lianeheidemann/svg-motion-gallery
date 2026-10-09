@@ -199,6 +199,28 @@ class EditorController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Ticks every top-level layer (folders count as one), for [multiMode].
+  void selectAllLayers() {
+    if (!_multiMode) return;
+    _multi = [
+      for (final layer in layers)
+        if (layer.depth == 0) layer.path,
+    ];
+    _selection = _multi.lastOrNull;
+    notifyListeners();
+  }
+
+  /// Replaces the selection with [paths] (several only in [multiMode]).
+  void replaceSelection(List<ElementPath> paths) {
+    if (_multiMode) {
+      _multi = [...paths];
+      _selection = _multi.lastOrNull;
+    } else {
+      _selection = paths.firstOrNull;
+    }
+    notifyListeners();
+  }
+
   void select(ElementPath? path) {
     if (_multiMode) {
       if (path == null) {

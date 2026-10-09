@@ -157,6 +157,7 @@
   "editingLight": "Editing the light version — tap for dark",
   "editingDark": "Editing the dark version — tap for light",
   "keepProportion": "Keep proportion",
+  "selectAllLayers": "Select all",
   "codeProblemGo": "Go to the problem",
   "codeMoreProblems": "+{count}",
   "selectionNone": "Selected: All",

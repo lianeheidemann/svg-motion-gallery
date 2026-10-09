@@ -220,6 +220,21 @@ void main() {
     expect(find.textContaining('Selecionado: Todas'), findsOneWidget);
   });
 
+  testWidgets('layers: with the corner box on, an icon ticks every layer', (tester) async {
+    await _openRedInEditor(
+      tester,
+      svg:
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+          '<rect width="4" height="4"/><circle r="2"/><g><rect width="1" height="1"/></g></svg>',
+    );
+    expect(find.byKey(const Key('select-all-layers')), findsNothing, reason: 'box is off');
+    await tester.tap(find.byKey(const Key('multi-select')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('select-all-layers')));
+    await tester.pumpAndSettle();
+    expect(find.text('3 camadas selecionadas'), findsWidgets, reason: 'three top-level layers');
+  });
+
   testWidgets('the rainbow swatch opens a free picker that recolors the layer', (tester) async {
     final services = await _openRedInEditor(tester);
     await _selectLayerThenColors(tester, 'Retângulo');

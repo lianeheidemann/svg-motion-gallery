@@ -53,6 +53,21 @@ class _EditorScreenState extends State<EditorScreen> {
   SvgColorScheme? _editScheme(BuildContext context, EditorController editor) =>
       SvgThemeEdit.canEdit(editor.svg) ? (_variant ?? schemeOf(context)) : null;
 
+  /// Switches between the light and the dark version. What is selected moves
+  /// to its twin in the other version (the "night" group to the "day" one),
+  /// since the selected one may not be drawn there.
+  void _toggleVariant(BuildContext context, EditorController editor) {
+    final from = _editScheme(context, editor);
+    if (from == null) return;
+    final to = from.opposite;
+    final chosen = editor.multiMode ? editor.multiSelection : [?editor.selection];
+    final mapped = [
+      for (final path in chosen) SvgThemeEdit.counterpart(editor.svg, path, from, to),
+    ];
+    setState(() => _variant = to);
+    if (chosen.isNotEmpty) editor.replaceSelection(mapped);
+  }
+
   /// Whether the stage was playing before the Colors tab froze it.
   var _resumeAfterColors = false;
   var _tab = _EditorTab.layers;
@@ -585,7 +600,7 @@ class _EditorScreenState extends State<EditorScreen> {
     _EditorTab.layers => LayersPanel(
       editor: editor,
       themeScheme: _editScheme(context, editor),
-      onToggleTheme: () => setState(() => _variant = _editScheme(context, editor)?.opposite),
+      onToggleTheme: () => _toggleVariant(context, editor),
     ),
     _EditorTab.insert => InsertPanel(editor: editor),
     _EditorTab.text => InsertPanel(key: const Key('text-panel'), editor: editor, text: true),

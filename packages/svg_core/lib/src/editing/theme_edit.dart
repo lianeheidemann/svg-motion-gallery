@@ -34,13 +34,65 @@ class SvgThemeEdit {
     final document = tryParseSvg(SvgThemeResolver.resolve(svg, scheme));
     var element = _target(document, path);
     if (document == null || element == null) return null;
-    final rules = _rules(document.rootElement);
+    final rules = _rules(document.rootElement, 'fill');
     while (element != null) {
-      final value = _fillOf(element, rules);
+      final value = _valueOf(element, rules, 'fill') ?? element.getAttribute('fill');
       if (value != null) return SvgColorValue.normalize(value) ?? value.trim();
       element = element.parentElement;
     }
     return null;
+  }
+
+  /// Whether the element at [path] is drawn in the [scheme] variant (not
+  /// hidden with `display:none`, itself or through an ancestor).
+  static bool isShown(String svg, ElementPath path, SvgColorScheme scheme) =>
+      _shownIn(_resolved(svg, scheme), path);
+
+  /// The element standing for [path] when the file is switched from [from] to
+  /// [to]: [path] itself when it is drawn in [to] too, else the sibling that
+  /// is hidden in [from] and drawn in [to] (a "night" group and its "day"
+  /// twin), the nearest one. [path] again when there is none.
+  static ElementPath counterpart(
+    String svg,
+    ElementPath path,
+    SvgColorScheme from,
+    SvgColorScheme to,
+  ) {
+    final parent = path.parent;
+    if (parent == null || path.isRoot) return path;
+    final inFrom = _resolved(svg, from);
+    final inTo = _resolved(svg, to);
+    if (_shownIn(inTo, path)) return path;
+    final holder = inTo == null ? null : parent.resolve(inTo.rootElement);
+    final count = parent.isRoot
+        ? inTo?.rootElement.childElements.length
+        : holder?.childElements.length;
+    if (count == null) return path;
+    final own = path.indices.last;
+    ElementPath? best;
+    for (var i = 0; i < count; i++) {
+      if (i == own) continue;
+      final sibling = parent.child(i);
+      if (_shownIn(inFrom, sibling) || !_shownIn(inTo, sibling)) continue;
+      if (best == null || (i - own).abs() < (best.indices.last - own).abs()) best = sibling;
+    }
+    return best ?? path;
+  }
+
+  static XmlDocument? _resolved(String svg, SvgColorScheme scheme) =>
+      tryParseSvg(SvgThemeResolver.resolve(svg, scheme));
+
+  static bool _shownIn(XmlDocument? document, ElementPath path) {
+    if (document == null) return true;
+    var element = path.isRoot ? null : path.resolve(document.rootElement);
+    if (element == null) return true;
+    final rules = _rules(document.rootElement, 'display');
+    while (element != null) {
+      final value = _valueOf(element, rules, 'display');
+      if (value != null && value.trim() == 'none') return false;
+      element = element.parentElement;
+    }
+    return true;
   }
 
   /// Sets the fill of the element at [path] to [color] in the [scheme] variant
@@ -116,18 +168,18 @@ class SvgThemeEdit {
   );
 
   /// The `fill` declarations of the simple rules of every `<style>`, in order.
-  static List<(String, String)> _rules(XmlElement root) {
+  static List<(String, String)> _rules(XmlElement root, String property) {
     final out = <(String, String)>[];
     for (final style in root.descendantElements.where((e) => e.localName == 'style')) {
       for (final match in _ruleText.allMatches(styleText(style))) {
-        String? fill;
-        mapDeclarations(match.group(2)!, (property, value) {
-          if (property == 'fill') fill = value.replaceAll('!important', '').trim();
+        String? found;
+        mapDeclarations(match.group(2)!, (name, value) {
+          if (name == property) found = value.replaceAll('!important', '').trim();
           return value;
         });
-        if (fill == null) continue;
+        if (found == null) continue;
         for (final selector in match.group(1)!.split(',')) {
-          out.add((selector.trim(), fill!));
+          out.add((selector.trim(), found!));
         }
       }
     }
@@ -149,10 +201,12 @@ class SvgThemeEdit {
     return key == null || element.getAttribute(_attribute) == key;
   }
 
-  static String? _fillOf(XmlElement element, List<(String, String)> rules) {
+  /// The value of [property] for [element]: its inline style, else the last
+  /// matching stylesheet rule; null when neither sets it.
+  static String? _valueOf(XmlElement element, List<(String, String)> rules, String property) {
     String? inline;
     mapDeclarations(element.getAttribute('style') ?? '', (name, value) {
-      if (name == 'fill') inline = value.trim();
+      if (name == property) inline = value.trim();
       return value;
     });
     if (inline != null) return inline;
@@ -160,6 +214,6 @@ class SvgThemeEdit {
     for (final (selector, value) in rules) {
       if (_matches(selector, element)) fromRule = value;
     }
-    return fromRule ?? element.getAttribute('fill');
+    return fromRule ?? element.getAttribute(property);
   }
 }
