@@ -297,7 +297,11 @@ void main() {
     expect(find.text('SVG inválido'), findsNothing, reason: 'validated only on Apply');
     await tester.tap(find.byKey(const Key('apply-code')));
     await tester.pumpAndSettle();
-    expect(find.text('SVG inválido'), findsOneWidget);
+    // The error is told once, under the code, without the parser's English text.
+    expect(find.byKey(const Key('code-error')), findsOneWidget);
+    expect(find.text('SVG inválido'), findsNothing, reason: 'no second message below');
+    expect(find.textContaining('expected'), findsNothing);
+    expect(find.textContaining('XML malformado'), findsOneWidget);
     expect(save().onPressed, isNull);
 
     await tester.enterText(find.byKey(const Key('code-field')), _valid);
@@ -317,14 +321,19 @@ void main() {
     await tester.pump();
     await tester.tap(find.byKey(const Key('apply-code')));
     await tester.pumpAndSettle();
-    expect(find.text('SVG válido, com um aviso'), findsOneWidget);
+    expect(find.byKey(const Key('code-hint')), findsOneWidget);
+    expect(
+      find.text('SVG válido, com um aviso'),
+      findsNothing,
+      reason: 'told once, under the code',
+    );
     expect(save().onPressed, isNotNull);
 
     await tester.enterText(find.byKey(const Key('code-field')), _valid);
     await tester.pump();
     await tester.tap(find.byKey(const Key('apply-code')));
     await tester.pumpAndSettle();
-    expect(find.text('SVG válido, com um aviso'), findsNothing);
+    expect(find.byKey(const Key('code-hint')), findsNothing);
 
     await tester.tap(find.byKey(const Key('save')));
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));

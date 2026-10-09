@@ -27,9 +27,10 @@ extension AppLocalizationsFormat on AppLocalizations {
         issue.line ?? 0,
       ),
     };
-    // The message of a bad value already says the value; the others add the
-    // parser's technical detail.
-    final showsDetail = issue.detail != null && issue.code != SvgIssueCode.invalidValue;
+    // Only a CSS problem adds its detail (the snippet): the parser's own text
+    // for XML errors is English and technical, and a bad value already names
+    // itself.
+    final showsDetail = issue.detail != null && issue.code == SvgIssueCode.malformedCss;
     return showsDetail ? '$base — ${issue.detail}' : base;
   }
 

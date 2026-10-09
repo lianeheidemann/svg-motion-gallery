@@ -400,6 +400,11 @@ class _EditorScreenState extends State<EditorScreen> {
     final warning = editor.validation.warning;
     final showValid = _justSaved && !editor.hasUnsavedChanges;
     if (issue == null && warning == null && !showValid) return const SizedBox.shrink();
+    // The Code tab says what is wrong right under the code, with a button to
+    // go there; saying it again down here would only repeat it.
+    if (_tab == _EditorTab.code && (issue != null || warning != null)) {
+      return const SizedBox.shrink();
+    }
     if (issue == null && warning != null) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
