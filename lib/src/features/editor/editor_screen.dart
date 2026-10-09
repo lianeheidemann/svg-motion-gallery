@@ -43,6 +43,9 @@ class _EditorScreenState extends State<EditorScreen> {
   EditorController? _editor;
   SvgDocument? _document;
   final _playback = SvgPlaybackController();
+
+  /// Whether the stage was playing before the Colors tab froze it.
+  var _resumeAfterColors = false;
   var _tab = _EditorTab.layers;
   bool get _isInsertTab => _tab == _EditorTab.insert || _tab == _EditorTab.text;
   var _saving = false;
@@ -206,7 +209,7 @@ class _EditorScreenState extends State<EditorScreen> {
                 child: PillTabs(
                   labelSelectedOnly: true,
                   selectedIndex: _tab.index,
-                  onChanged: (index) => setState(() => _tab = _EditorTab.values[index]),
+                  onChanged: (index) => setState(() => _switchTab(_EditorTab.values[index])),
                   tabs: [
                     // Always first and highlighted; another color while the
                     // whole drawing (every layer) is the target.
@@ -309,6 +312,23 @@ class _EditorScreenState extends State<EditorScreen> {
     return selection != null && SvgHitTest.movables(editor.svg).any((m) => m.path == selection);
   }
 
+  /// Switches tab. Colors compares two previews, so both sit still at the
+  /// start (two live animations would never show the same frame).
+  void _switchTab(_EditorTab next) {
+    final was = _tab;
+    _tab = next;
+    if (was == next) return;
+    if (next == _EditorTab.colors) {
+      _resumeAfterColors = _playback.isPlaying;
+      _playback
+        ..pause()
+        ..seekFraction(0);
+    } else if (was == _EditorTab.colors && _resumeAfterColors) {
+      _resumeAfterColors = false;
+      _playback.play();
+    }
+  }
+
   Widget _stage(BuildContext context, EditorController editor) {
     final l10n = context.l10n;
     final height = MediaQuery.sizeOf(context).height;
@@ -335,6 +355,7 @@ class _EditorScreenState extends State<EditorScreen> {
                           handleLabel: l10n.compareHandle,
                           before: SvgPreview(
                             svg: editor.initialSvg,
+                            autoplay: false,
                             showGrid: true,
                             background: _background,
                             padding: const EdgeInsets.all(16),

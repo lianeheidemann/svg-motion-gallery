@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:svg_motion_gallery/src/app_scope.dart';
+import 'package:svg_view/svg_view.dart';
 
 import 'helpers.dart';
 
@@ -105,6 +106,25 @@ void main() {
 
     await _tapTab(tester, 'Camadas');
     expect(find.byKey(const Key('before-after')), findsNothing);
+  });
+
+  testWidgets('colors: both previews sit still at the start so they show the same frame', (
+    tester,
+  ) async {
+    await _openRedInEditor(tester);
+    SvgPlaybackController? stage() =>
+        tester.widgetList<SvgView>(find.byType(SvgView)).map((v) => v.controller).nonNulls.first;
+    expect(stage()!.isPlaying, isTrue);
+
+    await _tapTab(tester, 'Cores');
+    expect(stage()!.isPlaying, isFalse);
+    final views = tester.widgetList<SvgView>(find.byType(SvgView)).toList();
+    expect(views, hasLength(2));
+    final before = views.firstWhere((v) => v.controller == null);
+    expect(before.autoplay, isFalse, reason: 'the original starts paused');
+
+    await _tapTab(tester, 'Camadas');
+    expect(stage()!.isPlaying, isTrue);
   });
 
   testWidgets('colors: painting everything leaves outline-only shapes alone', (tester) async {

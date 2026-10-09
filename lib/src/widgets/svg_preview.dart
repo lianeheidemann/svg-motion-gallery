@@ -26,6 +26,7 @@ class SvgPreview extends StatelessWidget {
     this.padding = const EdgeInsets.all(12),
     this.borderRadius = AppSpacing.radius,
     this.semanticLabel,
+    this.autoplay,
   });
 
   final String svg;
@@ -46,6 +47,9 @@ class SvgPreview extends StatelessWidget {
   final double borderRadius;
   final String? semanticLabel;
 
+  /// Overrides the "autoplay" setting (false renders paused at the start).
+  final bool? autoplay;
+
   @override
   Widget build(BuildContext context) {
     final settings = AppScope.of(context).settings;
@@ -63,7 +67,7 @@ class SvgPreview extends StatelessWidget {
             svg: svg,
             scheme: scheme ?? schemeOf(context),
             mode: still ? SvgRenderMode.still : SvgRenderMode.live,
-            autoplay: value.autoplay,
+            autoplay: autoplay ?? value.autoplay,
             loop: value.loop,
             controller: controller,
             interactive: interactive,
