@@ -206,6 +206,19 @@ void main() {
     expect(find.byKey(const Key('theme-variant')), findsNothing);
   });
 
+  testWidgets('the selection label has an icon that clears the selection', (tester) async {
+    await _openRedInEditor(tester);
+    expect(find.byKey(const Key('clear-selection')), findsNothing, reason: 'nothing selected');
+    await _tapTab(tester, 'Camadas');
+    await tester.tap(find.text('Retângulo'));
+    await tester.pumpAndSettle();
+    expect(find.text('Limpar seleção'), findsNothing, reason: 'icon only');
+    await tester.tap(find.byKey(const Key('clear-selection')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('clear-selection')), findsNothing);
+    expect(find.textContaining('Selecionado: Todas'), findsOneWidget);
+  });
+
   testWidgets('the rainbow swatch opens a free picker that recolors the layer', (tester) async {
     final services = await _openRedInEditor(tester);
     await _selectLayerThenColors(tester, 'Retângulo');

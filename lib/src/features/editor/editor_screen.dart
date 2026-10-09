@@ -533,14 +533,16 @@ class _EditorScreenState extends State<EditorScreen> {
                   ),
                 ),
                 if (layer != null)
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      minimumSize: const Size(0, 40),
+                  IconButton(
+                    key: const Key('clear-selection'),
+                    tooltip: l10n.clearSelection,
+                    style: IconButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      fixedSize: const Size(32, 40),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     onPressed: () => editor.select(null),
-                    child: Text(l10n.clearSelection),
+                    icon: const Icon(Icons.deselect_rounded),
                   ),
                 PopupMenuButton<StageBackground>(
                   key: const Key('preview-bg'),
