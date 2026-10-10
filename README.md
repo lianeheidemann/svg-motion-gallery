@@ -33,27 +33,23 @@
 
 
 ```
-Flutter app to **view, animate and edit SVG files**. Built for Android.
+Flutter app to *view, animate and edit SVG files*. Built for Android.
 ```
 
 
 
 
-<p style="text-align: justify;">
-  
-SVG (Scalable Vector Graphics) is an XML-based vector format supporting resolution-independent graphics and animations through CSS and SMIL. Rendering performance depends on graphical complexity, filters, and animation behavior.
+<p align="justify">SVG (Scalable Vector Graphics) is an XML-based vector format supporting resolution-independent graphics and animations through CSS and SMIL. Rendering performance depends on graphical complexity, filters, and animation behavior.</p>
 
-Despite its widespread use in web development, many mobile galleries lack native SVG previews and animation support.
+<p align="justify">Despite its widespread use in web development, many mobile galleries lack native SVG previews and animation support.</p>
 
-SVG Motion Gallery is a Flutter-based Android application designed to address these limitations. It supports animated SVG playback directly within the gallery for easier visual identification, with an option to disable automatic playback and display static previews to reduce processing overhead.
+<p align="justify">SVG Motion Gallery is a Flutter-based Android application designed to address these limitations. It supports animated SVG playback directly within the gallery for easier visual identification, with an option to disable automatic playback and display static previews to reduce processing overhead.</p>
 
-The application also includes a visual editor for modifying layers, colors, dimensions, transformations, and animations, alongside a built-in code editor for inspecting and modifying SVG source files.
+<p align="justify">The application also includes a visual editor for modifying layers, colors, dimensions, transformations, and animations, alongside a built-in code editor for inspecting and modifying SVG source files.</p>
 
-The project aims to simplify SVG visualization, editing, experimentation, and reuse, particularly for animated icons and interface elements.
+<p align="justify">The project aims to simplify SVG visualization, editing, experimentation, and reuse, particularly for animated icons and interface elements.</p>
 
-Tech stack: Flutter · Dart · XML · CSS · SMIL
-
-</p>
+<p align="justify"><strong>Tech stack:</strong> Flutter · Dart · XML · CSS · SMIL</p>
 
 
 
