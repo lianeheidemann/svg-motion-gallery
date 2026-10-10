@@ -327,5 +327,10 @@
   "alignBottom": "Align bottom",
   "alignCenter": "Center in the middle",
   "alignFailed": "Could not measure the layer.",
-  "filledShape": "Filled"
+  "filledShape": "Filled",
+  "shuffleColors": "Generate colors",
+  "shuffleSurprise": "Surprise",
+  "shuffleGoldenAngle": "Golden angle",
+  "shuffleCosine": "Cosine palette",
+  "shuffleClassic": "Classic schemes"
 }
