@@ -31,8 +31,7 @@ const _neutralChroma = 0.03;
 
 /// The key of [color] in the map returned by [shuffleColors]: its RGB value
 /// (alpha is ignored, the caller keeps it).
-int colorKey(Color color) =>
-    (_byte(color.r) << 16) | (_byte(color.g) << 8) | _byte(color.b);
+int colorKey(Color color) => (_byte(color.r) << 16) | (_byte(color.g) << 8) | _byte(color.b);
 
 int _byte(double channel) => (channel * 255).round().clamp(0, 255);
 
@@ -161,7 +160,9 @@ const _moods = [
 class _Recipe {
   _Recipe(ShuffleMode mode, this.count, this.random) {
     final resolved = mode == ShuffleMode.surprise
-        ? const [ShuffleMode.goldenAngle, ShuffleMode.cosine, ShuffleMode.classic][random.nextInt(3)]
+        ? const [ShuffleMode.goldenAngle, ShuffleMode.cosine, ShuffleMode.classic][random.nextInt(
+            3,
+          )]
         : mode;
     this.mode = resolved;
     base = random.nextDouble() * 360;
@@ -265,7 +266,8 @@ double _lerpHue(double from, double to, double t) {
 
 // --- OKLab ------------------------------------------------------------
 
-double _toLinear(double c) => c <= 0.04045 ? c / 12.92 : math.pow((c + 0.055) / 1.055, 2.4).toDouble();
+double _toLinear(double c) =>
+    c <= 0.04045 ? c / 12.92 : math.pow((c + 0.055) / 1.055, 2.4).toDouble();
 
 double _fromLinear(double c) =>
     c <= 0.0031308 ? c * 12.92 : 1.055 * math.pow(c, 1 / 2.4).toDouble() - 0.055;

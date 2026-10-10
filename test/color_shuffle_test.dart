@@ -6,7 +6,9 @@ import 'package:svg_motion_gallery/src/features/editor/color_shuffle.dart';
 
 Color _hsl(double h, double s, double l) => HSLColor.fromAHSL(1, h, s, l).toColor();
 
-List<Color> _many(int n) => [for (var i = 0; i < n; i++) _hsl(i * 360 / n, 0.7, 0.3 + (i % 5) * 0.1)];
+List<Color> _many(int n) => [
+  for (var i = 0; i < n; i++) _hsl(i * 360 / n, 0.7, 0.3 + (i % 5) * 0.1),
+];
 
 void main() {
   const black = Color(0xFF000000);
@@ -14,7 +16,11 @@ void main() {
   const grey = Color(0xFF808080);
 
   test('neutrals are left out of the mapping', () {
-    final out = shuffleColors([black, white, grey, _hsl(10, 0.8, 0.5)], ShuffleMode.surprise, math.Random(1));
+    final out = shuffleColors(
+      [black, white, grey, _hsl(10, 0.8, 0.5)],
+      ShuffleMode.surprise,
+      math.Random(1),
+    );
     expect(out.containsKey(colorKey(black)), isFalse);
     expect(out.containsKey(colorKey(white)), isFalse);
     expect(out.containsKey(colorKey(grey)), isFalse);
@@ -65,7 +71,9 @@ void main() {
   test('the palette really changes', () {
     final colors = _many(6);
     final out = shuffleColors(colors, ShuffleMode.goldenAngle, math.Random(5));
-    final changed = colors.where((c) => out[colorKey(c)] != null && colorKey(out[colorKey(c)]!) != colorKey(c));
+    final changed = colors.where(
+      (c) => out[colorKey(c)] != null && colorKey(out[colorKey(c)]!) != colorKey(c),
+    );
     expect(changed, isNotEmpty);
   });
 
