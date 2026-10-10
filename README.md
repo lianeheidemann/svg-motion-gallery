@@ -2,13 +2,12 @@
 
 <p>
   <a href="https://github.com/lianeheidemann/svg-motion-gallery/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/svg-motion-gallery/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI" /></a>
+  <a href="https://github.com/lianeheidemann/svg-motion-gallery/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/lianeheidemann/svg-motion-gallery?include_prereleases&style=flat-square&logo=github&logoColor=white&label=release&color=2563EB" /></a>
   <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-2.1.1-2563EB?style=flat-square" />
   <img alt="Flutter 3.47" src="https://img.shields.io/badge/Flutter-3.47-02569B?style=flat-square&logo=flutter&logoColor=white" />
   <img alt="Dart 3.13" src="https://img.shields.io/badge/Dart-3.13-0175C2?style=flat-square&logo=dart&logoColor=white" />
   <img alt="Plataformas: Android, iOS e Web" src="https://img.shields.io/badge/plataformas-Android%20%C2%B7%20iOS%20%C2%B7%20Web-3DDC84?style=flat-square&logo=android&logoColor=white" />
   <img alt="Idiomas: português e inglês" src="https://img.shields.io/badge/idiomas-PT%20%C2%B7%20EN-8B5CF6?style=flat-square" />
-  <a href="LICENSE"><img alt="Licença" src="https://img.shields.io/badge/licen%C3%A7a-portf%C3%B3lio-lightgrey?style=flat-square" /></a>
-  <img alt="Último commit" src="https://img.shields.io/github/last-commit/lianeheidemann/svg-motion-gallery?style=flat-square&color=22D3EE" />
 </p>
 
 Aplicativo Flutter para **visualizar, animar e editar arquivos SVG**. Roda em Android e iOS, com build web para preview.
