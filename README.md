@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/icon/app_logo.png" alt="Logo do SVG Motion Gallery" width="128" />
+</p>
+
 # SVG Motion Gallery
 
 <p>
