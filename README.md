@@ -15,6 +15,8 @@
   
 # SVG Motion Gallery
 
+<p><em>View, animate and edit SVG files on Android.</em></p>
+
 <img width="180" alt="Status: under construction" src="assets/badge/badge_under-construction_v2.svg" />
 
 <p>
@@ -28,14 +30,6 @@
 </p>
 
 </div>
-
-
-
-
-```
-Flutter app to *view, animate and edit SVG files*. Built for Android; also runs on iOS and in the browser (preview).
-```
-
 
 
 
