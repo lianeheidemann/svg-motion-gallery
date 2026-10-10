@@ -62,12 +62,13 @@ class _ColorsPanelState extends State<ColorsPanel> {
   /// since a fill would turn the line into a blob.
   String _property(String svg, ElementPath target) {
     final scheme = widget.scheme;
+    // What the shape shows, so a fill or stroke set on its group counts.
     final fill = scheme == null
-        ? SvgPaintEdit.read(svg, target).fill
+        ? SvgPaintEdit.inherited(svg, target, 'fill')
         : SvgThemeEdit.fillFor(svg, target, scheme);
     if (fill != 'none') return 'fill';
     final stroke = scheme == null
-        ? SvgPaintEdit.read(svg, target).stroke
+        ? SvgPaintEdit.inherited(svg, target, 'stroke')
         : SvgThemeEdit.paintFor(svg, target, scheme, 'stroke');
     return stroke != null && stroke != 'none' ? 'stroke' : 'fill';
   }
