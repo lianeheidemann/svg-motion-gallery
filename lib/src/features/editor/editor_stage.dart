@@ -189,12 +189,16 @@ class EditorStage extends StatelessWidget {
                 Positioned.fill(
                   child: CanvasFrame(svg: editor.displaySvg, padding: const EdgeInsets.all(16)),
                 ),
-                // The Insert tab draws its own outline (with handles) for shapes.
-                if (!(showsDragLayer && _selectedIsShape()))
+                // The drag layer draws its own outline (with handles) for the
+                // selected shape; with several ticked, the others still get
+                // theirs from here.
+                if (!(showsDragLayer && _selectedIsShape()) ||
+                    (editor.multiMode && editor.multiSelection.length > 1))
                   Positioned.fill(
                     child: SelectionHighlight(
                       controller: playback,
                       padding: const EdgeInsets.all(16),
+                      skipSelected: showsDragLayer && _selectedIsShape(),
                     ),
                   ),
                 if (tab == EditorTab.colors && editor.eyedropper)
