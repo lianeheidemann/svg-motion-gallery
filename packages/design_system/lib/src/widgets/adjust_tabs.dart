@@ -44,61 +44,63 @@ class _AdjustTabsState<T> extends State<AdjustTabs<T>> {
     super.dispose();
   }
 
+  Widget _item(BuildContext context, AdjustTab<T> tab, ColorScheme scheme) {
+    final on = tab.id == widget.selected;
+    return Semantics(
+      button: true,
+      selected: on,
+      label: tab.label,
+      child: InkResponse(
+        key: Key('adjust-${tab.id}'),
+        onTap: () => widget.onSelected(tab.id),
+        radius: 42,
+        child: SizedBox(
+          width: 84,
+          child: Column(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: on ? scheme.primary : scheme.surfaceContainerHighest,
+                ),
+                child: Icon(tab.icon, color: on ? scheme.onPrimary : scheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                tab.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: on ? scheme.primary : scheme.onSurfaceVariant,
+                  fontWeight: on ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final row = ScrollConfiguration(
       behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-      child: ListView.separated(
+      // A handful of items, all built, so each can be found and scrolled to.
+      child: SingleChildScrollView(
         controller: _scroll,
         scrollDirection: Axis.horizontal,
-        // A handful of items: all stay built, so each can be found and scrolled to.
-        cacheExtent: double.infinity,
-        itemCount: tabs.length + (widget.trailing == null ? 0 : 1),
-        separatorBuilder: (context, index) => const SizedBox(width: 6),
-        itemBuilder: (context, index) {
-          // The trailing widget is the last item, so it swipes with the rest.
-          if (index == tabs.length) return widget.trailing!;
-          final tab = tabs[index];
-          final on = tab.id == widget.selected;
-          return Semantics(
-            button: true,
-            selected: on,
-            label: tab.label,
-            child: InkResponse(
-              key: Key('adjust-${tab.id}'),
-              onTap: () => widget.onSelected(tab.id),
-              radius: 42,
-              child: SizedBox(
-                width: 84,
-                child: Column(
-                  children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: on ? scheme.primary : scheme.surfaceContainerHighest,
-                      ),
-                      child: Icon(tab.icon, color: on ? scheme.onPrimary : scheme.onSurfaceVariant),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      tab.label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      softWrap: false,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: on ? scheme.primary : scheme.onSurfaceVariant,
-                        fontWeight: on ? FontWeight.w700 : FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
+        child: Row(
+          children: [
+            for (final tab in tabs) ...[_item(context, tab, scheme), const SizedBox(width: 6)],
+            // The trailing widget is the last item, so it swipes with the rest.
+            ?widget.trailing,
+          ],
+        ),
       ),
     );
     return SizedBox(height: 66, child: row);
