@@ -18,12 +18,8 @@
 <img width="180" alt="Status: under construction" src="assets/badge/badge_under-construction_v2.svg" />
 
 <p>
-
-    
   <a href="https://github.com/lianeheidemann/svg-motion-gallery/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/svg-motion-gallery/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI" /></a>
   <a href="https://github.com/lianeheidemann/svg-motion-gallery/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/lianeheidemann/svg-motion-gallery?include_prereleases&style=flat-square&logo=github&logoColor=white&label=release&color=2563EB" /></a><br>
-  
-  
   <img alt="Version" src="https://img.shields.io/badge/version-2.2.0-2563EB?style=flat-square" />
   <img alt="Flutter 3.47" src="https://img.shields.io/badge/Flutter-3.47-02569B?style=flat-square&logo=flutter&logoColor=white" />
   <img alt="Dart 3.13" src="https://img.shields.io/badge/Dart-3.13-0175C2?style=flat-square&logo=dart&logoColor=white" />
@@ -31,8 +27,41 @@
   <img alt="Languages: Portuguese and English" src="https://img.shields.io/badge/languages-PT%20%C2%B7%20EN-8B5CF6?style=flat-square" />
 </p>
 
-Flutter app to **view, animate and edit SVG files**. Built for Android.
+</p>
 
+
+
+
+```
+Flutter app to **view, animate and edit SVG files**. Built for Android.
+```
+
+
+
+
+<p style="text-align: justify;">
+  
+SVG (Scalable Vector Graphics) is an XML-based vector format supporting resolution-independent graphics and animations through CSS and SMIL. Rendering performance depends on graphical complexity, filters, and animation behavior.
+
+Despite its widespread use in web development, many mobile galleries lack native SVG previews and animation support.
+
+SVG Motion Gallery is a Flutter-based Android application designed to address these limitations. It supports animated SVG playback directly within the gallery for easier visual identification, with an option to disable automatic playback and display static previews to reduce processing overhead.
+
+The application also includes a visual editor for modifying layers, colors, dimensions, transformations, and animations, alongside a built-in code editor for inspecting and modifying SVG source files.
+
+The project aims to simplify SVG visualization, editing, experimentation, and reuse, particularly for animated icons and interface elements.
+
+Tech stack: Flutter · Dart · XML · CSS · SMIL
+
+</p>
+
+
+
+
+
+
+<div align="center">
+    
 <img width="100%" src="assets/svg-gallery-interface-v2.webp" />
 
 </div>
