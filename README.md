@@ -1,8 +1,21 @@
+<p align="center">
+  <img src="docs/logo.png" alt="Logo do SVG Motion Gallery" width="160" />
+</p>
+
+
+
+
+
+
+<div align="center">
+  
 # SVG Motion Gallery
 
 <p>
   <a href="https://github.com/lianeheidemann/svg-motion-gallery/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/svg-motion-gallery/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI" /></a>
-  <a href="https://github.com/lianeheidemann/svg-motion-gallery/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/lianeheidemann/svg-motion-gallery?include_prereleases&style=flat-square&logo=github&logoColor=white&label=release&color=2563EB" /></a>
+  <a href="https://github.com/lianeheidemann/svg-motion-gallery/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/lianeheidemann/svg-motion-gallery?include_prereleases&style=flat-square&logo=github&logoColor=white&label=release&color=2563EB" /></a><br>
+  
+  
   <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-2.1.1-2563EB?style=flat-square" />
   <img alt="Flutter 3.47" src="https://img.shields.io/badge/Flutter-3.47-02569B?style=flat-square&logo=flutter&logoColor=white" />
   <img alt="Dart 3.13" src="https://img.shields.io/badge/Dart-3.13-0175C2?style=flat-square&logo=dart&logoColor=white" />
@@ -13,6 +26,13 @@
 Aplicativo Flutter para **visualizar, animar e editar arquivos SVG**. Feito para Android.
 
 <img width="100%" src="assets/svg-gallery-interface-v2.webp" />
+
+</div>
+
+
+
+
+
 
 ## Destaques
 
