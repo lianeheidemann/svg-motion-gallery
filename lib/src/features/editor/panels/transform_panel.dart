@@ -139,29 +139,54 @@ class _TransformPanelState extends State<TransformPanel> {
                   : null,
               onChangeEnd: _locked ? (_) => _commit() : null,
             ),
-            SliderField(
-              key: const Key('transform-width'),
-              label: l10n.width,
-              value: (values.widthFactor * 100).clamp(10, 400),
-              min: 10,
-              max: 400,
-              unit: '%',
-              onChanged: _locked
-                  ? null
-                  : (v) => _preview(values.copyWith(widthFactor: v.roundToDouble() / 100)),
-              onChangeEnd: _locked ? null : (_) => _commit(),
-            ),
-            SliderField(
-              key: const Key('transform-height'),
-              label: l10n.height,
-              value: (values.heightFactor * 100).clamp(10, 400),
-              min: 10,
-              max: 400,
-              unit: '%',
-              onChanged: _locked
-                  ? null
-                  : (v) => _preview(values.copyWith(heightFactor: v.roundToDouble() / 100)),
-              onChangeEnd: _locked ? null : (_) => _commit(),
+            // Under Escala: smaller and indented, with a guide line, since they
+            // are its other way of working (free, once the lock is open).
+            Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border(
+                    left: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 2),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 12),
+                  child: Column(
+                    children: [
+                      SliderField(
+                        key: const Key('transform-width'),
+                        label: l10n.width,
+                        compact: true,
+                        labelWidth: 68,
+                        value: (values.widthFactor * 100).clamp(10, 400),
+                        min: 10,
+                        max: 400,
+                        unit: '%',
+                        onChanged: _locked
+                            ? null
+                            : (v) =>
+                                  _preview(values.copyWith(widthFactor: v.roundToDouble() / 100)),
+                        onChangeEnd: _locked ? null : (_) => _commit(),
+                      ),
+                      SliderField(
+                        key: const Key('transform-height'),
+                        label: l10n.height,
+                        compact: true,
+                        labelWidth: 68,
+                        value: (values.heightFactor * 100).clamp(10, 400),
+                        min: 10,
+                        max: 400,
+                        unit: '%',
+                        onChanged: _locked
+                            ? null
+                            : (v) =>
+                                  _preview(values.copyWith(heightFactor: v.roundToDouble() / 100)),
+                        onChangeEnd: _locked ? null : (_) => _commit(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
             SliderField(
               label: l10n.rotation,

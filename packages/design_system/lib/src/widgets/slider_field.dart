@@ -23,6 +23,7 @@ class SliderField extends StatefulWidget {
     this.unit = '',
     this.labelWidth = 92,
     this.labelTrailing,
+    this.compact = false,
   });
 
   final String label;
@@ -35,6 +36,9 @@ class SliderField extends StatefulWidget {
   /// Suffix shown after the number, e.g. `%`, `°`, `s`, `px`.
   final String unit;
   final double labelWidth;
+
+  /// A smaller row (label, number and bar), for options that sit under another.
+  final bool compact;
 
   /// A small widget right after the label (e.g. a lock icon).
   final Widget? labelTrailing;
@@ -96,15 +100,17 @@ class _SliderFieldState extends State<SliderField> {
 
   /// Width the slider itself needs to stay usable next to the label and field.
   static const _fieldWidth = 76.0;
+  static const _compactFieldWidth = 64.0;
   static const _minSliderWidth = 110.0;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final value = _clamp(widget.value);
+    final fieldWidth = widget.compact ? _compactFieldWidth : _fieldWidth;
     final text = Text(
       widget.label,
-      style: theme.textTheme.bodyMedium,
+      style: widget.compact ? theme.textTheme.bodySmall : theme.textTheme.bodyMedium,
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
     );
@@ -118,11 +124,12 @@ class _SliderFieldState extends State<SliderField> {
             ],
           );
     final field = SizedBox(
-      width: _fieldWidth,
+      width: fieldWidth,
       child: TextField(
         controller: _text,
         focusNode: _focus,
         enabled: _enabled,
+        style: widget.compact ? theme.textTheme.bodyMedium?.copyWith(fontSize: 13) : null,
         textAlign: TextAlign.center,
         keyboardType: TextInputType.numberWithOptions(
           signed: widget.min < 0,
@@ -132,34 +139,45 @@ class _SliderFieldState extends State<SliderField> {
         decoration: InputDecoration(
           suffixText: widget.unit,
           suffixStyle: TextStyle(color: GalleryColors.of(context).muted),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: widget.compact ? 4 : 8),
         ),
         onSubmitted: _submit,
       ),
     );
     final slider = Expanded(
-      child: Slider(
-        value: value,
-        min: widget.min,
-        max: widget.max,
-        divisions: widget.divisions,
-        label: '${_format(value)}${widget.unit}',
-        semanticFormatterCallback: (v) => '${widget.label} ${_format(v)}${widget.unit}',
-        onChanged: _enabled
-            ? (v) {
-                _text.text = _format(v);
-                widget.onChanged?.call(v);
-              }
-            : null,
-        onChangeStart: widget.onChangeStart,
-        onChangeEnd: widget.onChangeEnd,
+      child: SliderTheme(
+        data: widget.compact
+            ? SliderTheme.of(context).copyWith(
+                trackHeight: 2,
+                thumbShape: const RoundSliderThumbShape(
+                  enabledThumbRadius: 7,
+                  disabledThumbRadius: 7,
+                ),
+              )
+            : SliderTheme.of(context),
+        child: Slider(
+          value: value,
+          min: widget.min,
+          max: widget.max,
+          divisions: widget.divisions,
+          label: '${_format(value)}${widget.unit}',
+          semanticFormatterCallback: (v) => '${widget.label} ${_format(v)}${widget.unit}',
+          onChanged: _enabled
+              ? (v) {
+                  _text.text = _format(v);
+                  widget.onChanged?.call(v);
+                }
+              : null,
+          onChangeStart: widget.onChangeStart,
+          onChangeEnd: widget.onChangeEnd,
+        ),
       ),
     );
     return LayoutBuilder(
       builder: (context, constraints) {
         // On narrow widths (small phones, a large interface size) the label
         // moves above the row so the slider keeps its length.
-        final stacked = constraints.maxWidth - widget.labelWidth - _fieldWidth < _minSliderWidth;
+        final stacked = constraints.maxWidth - widget.labelWidth - fieldWidth < _minSliderWidth;
         if (stacked) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
