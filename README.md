@@ -2,7 +2,7 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/logo.png" />
     <source media="(prefers-color-scheme: light)" srcset="docs/logo-light.png" />
-    <img src="docs/logo-light.png" alt="Logo do SVG Motion Gallery" width="160" />
+    <img src="docs/logo-light.png" alt="SVG Motion Gallery logo" width="160" />
   </picture>
 </p>
 
@@ -20,14 +20,14 @@
   <a href="https://github.com/lianeheidemann/svg-motion-gallery/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/lianeheidemann/svg-motion-gallery?include_prereleases&style=flat-square&logo=github&logoColor=white&label=release&color=2563EB" /></a><br>
   
   
-  <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-2.1.1-2563EB?style=flat-square" />
+  <img alt="Version" src="https://img.shields.io/badge/version-2.1.1-2563EB?style=flat-square" />
   <img alt="Flutter 3.47" src="https://img.shields.io/badge/Flutter-3.47-02569B?style=flat-square&logo=flutter&logoColor=white" />
   <img alt="Dart 3.13" src="https://img.shields.io/badge/Dart-3.13-0175C2?style=flat-square&logo=dart&logoColor=white" />
-  <img alt="Plataforma: Android" src="https://img.shields.io/badge/plataforma-Android-3DDC84?style=flat-square&logo=android&logoColor=white" />
-  <img alt="Idiomas: português e inglês" src="https://img.shields.io/badge/idiomas-PT%20%C2%B7%20EN-8B5CF6?style=flat-square" />
+  <img alt="Platform: Android" src="https://img.shields.io/badge/platform-Android-3DDC84?style=flat-square&logo=android&logoColor=white" />
+  <img alt="Languages: Portuguese and English" src="https://img.shields.io/badge/languages-PT%20%C2%B7%20EN-8B5CF6?style=flat-square" />
 </p>
 
-Aplicativo Flutter para **visualizar, animar e editar arquivos SVG**. Feito para Android.
+Flutter app to **view, animate and edit SVG files**. Built for Android.
 
 <img width="100%" src="assets/svg-gallery-interface-v2.webp" />
 
@@ -38,88 +38,88 @@ Aplicativo Flutter para **visualizar, animar e editar arquivos SVG**. Feito para
 
 
 
-## Destaques
+## Highlights
 
-- **Animações reais**: miniaturas e visualizador executam CSS/SMIL (WebView no Android/iOS, iframe na web), com apresentação automática.
-- **SVGs claros e escuros**: detecta `prefers-color-scheme`, `light-dark()`, `currentColor` e seletores de tema; o visualizador mostra *Tema do app*, *Clara*, *Escura* ou *Lado a lado*.
-- **Editor completo**, com desfazer/refazer: nove abas (veja [O editor](#o-editor)) para camadas, transformação, janela, alinhamento, cores, animação, formas, texto e código com realce e validação ao vivo.
-- **SVGs do celular (Android)**: pede acesso aos arquivos, lista todos os `.svg` do aparelho e permite editar, renomear, compartilhar e apagar, inclusive vários de uma vez.
-- **Ajustes por slider** em todo o app, inclusive o **tamanho da interface** (50% a 120%, padrão 80%).
-- **Tema claro/escuro e português/inglês** trocados por botões na tela inicial; todos os textos vêm de arquivos ARB.
+- **Real animations**: thumbnails and the viewer run CSS/SMIL (WebView on Android/iOS, iframe on the web), with automatic playback.
+- **Light and dark SVGs**: detects `prefers-color-scheme`, `light-dark()`, `currentColor` and theme selectors; the viewer shows *App theme*, *Light*, *Dark* or *Side by side*.
+- **Full editor** with undo/redo: nine tabs (see [The editor](#the-editor)) for layers, transform, window, alignment, colors, animation, shapes, text and code with highlighting and live validation.
+- **SVGs on the phone (Android)**: asks for file access, lists every `.svg` on the device and lets you edit, rename, share and delete them, several at once included.
+- **Slider settings** across the app, including the **interface size** (50% to 120%, default 80%).
+- **Light/dark theme and Portuguese/English** switched with buttons on the home screen; all texts come from ARB files.
 
-## O editor
+## The editor
 
-| Aba | O que faz |
+| Tab | What it does |
 |---|---|
-| **Camadas** | Árvore de camadas com seleção simples ou múltipla, ordem, duplicar, mostrar/ocultar e apagar; o botão de tema (sol/lua) aparece primeiro, em destaque, nos SVGs com variantes clara e escura. |
-| **Transformar** | Posição, escala (com cadeado de proporção), largura e altura (sub-opções da escala, livres com o cadeado aberto), rotação e opacidade. |
-| **Janela** | Recorte do desenho: proporção (1:1, 4:3, 3:4, 16:9, 9:16), largura, altura e margem em volta do conteúdo. |
-| **Alinhar** | Alinha a camada à tela. |
-| **Cores** | Antes/Depois lado a lado, com o mesmo recorte; paleta, seletor livre, hexadecimal e conta-gotas; linha de ajustes (matiz, saturação, luminosidade, brilho, contraste…) que desliza para o lado. Formas só de contorno têm o traço pintado, mesmo quando o `fill="none"` vem do grupo. A tela começa parada e o botão de play continua funcionando. |
-| **Animação** | Presets de animação e velocidade. |
-| **Inserir** / **Texto** | Adicionam formas e texto. Cor, tamanho, largura, altura, contorno e "Preenchida" ficam acinzentados até haver uma forma (ou um texto) dessa aba selecionada. |
-| **Código** | Editor com realce, números de linha, busca, formatar e **Quebrar linhas**, que mantém o recuo da linha de origem (inclusive no texto de `<title>` e `<desc>`). |
+| **Layers** | Layer tree with single or multiple selection, ordering, duplicate, show/hide and delete; the theme button (sun/moon) comes first, highlighted, on SVGs with light and dark variants. |
+| **Transform** | Position, scale (with a proportion lock), width and height (sub-options of scale, free once the lock is open), rotation and opacity. |
+| **Window** | Crop of the drawing: aspect ratio (1:1, 4:3, 3:4, 16:9, 9:16), width, height and a margin around the content. |
+| **Align** | Aligns the layer to the canvas. |
+| **Colors** | Before/After side by side with the same crop; palette, free picker, hex and eyedropper; an adjustment row (hue, saturation, lightness, brightness, contrast…) that swipes sideways. Outline-only shapes get their stroke painted, even when `fill="none"` comes from the group. The stage starts paused and the play button still works. |
+| **Animation** | Animation presets and speed. |
+| **Insert** / **Text** | Add shapes and text. Color, size, width, height, outline and "Filled" stay greyed out until a shape (or text) from that tab is selected. |
+| **Code** | Editor with highlighting, line numbers, search, format and **Wrap lines**, which keeps the indent of the line it comes from (including the text of `<title>` and `<desc>`). |
 
-## Arquitetura
+## Architecture
 
-Monorepo com [pub workspaces](https://dart.dev/tools/pub/workspaces). As dependências apontam sempre para baixo:
+Monorepo with [pub workspaces](https://dart.dev/tools/pub/workspaces). Dependencies always point downward:
 
 ```text
                 app (lib/)
      ┌─────────────┼──────────────┐
      ▼             ▼              ▼
 design_system   svg_view ─────▶ svg_core
-  (Flutter UI)  (renderização)   (Dart puro)
+  (Flutter UI)  (rendering)      (pure Dart)
 ```
 
-| Módulo | Responsabilidade |
+| Module | Responsibility |
 |---|---|
-| `packages/svg_core` | Dart puro: validação, metadados, resolução de temas, sanitização, edições imutáveis (`String → String`) e histórico. |
-| `packages/svg_view` | `SvgView` e controle de reprodução (WebView, iframe ou `flutter_svg`). |
-| `packages/design_system` | Tokens, temas, `UiScale` e widgets reutilizáveis. |
-| `lib/` | Telas (`gallery`, `viewer`, `editor`, `settings`), estado com `ChangeNotifier`, dados, serviços e i18n. |
+| `packages/svg_core` | Pure Dart: validation, metadata, theme resolution, sanitizing, immutable edits (`String → String`) and history. |
+| `packages/svg_view` | `SvgView` and playback control (WebView, iframe or `flutter_svg`). |
+| `packages/design_system` | Tokens, themes, `UiScale` and reusable widgets. |
+| `lib/` | Screens (`gallery`, `viewer`, `editor`, `settings`), `ChangeNotifier` state, data, services and i18n. |
 
-## Começando
+## Getting started
 
-Requer Flutter **3.47.5**, a mesma versão do CI.
+Requires Flutter **3.47.5**, the same version as CI.
 
 ```bash
 flutter pub get
-flutter run              # Android ou iOS
-flutter run -d chrome    # preview web
-./tool/check.sh          # formatação, análise e todos os testes (o que o CI roda)
+flutter run              # Android or iOS
+flutter run -d chrome    # web preview
+./tool/check.sh          # formatting, analysis and all tests (what CI runs)
 ```
 
-## SVGs de exemplo
+## Sample SVGs
 
-Os exemplos ficam em **`assets/svgs/`**. Qualquer `.svg` colocado ou removido dessa pasta entra ou sai do APK seguinte; `butterfly` e `sun-moon` (os dois adaptáveis ao tema) aparecem primeiro e os demais em ordem alfabética. Hoje são três: `butterfly`, `sun-moon` e `wave`.
+The samples live in **`assets/svgs/`**. Any `.svg` added to or removed from that folder goes in or out of the next APK; `butterfly` and `sun-moon` (the two theme-adaptive ones) come first and the rest in alphabetical order. Today there are three: `butterfly`, `sun-moon` and `wave`.
 
-Os exemplos são copiados para a galeria **na primeira abertura** ou em *Configurações → Restaurar exemplos*. Quem já tem o app instalado mantém os arquivos que já tinha.
+The samples are copied to the gallery **on first launch** or via *Settings → Restore samples*. Anyone who already has the app installed keeps the files they had.
 
-## Permissão de arquivos (Android)
+## File permission (Android)
 
-- **Android 11+**: o app abre a tela do sistema "Acesso a todos os arquivos", onde você liga a chave. **Android 10 ou anterior**: permissão de armazenamento comum.
-- Pastas ocultas e `Android/data` ficam de fora. Não há esse recurso no iOS nem na web.
-- Apagar é definitivo e sempre pede confirmação. Os SVGs do celular nunca entram no índice da galeria: o arquivo é a fonte da verdade.
-- A Play Store restringe essa permissão; ela só importa se você publicar lá.
+- **Android 11+**: the app opens the system "All files access" screen, where you turn the switch on. **Android 10 or earlier**: regular storage permission.
+- Hidden folders and `Android/data` are left out. This feature does not exist on iOS or the web.
+- Deleting is permanent and always asks for confirmation. Phone SVGs never enter the gallery index: the file is the source of truth.
+- The Play Store restricts this permission; it only matters if you publish there.
 
-## Integração contínua
+## Continuous integration
 
-| Workflow | Função |
+| Workflow | Purpose |
 |---|---|
-| `ci.yml` | A cada push e PR: verificações, APK e web preview como artefatos. Com **release** marcado em *Run workflow*, publica a Release. |
-| `release.yml` | *Actions → Release → Run workflow*: verificações opcionais, APK e publicação como `v<versão>-build<n>`. Só aparece quando o arquivo está na branch padrão. |
-| `checks.yml`, `android-build.yml` | Partes reutilizáveis. |
+| `ci.yml` | On every push and PR: checks, APK and web preview as artifacts. With **release** ticked in *Run workflow*, it publishes the Release. |
+| `release.yml` | *Actions → Release → Run workflow*: optional checks, APK and publishing as `v<version>-build<n>`. Only listed once the file is on the default branch. |
+| `checks.yml`, `android-build.yml` | Reusable parts. |
 
-O Dependabot atualiza pacotes e actions semanalmente.
+Dependabot updates packages and actions weekly.
 
-## Limitações
+## Limitations
 
-- O modo leve (`flutter_svg`) não executa animações nem filtros.
-- Edição de nós de `path` e abrir arquivos pelo "Compartilhar/Abrir com" do Android ainda não existem.
-- O APK de release usa a chave de debug; para uma loja, configure uma keystore.
-- O CI não compila iOS.
+- The lightweight mode (`flutter_svg`) does not run animations or filters.
+- Editing `path` nodes and opening files through Android's "Share/Open with" do not exist yet.
+- The release APK uses the debug key; for a store, set up a keystore.
+- CI does not build iOS.
 
-## Licença
+## License
 
-Projeto acadêmico e de portfólio. Veja [LICENSE](LICENSE) antes de redistribuir.
+Academic and portfolio project. See [LICENSE](LICENSE) before redistributing.
