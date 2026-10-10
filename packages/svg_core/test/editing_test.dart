@@ -160,8 +160,8 @@ void main() {
         '<svg xmlns="http://www.w3.org/2000/svg">'
         '<g fill="none" stroke="url(#g)"><path d="M0 0" stroke-width="2"/>'
         '<path d="M1 1" fill="#00FF00"/></g></svg>';
-    final first = ElementPath([0, 0]);
-    final second = ElementPath([0, 1]);
+    const first = ElementPath([0, 0]);
+    const second = ElementPath([0, 1]);
 
     test('falls back to the group when the element sets nothing', () {
       expect(SvgPaintEdit.inherited(doc, first, 'fill'), 'none');
@@ -173,7 +173,7 @@ void main() {
       expect(
         SvgPaintEdit.inherited(
           '<svg xmlns="http://www.w3.org/2000/svg"><g/></svg>',
-          ElementPath([0]),
+          const ElementPath([0]),
           'fill',
         ),
         isNull,
