@@ -12,6 +12,7 @@ import 'editor_controller.dart';
 import 'editor_tabs.dart';
 import 'panels/layers_panel.dart';
 import 'selection_highlight.dart';
+import 'selection_outlines.dart';
 import 'stage_drag_layer.dart';
 import 'stage_geometry.dart';
 
@@ -136,6 +137,18 @@ class EditorStage extends StatelessWidget {
         : math.min(height * .32, 320.0);
     final layer = editor.selectedLayer;
     final ticked = editor.multiMode ? editor.multiSelection.length : 0;
+    final selected = editor.selection;
+    final multi = ticked > 1;
+    final selectedOutlinedByDrag = showsDragLayer && _selectedIsShape();
+    // Shapes on the canvas among the ticked ones: outlined from the document.
+    final outlined = multi
+        ? movablesAmong(editor.displaySvg, editor.multiSelection)
+        : const <SvgMovable>[];
+    final selectedIsOutlined = outlined.any((shape) => shape.path == selected);
+    final outlines = [
+      for (final shape in outlined)
+        if (!(selectedOutlinedByDrag && shape.path == selected)) shape,
+    ];
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
       child: Column(
@@ -190,15 +203,24 @@ class EditorStage extends StatelessWidget {
                   child: CanvasFrame(svg: editor.displaySvg, padding: const EdgeInsets.all(16)),
                 ),
                 // The drag layer draws its own outline (with handles) for the
-                // selected shape; with several ticked, the others still get
-                // theirs from here.
-                if (!(showsDragLayer && _selectedIsShape()) ||
-                    (editor.multiMode && editor.multiSelection.length > 1))
+                // selected shape. With several ticked, the other shapes get
+                // an outline from the document (turning and resizing with
+                // them); only what is not a shape on the canvas (a group, a
+                // nested element) is outlined by the renderer's measurement.
+                if (!selectedOutlinedByDrag || multi)
                   Positioned.fill(
                     child: SelectionHighlight(
                       controller: playback,
                       padding: const EdgeInsets.all(16),
-                      skipSelected: showsDragLayer && _selectedIsShape(),
+                      skipSelected: selectedOutlinedByDrag || (multi && selectedIsOutlined),
+                    ),
+                  ),
+                if (outlines.isNotEmpty)
+                  Positioned.fill(
+                    child: SelectionOutlines(
+                      svg: editor.displaySvg,
+                      shapes: outlines,
+                      padding: const EdgeInsets.all(16),
                     ),
                   ),
                 if (tab == EditorTab.colors && editor.eyedropper)

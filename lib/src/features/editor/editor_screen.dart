@@ -22,6 +22,7 @@ import 'panels/insert_panel.dart';
 import 'panels/layers_panel.dart';
 import 'panels/transform_panel.dart';
 import 'panels/window_panel.dart';
+import 'selection_outlines.dart';
 
 /// The single editor: live stage on top, one tab per kind of edit, a
 /// validation/status line at the bottom and one Save button.
@@ -196,10 +197,17 @@ class _EditorScreenState extends State<EditorScreen> {
   void _syncSelection(EditorController editor) {
     final selection = editor.selection;
     // The other ticked layers (multi-selection) are outlined too.
-    final also = [
+    // Shapes on the canvas are outlined from the document (SelectionOutlines),
+    // so the renderer only measures the other ones.
+    final others = [
       if (editor.multiMode)
         for (final path in editor.multiSelection)
           if (path != selection) path,
+    ];
+    final drawn = movablesAmong(editor.svg, others).map((shape) => shape.path).toList();
+    final also = [
+      for (final path in others)
+        if (!drawn.contains(path)) path,
     ];
     if (selection == _sentSelection && listEquals(also, _sentAlso)) return;
     _sentSelection = selection;
