@@ -5,6 +5,7 @@ import 'package:svg_core/svg_core.dart';
 
 import '../../l10n/l10n.dart';
 import 'editor_controller.dart';
+import 'selection_outlines.dart';
 import 'stage_geometry.dart';
 
 /// Transparent layer over the stage that lets a finger select, move, resize
@@ -278,7 +279,7 @@ class _StageDragLayerState extends State<StageDragLayer> {
                   onScaleEnd: widget.canMove ? (_) => _end(size) : null,
                   child: CustomPaint(
                     size: size,
-                    painter: _OutlinePainter(outline, turn, color, active: _target != null),
+                    painter: StageOutlinePainter(outline, turn, color, active: _target != null),
                   ),
                 ),
               ),
@@ -353,41 +354,4 @@ class _StageDragLayerState extends State<StageDragLayer> {
       ),
     ),
   );
-}
-
-class _OutlinePainter extends CustomPainter {
-  const _OutlinePainter(this.rect, this.turn, this.color, {required this.active});
-
-  final Rect? rect;
-
-  /// Radians, clockwise, around the center of [rect].
-  final double turn;
-  final Color color;
-  final bool active;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = this.rect;
-    if (rect == null) return;
-    canvas
-      ..save()
-      ..translate(rect.center.dx, rect.center.dy)
-      ..rotate(turn)
-      ..translate(-rect.center.dx, -rect.center.dy);
-    final rounded = RRect.fromRectAndRadius(rect, const Radius.circular(6));
-    if (active) canvas.drawRRect(rounded, Paint()..color = color.withValues(alpha: .15));
-    canvas
-      ..drawRRect(
-        rounded,
-        Paint()
-          ..color = color
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = active ? 2 : 1.5,
-      )
-      ..restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant _OutlinePainter old) =>
-      old.rect != rect || old.turn != turn || old.color != color || old.active != active;
 }
