@@ -392,21 +392,20 @@ void main() {
     expect(find.text('Preenchimento'), findsNothing, reason: 'hollow: no fill color yet');
 
     // New shapes are hollow; the box fills them.
-    CheckboxListTile filled() =>
-        tester.widget<CheckboxListTile>(find.byKey(const Key('selected-filled')));
+    FilterChip filled() => tester.widget<FilterChip>(find.byKey(const Key('selected-filled')));
     await tester.ensureVisible(find.byKey(const Key('selected-filled')));
     await tester.pumpAndSettle();
-    expect(filled().value, isFalse);
+    expect(filled().selected, isFalse);
     await tester.tap(find.byKey(const Key('selected-filled')));
     await tester.pumpAndSettle();
-    expect(filled().value, isTrue);
+    expect(filled().selected, isTrue);
     expect(find.text('Preenchimento'), findsOneWidget, reason: 'filled: pick the fill color too');
     // The fill colors pushed the box down.
     await tester.ensureVisible(find.byKey(const Key('selected-filled')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('selected-filled')));
     await tester.pumpAndSettle();
-    expect(filled().value, isFalse);
+    expect(filled().selected, isFalse);
     // Back to the state right after inserting (two undoable steps).
     await tester.tap(find.byTooltip('Desfazer'));
     await tester.tap(find.byTooltip('Desfazer'));
