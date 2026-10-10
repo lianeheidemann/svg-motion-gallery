@@ -27,7 +27,7 @@
   <img alt="Languages: Portuguese and English" src="https://img.shields.io/badge/languages-PT%20%C2%B7%20EN-8B5CF6?style=flat-square" />
 </p>
 
-</p>
+</div>
 
 
 
