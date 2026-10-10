@@ -2,6 +2,13 @@
   <img src="docs/logo.png" alt="Logo do SVG Motion Gallery" width="160" />
 </p>
 
+
+
+
+
+
+<div align="center">
+  
 # SVG Motion Gallery
 
 <p>
@@ -19,6 +26,13 @@
 Aplicativo Flutter para **visualizar, animar e editar arquivos SVG**. Feito para Android.
 
 <img width="100%" src="assets/svg-gallery-interface-v2.webp" />
+
+</div>
+
+
+
+
+
 
 ## Destaques
 
