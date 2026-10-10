@@ -15,7 +15,7 @@
   
 # SVG Motion Gallery
 
-<img alt="Status: under construction" src="https://img.shields.io/badge/status-under%20construction-F59E0B?style=flat-square&logo=hammer&logoColor=white" />
+<img width="200" alt="Status: under construction" src="assets/badge/badge_under-construction_v2.svg" />
 
 <p>
 
