@@ -1,5 +1,9 @@
 <p align="center">
-  <img src="docs/logo.png" alt="Logo do SVG Motion Gallery" width="160" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo.png" />
+    <source media="(prefers-color-scheme: light)" srcset="docs/logo-light.png" />
+    <img src="docs/logo-light.png" alt="Logo do SVG Motion Gallery" width="160" />
+  </picture>
 </p>
 
 # SVG Motion Gallery
