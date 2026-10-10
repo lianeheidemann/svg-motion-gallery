@@ -22,8 +22,8 @@ String? formatSvg(String content) {
 
 /// Breaks lines longer than [maxColumns] at places where whitespace does not
 /// matter: between the attributes of a tag and, in style sheets, after a
-/// `,` `;` or `}`. Each continuation line is indented two spaces more than the
-/// line it came from, so the structure stays readable. The drawing is the
+/// `,` `;` or `}` and in the text of `<title>` and `<desc>`. Each continuation
+/// line keeps the indent of the line it came from, so it stays aligned. The drawing is the
 /// same; only whitespace between tokens changes.
 String wrapSvgLines(String content, int maxColumns) {
   if (maxColumns < 20) return content;
@@ -32,7 +32,13 @@ String wrapSvgLines(String content, int maxColumns) {
   String? quote;
   // Whether the quoted value being read may be broken at its spaces.
   var quotedBreaks = false;
+  // Name of the tag being read, and whether the text now being read belongs to
+  // a `<title>` or `<desc>`, where a space may become a line break.
+  var tagName = StringBuffer();
+  var readingName = false;
+  var proseText = false;
   for (final line in content.split('\n')) {
+    final lead = line.length - line.trimLeft().length;
     // Where a break is allowed, found with the state at each position.
     final breakable = List<bool>.filled(line.length, false);
     final css = line.contains('{');
@@ -47,16 +53,30 @@ String wrapSvgLines(String content, int maxColumns) {
         continue;
       }
       if (inTag) {
+        if (readingName) {
+          if (c == ' ' || c == '>' || c == '/') {
+            readingName = false;
+          } else {
+            tagName.write(c);
+          }
+        }
         if (c == '"' || c == "'") {
           quote = c;
           quotedBreaks = _spaceFreeAttributes.contains(_attributeBefore(line, i));
         } else if (c == '>') {
           inTag = false;
+          final name = tagName.toString();
+          proseText = (name == 'title' || name == 'desc') && line[i - 1] != '/';
         } else if (c == ' ') {
           breakable[i] = true;
         }
       } else if (c == '<') {
         inTag = true;
+        proseText = false;
+        readingName = true;
+        tagName = StringBuffer();
+      } else if (proseText && c == ' ' && i > lead) {
+        breakable[i] = true;
       } else if (css && c == ' ' && i > 0 && ',;}'.contains(line[i - 1])) {
         breakable[i] = true;
       }
