@@ -153,7 +153,12 @@ class EditorStage extends StatelessWidget {
                           afterLabel: l10n.compareAfter,
                           handleLabel: l10n.compareHandle,
                           before: SvgPreview(
-                            svg: editor.initialSvg,
+                            // The original drawing in the window being edited, so both
+                            // halves have the same crop and size.
+                            svg: SvgDocumentEdit.copyWindow(
+                              editor.initialSvg,
+                              from: editor.displaySvg,
+                            ),
                             scheme: scheme,
                             autoplay: false,
                             showGrid: true,

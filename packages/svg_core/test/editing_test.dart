@@ -155,6 +155,37 @@ void main() {
     });
   });
 
+  group('SvgDocumentEdit.copyWindow', () {
+    test('takes viewBox, width and height from the other drawing, keeping the content', () {
+      const original =
+          '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="50" viewBox="0 0 100 50">'
+          '<rect width="100" height="50" fill="#FF0000"/></svg>';
+      final cropped = SvgDocumentEdit.setViewBox(
+        original.replaceAll('#FF0000', '#00FF00'),
+        minX: 10,
+        minY: 5,
+        width: 50,
+        height: 25,
+      );
+      final result = SvgDocumentEdit.copyWindow(original, from: cropped);
+      expect(result, contains('viewBox="10 5 50 25"'));
+      expect(result, contains('width="50"'));
+      expect(result, contains('height="25"'));
+      expect(result, contains('#FF0000'), reason: 'the content is the original');
+      expect(result, isNot(contains('#00FF00')));
+    });
+
+    test('removes what the other drawing does not have; invalid XML is left alone', () {
+      const withSize = '<svg xmlns="http://www.w3.org/2000/svg" width="9" height="9"><g/></svg>';
+      const bare = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4"><g/></svg>';
+      final result = SvgDocumentEdit.copyWindow(withSize, from: bare);
+      expect(result, contains('viewBox="0 0 4 4"'));
+      expect(result, isNot(contains('width=')));
+      expect(SvgDocumentEdit.copyWindow('not xml', from: bare), 'not xml');
+      expect(SvgDocumentEdit.copyWindow(bare, from: 'not xml'), bare);
+    });
+  });
+
   group('SvgDocumentEdit.setSize', () {
     test('adds a viewBox before resizing when missing', () {
       final resized = SvgDocumentEdit.setSize(

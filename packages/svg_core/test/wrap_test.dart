@@ -55,4 +55,24 @@ void main() {
   test('short lines are untouched', () {
     expect(wrapSvgLines(svg, 400), svg);
   });
+
+  test('the text of title and desc is broken too, with the indent of its line', () {
+    const doc =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">\n'
+        '  <title id="t">Logo de robo com giro horizontal em tres dimensoes</title>\n'
+        '  <desc id="d">Balao de conversa em forma de robo girando horizontalmente</desc>\n'
+        '</svg>';
+    final once = wrapSvgLines(doc, 40);
+    for (final line in once.split('\n')) {
+      expect(line.length, lessThanOrEqualTo(40), reason: line);
+    }
+    final lines = once.split('\n');
+    final at = lines.indexWhere((l) => l.contains('<title'));
+    expect(lines[at + 1], startsWith('  '));
+    expect(lines[at + 1], isNot(startsWith('   ')));
+    expect(validateSvg(once).isValid, isTrue);
+    expect(wrapSvgLines(once, 40), once, reason: 'idempotent');
+    String squash(String s) => s.replaceAll(RegExp(r'\s+'), ' ');
+    expect(squash(once), squash(doc));
+  });
 }

@@ -108,12 +108,23 @@ class _InsertPanelState extends State<InsertPanel> {
     return SvgPaintEdit.setStrokeWidth(svg, path, width);
   }
 
-  SvgLayer? _layerAt(ElementPath path) =>
-      editor.layers.where((layer) => layer.path == path).firstOrNull;
+  /// The tag of what the user drew at [path]: an editor wrapper (made when a
+  /// shape is moved, scaled or rotated) is followed down to its shape.
+  String? _shapeTag(ElementPath path) {
+    final layers = editor.layers;
+    var i = layers.indexWhere((layer) => layer.path == path);
+    if (i < 0) return null;
+    while (layers[i].isEditorGroup &&
+        i + 1 < layers.length &&
+        layers[i + 1].depth > layers[i].depth) {
+      i++;
+    }
+    return layers[i].tag;
+  }
 
   /// Closed shapes can be filled or hollow; lines and text cannot.
   bool _fillable(ElementPath path) =>
-      const {'rect', 'circle', 'ellipse', 'polygon', 'path'}.contains(_layerAt(path)?.tag);
+      const {'rect', 'circle', 'ellipse', 'polygon', 'path'}.contains(_shapeTag(path));
 
   bool _isFilled(ElementPath path) {
     final fill = SvgPaintEdit.read(editor.svg, path).fill;
@@ -285,7 +296,7 @@ class _InsertPanelState extends State<InsertPanel> {
     final selectedShape =
         selection != null &&
             SvgInsertEdit.isInserted(editor.svg, selection) &&
-            (_layerAt(selection)?.tag == 'text') == widget.text &&
+            (_shapeTag(selection) == 'text') == widget.text &&
             SvgHitTest.movables(editor.svg).any((m) => m.path == selection)
         ? selection
         : null;
@@ -330,18 +341,16 @@ class _InsertPanelState extends State<InsertPanel> {
                         label: Text(l10n.shape(kind)),
                         onPressed: () => _insert(kind, color, fill),
                       ),
+                  // Last in the row, after the shapes: acts on the selected shape.
+                  FilterChip(
+                    key: const Key('selected-filled'),
+                    label: Text(l10n.filledShape),
+                    selected: selectedShape != null && _isFilled(selectedShape),
+                    onSelected: selectedShape == null || !_fillable(selectedShape)
+                        ? null
+                        : (v) => _setFilled(selectedShape, v, fill),
+                  ),
                 ],
-              ),
-            if (!widget.text)
-              CheckboxListTile(
-                key: const Key('selected-filled'),
-                contentPadding: const EdgeInsets.only(left: 8),
-                controlAffinity: ListTileControlAffinity.leading,
-                title: Text(l10n.filledShape),
-                value: selectedShape != null && _isFilled(selectedShape),
-                onChanged: selectedShape == null || !_fillable(selectedShape)
-                    ? null
-                    : (v) => _setFilled(selectedShape, v ?? false, fill),
               ),
             if (showFill)
               ...insertColorSection(
