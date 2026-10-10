@@ -68,5 +68,5 @@ jobs:
           name: SVG Motion Gallery ${{ needs.android.outputs.tag }}
           target_commitish: ${{ github.sha }}
           make_latest: true
-          generate_release_notes: true
+          generate_release_notes: false
           files: ${{ needs.android.outputs.artifact }}.apk
