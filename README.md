@@ -128,7 +128,7 @@ Dependabot updates packages and actions weekly.
 
 <div align="center">
 
-<img width="220" src="assets/svg-gallery-interface-v3.webp">
+<img width="220" src="assets/svg-gallery-interface-v4.webp">
 
 </div>
 
