@@ -36,6 +36,19 @@ class SvgPaintEdit {
     );
   }
 
+  /// The raw [property] (`fill` or `stroke`) the element at [path] shows: its
+  /// own, else the nearest ancestor's (a group's `fill="none"` applies to the
+  /// paths in it). Null when nothing sets one.
+  static String? inherited(String svg, ElementPath path, String property) {
+    var element = _target(tryParseSvg(svg), path);
+    while (element != null) {
+      final value = _get(element, property);
+      if (value != null) return _normalized(value);
+      element = element.parentElement;
+    }
+    return null;
+  }
+
   /// The `#RRGGBB` fill the element at [path] shows: its own, else the nearest
   /// ancestor's. Null when that is not a plain color (`none`, a gradient...)
   /// or nothing sets one.

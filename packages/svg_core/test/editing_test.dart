@@ -155,6 +155,32 @@ void main() {
     });
   });
 
+  group('SvgPaintEdit.inherited', () {
+    const doc =
+        '<svg xmlns="http://www.w3.org/2000/svg">'
+        '<g fill="none" stroke="url(#g)"><path d="M0 0" stroke-width="2"/>'
+        '<path d="M1 1" fill="#00FF00"/></g></svg>';
+    final first = ElementPath([0, 0]);
+    final second = ElementPath([0, 1]);
+
+    test('falls back to the group when the element sets nothing', () {
+      expect(SvgPaintEdit.inherited(doc, first, 'fill'), 'none');
+      expect(SvgPaintEdit.inherited(doc, first, 'stroke'), 'url(#g)');
+    });
+
+    test('an own value wins; nothing set anywhere is null', () {
+      expect(SvgPaintEdit.inherited(doc, second, 'fill'), '#00FF00');
+      expect(
+        SvgPaintEdit.inherited(
+          '<svg xmlns="http://www.w3.org/2000/svg"><g/></svg>',
+          ElementPath([0]),
+          'fill',
+        ),
+        isNull,
+      );
+    });
+  });
+
   group('SvgDocumentEdit.copyWindow', () {
     test('takes viewBox, width and height from the other drawing, keeping the content', () {
       const original =

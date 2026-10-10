@@ -152,6 +152,22 @@ void main() {
     expect(box(views.first), isNot('0 0 10 10'), reason: 'the window really changed');
   });
 
+  testWidgets('colors: a line whose group says fill none gets its stroke painted, not a fill', (
+    tester,
+  ) async {
+    final services = await _openRedInEditor(
+      tester,
+      svg:
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+          '<g fill="none" stroke="#0000FF" stroke-width="1"><path d="M0 5 L10 5"/></g></svg>',
+    );
+    await _selectLayerThenColors(tester, 'Caminho');
+    await _pickPreset(tester, '#3B82F6');
+    final saved = await _save(tester, services);
+    expect(saved, isNot(contains('FILL="#')), reason: 'the line was not turned into a blob');
+    expect(saved, contains('STROKE="#3B82F6"'), reason: 'the stroke got the new color');
+  });
+
   testWidgets('colors: an outline-only shape is painted on its stroke, alone or with all', (
     tester,
   ) async {
