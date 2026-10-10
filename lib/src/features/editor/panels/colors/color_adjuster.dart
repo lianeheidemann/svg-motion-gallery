@@ -5,11 +5,21 @@ import '../../../../l10n/l10n.dart';
 import '../../color_adjust.dart';
 
 /// Photo-editor style adjustments of the painted color: pick what to change
-/// (hue, saturation, brightness...) and slide the ruler. Every adjustment
-/// starts at 0 from the color as it is, so letting go makes the result the
-/// new color and the ruler returns to 0.
+/// (hue, saturation, brightness...) and slide the ruler. Each adjustment keeps
+/// the value where it was let go (the parent works every result out from the
+/// color before the first adjustment); tapping its icon twice puts it back to 0.
 class ColorAdjuster extends StatefulWidget {
-  const ColorAdjuster({super.key, required this.onPreview, required this.onCommit, this.onReset});
+  const ColorAdjuster({
+    super.key,
+    required this.amounts,
+    required this.onPreview,
+    required this.onCommit,
+    this.onReset,
+    this.onResetKind,
+  });
+
+  /// The value each adjustment has now (missing means 0).
+  final Map<ColorAdjustment, double> amounts;
 
   /// Called while the ruler moves, with the adjustment and its amount.
   final void Function(ColorAdjustment kind, double amount) onPreview;
@@ -21,6 +31,10 @@ class ColorAdjuster extends StatefulWidget {
   /// is nothing to put back.
   final VoidCallback? onReset;
 
+  /// Called when an adjustment's icon is tapped twice: puts back only what that
+  /// adjustment changed.
+  final ValueChanged<ColorAdjustment>? onResetKind;
+
   @override
   State<ColorAdjuster> createState() => _ColorAdjusterState();
 }
@@ -28,6 +42,20 @@ class ColorAdjuster extends StatefulWidget {
 class _ColorAdjusterState extends State<ColorAdjuster> {
   var _kind = ColorAdjustment.hue;
   var _amount = 0.0;
+  var _dragging = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _amount = widget.amounts[_kind] ?? 0;
+  }
+
+  @override
+  void didUpdateWidget(ColorAdjuster old) {
+    super.didUpdateWidget(old);
+    // Undo, reset or a new selection changed the values: the ruler follows.
+    if (!_dragging) _amount = widget.amounts[_kind] ?? 0;
+  }
 
   static const _icons = {
     ColorAdjustment.hue: Icons.palette_outlined,
@@ -55,8 +83,9 @@ class _ColorAdjusterState extends State<ColorAdjuster> {
           trailing: _ResetButton(label: l10n.adjustReset, onPressed: widget.onReset),
           onSelected: (kind) => setState(() {
             _kind = kind;
-            _amount = 0;
+            _amount = widget.amounts[kind] ?? 0;
           }),
+          onDoubleTapped: widget.onResetKind,
         ),
         const SizedBox(height: 2),
         RulerSlider(
@@ -66,11 +95,13 @@ class _ColorAdjusterState extends State<ColorAdjuster> {
           unit: _kind == ColorAdjustment.hue ? '°' : '',
           semanticLabel: l10n.colorAdjustment(_kind),
           onChanged: (v) {
+            _dragging = true;
             setState(() => _amount = v);
             widget.onPreview(_kind, v);
           },
           onChangeEnd: (v) {
-            setState(() => _amount = 0);
+            _dragging = false;
+            setState(() => _amount = v);
             widget.onCommit(_kind, v);
           },
         ),
