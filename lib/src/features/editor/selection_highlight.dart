@@ -7,12 +7,21 @@ import 'package:svg_view/svg_view.dart';
 /// element is drawn, so this works for any element: paths, groups, shapes.
 /// Draws only; touches go through it.
 class SelectionHighlight extends StatelessWidget {
-  const SelectionHighlight({super.key, required this.controller, required this.padding});
+  const SelectionHighlight({
+    super.key,
+    required this.controller,
+    required this.padding,
+    this.skipSelected = false,
+  });
 
   final SvgPlaybackController controller;
 
   /// Padding between the stage edge and the drawing (the rendered view).
   final EdgeInsets padding;
+
+  /// Leaves out the selected element (the first box), for when something else
+  /// already outlines it and only the other ticked ones are left to show.
+  final bool skipSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +33,7 @@ class SelectionHighlight extends StatelessWidget {
           builder: (context, constraints) {
             final inner = padding.deflateSize(constraints.biggest);
             final rects = [
-              for (final box in controller.selectionBoxes)
+              for (final box in controller.selectionBoxes.skip(skipSelected ? 1 : 0))
                 Rect.fromLTRB(
                   padding.left + box.left * inner.width,
                   padding.top + box.top * inner.height,

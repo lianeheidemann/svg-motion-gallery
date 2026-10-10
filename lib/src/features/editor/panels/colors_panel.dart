@@ -38,6 +38,11 @@ class _ColorsPanelState extends State<ColorsPanel> {
   String? _adjustResult;
   List<ElementPath> _adjustTargets = const [];
 
+  /// What each ruler shows now: the total of that adjustment since
+  /// [_adjustBase], in the order they were first used. Every result is worked
+  /// out again from [_adjustBase], so an adjustment can be taken out alone.
+  final _adjustAmounts = <ColorAdjustment, double>{};
+
   EditorController get _editor => widget.editor;
 
   @override
@@ -149,6 +154,38 @@ class _ColorsPanelState extends State<ColorsPanel> {
     return out;
   }
 
+  /// [base] with every adjustment of [amounts] applied, in order.
+  String _adjustAll(String base, Map<ColorAdjustment, double> amounts) {
+    var svg = base;
+    for (final entry in amounts.entries) {
+      svg = _adjust(svg, entry.key, entry.value);
+    }
+    return svg;
+  }
+
+  /// [kind] set to [amount] (0 takes it out) with the other adjustments kept.
+  Map<ColorAdjustment, double> _withAmount(ColorAdjustment kind, double amount) {
+    final out = Map.of(_adjustAmounts);
+    if (amount == 0) {
+      out.remove(kind);
+    } else {
+      out[kind] = amount;
+    }
+    return out;
+  }
+
+  /// Puts [amounts] on the drawing as one undoable step.
+  void _commitAdjust(Map<ColorAdjustment, double> amounts) {
+    final base = _adjustBase ?? _editor.svg;
+    _adjustBase = amounts.isEmpty ? null : base;
+    _adjustAmounts
+      ..clear()
+      ..addAll(amounts);
+    _editor.commit(_adjustAll(base, amounts));
+    _adjustResult = _editor.svg;
+    _adjustTargets = _editor.paintTargets;
+  }
+
   HslLabels _labels(AppLocalizations l10n) => HslLabels(
     hue: l10n.hue,
     saturation: l10n.saturation,
@@ -243,6 +280,7 @@ class _ColorsPanelState extends State<ColorsPanel> {
     if (_adjustBase != null &&
         (_editor.svg != _adjustResult || !listEquals(_editor.paintTargets, _adjustTargets))) {
       _adjustBase = null;
+      _adjustAmounts.clear();
     }
     // Every ticked layer takes the change; the card shows the first one's paint.
     final targets = _editor.paintTargets;
@@ -282,20 +320,17 @@ class _ColorsPanelState extends State<ColorsPanel> {
           onChangeEnd: (color) => _editor.commit(apply(_editor.svg, colorToHex(color))),
         ),
         ColorAdjuster(
-          onPreview: (kind, amount) => _editor.preview(_adjust(_editor.svg, kind, amount)),
+          amounts: Map.of(_adjustAmounts),
+          onPreview: (kind, amount) =>
+              _editor.preview(_adjustAll(_adjustBase ?? _editor.svg, _withAmount(kind, amount))),
           onCommit: (kind, amount) {
-            if (amount == 0) return;
-            _adjustBase ??= _editor.svg;
-            _editor.commit(_adjust(_editor.svg, kind, amount));
-            _adjustResult = _editor.svg;
-            _adjustTargets = _editor.paintTargets;
+            if (amount == 0 && !_adjustAmounts.containsKey(kind)) return;
+            _commitAdjust(_withAmount(kind, amount));
           },
-          onReset: _adjustBase == null
-              ? null
-              : () {
-                  _editor.commit(_adjustBase!);
-                  _adjustBase = null;
-                },
+          onReset: _adjustBase == null ? null : () => _commitAdjust(const {}),
+          onResetKind: (kind) {
+            if (_adjustAmounts.containsKey(kind)) _commitAdjust(_withAmount(kind, 0));
+          },
         ),
       ],
     );

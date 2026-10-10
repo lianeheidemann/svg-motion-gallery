@@ -17,12 +17,17 @@ class AdjustTabs<T> extends StatefulWidget {
     required this.tabs,
     required this.selected,
     required this.onSelected,
+    this.onDoubleTapped,
     this.trailing,
   });
 
   final List<AdjustTab<T>> tabs;
   final T selected;
   final ValueChanged<T> onSelected;
+
+  /// Called when the same tab is tapped twice in a row. The first tap still
+  /// selects at once (nothing waits for a second one).
+  final ValueChanged<T>? onDoubleTapped;
 
   /// A widget after the last tab (e.g. a reset button); it scrolls with them.
   final Widget? trailing;
@@ -36,12 +41,31 @@ class _AdjustTabsState<T> extends State<AdjustTabs<T>> {
   // holds this row.
   final _scroll = ScrollController();
 
+  static const _doubleTap = Duration(milliseconds: 350);
+  T? _lastTapped;
+  DateTime? _lastTapAt;
+
   List<AdjustTab<T>> get tabs => widget.tabs;
 
   @override
   void dispose() {
     _scroll.dispose();
     super.dispose();
+  }
+
+  void _tapped(T id) {
+    final now = DateTime.now();
+    final last = _lastTapAt;
+    final again = _lastTapped == id && last != null && now.difference(last) < _doubleTap;
+    if (again && widget.onDoubleTapped != null) {
+      _lastTapped = null;
+      _lastTapAt = null;
+      widget.onDoubleTapped!(id);
+      return;
+    }
+    _lastTapped = id;
+    _lastTapAt = now;
+    widget.onSelected(id);
   }
 
   Widget _item(BuildContext context, AdjustTab<T> tab, ColorScheme scheme) {
@@ -52,7 +76,7 @@ class _AdjustTabsState<T> extends State<AdjustTabs<T>> {
       label: tab.label,
       child: InkResponse(
         key: Key('adjust-${tab.id}'),
-        onTap: () => widget.onSelected(tab.id),
+        onTap: () => _tapped(tab.id),
         radius: 42,
         child: SizedBox(
           width: 84,
