@@ -15,7 +15,7 @@
   
 # SVG Motion Gallery
 
-<img width="200" alt="Status: under construction" src="assets/badge/badge_under-construction_v2.svg" />
+<img width="180" alt="Status: under construction" src="assets/badge/badge_under-construction_v2.svg" />
 
 <p>
 
