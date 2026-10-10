@@ -1,0 +1,48 @@
+<svg width="36" height="36" fill="#f86faf" viewBox="0 0 24 24">
+  <style data-sm-anim="keyframes">@keyframes sm-spin{to{transform:rotate(360deg)}}@keyframes sm-pulse{50%{transform:scale(calc(1 + .15 * var(--sm-i,1)))}}@keyframes sm-float{50%{transform:translateY(calc(-8% * var(--sm-i,1)))}}@keyframes sm-sway{25%{transform:rotate(calc(-8deg * var(--sm-i,1)))}75%{transform:rotate(calc(8deg * var(--sm-i,1)))}}@keyframes sm-fade{50%{opacity:calc(1 - .75 * var(--sm-i,1))}}</style>
+  <style>.spinner_zWVm{animation:spinner_5QiW 3.015s linear infinite,spinner_PnZo 3.015s linear infinite}.spinner_gfyD{animation:spinner_5QiW 3.015s linear infinite,spinner_4j7o 3.015s linear infinite;animation-delay:0.252s}.spinner_T5JJ{animation:spinner_5QiW 3.015s linear infinite,spinner_fLK4 3.015s linear infinite;animation-delay:0.252s}.spinner_E3Wz{animation:spinner_5QiW 3.015s linear infinite,spinner_tDji 3.015s linear infinite;animation-delay:0.503s}.spinner_g2vs{animation:spinner_5QiW 3.015s linear infinite,spinner_CMiT 3.015s linear infinite;animation-delay:0.503s}.spinner_ctYB{animation:spinner_5QiW 3.015s linear infinite,spinner_cHKR 3.015s linear infinite;animation-delay:0.503s}.spinner_BDNj{animation:spinner_5QiW 3.015s linear infinite,spinner_Re6e 3.015s linear infinite;animation-delay:0.753s}.spinner_rCw3{animation:spinner_5QiW 3.015s linear infinite,spinner_EJmJ 3.015s linear infinite;animation-delay:0.753s}.spinner_Rszm{animation:spinner_5QiW 3.015s linear infinite,spinner_YJOP 3.015s linear infinite;animation-delay:1.005s}@keyframes spinner_5QiW{0%,50%{width:7.33px;height:7.33px}25%{width:1.33px;height:1.33px}}@keyframes spinner_PnZo{0%,50%{x:1px;y:1px}25%{x:4px;y:4px}}@keyframes spinner_4j7o{0%,50%{x:8.33px;y:1px}25%{x:11.33px;y:4px}}@keyframes spinner_fLK4{0%,50%{x:1px;y:8.33px}25%{x:4px;y:11.33px}}@keyframes spinner_tDji{0%,50%{x:15.66px;y:1px}25%{x:18.66px;y:4px}}@keyframes spinner_CMiT{0%,50%{x:8.33px;y:8.33px}25%{x:11.33px;y:11.33px}}@keyframes spinner_cHKR{0%,50%{x:1px;y:15.66px}25%{x:4px;y:18.66px}}@keyframes spinner_Re6e{0%,50%{x:15.66px;y:8.33px}25%{x:18.66px;y:11.33px}}@keyframes spinner_EJmJ{0%,50%{x:8.33px;y:15.66px}25%{x:11.33px;y:18.66px}}@keyframes spinner_YJOP{0%,50%{x:15.66px;y:15.66px}25%{x:18.66px;y:18.66px}}</style>
+  <g data-sm-edit="element" transform="translate(0 0) rotate(0) scale(0.93)" style="transform-box:fill-box;transform-origin:center">
+    <rect class="spinner_zWVm" x="1" y="1" width="7.33" height="7.33" fill="#93C5FD" style="fill:#93C5FD;animation:spinner_5QiW 2.602s linear infinite,spinner_PnZo 2.602s linear infinite"/>
+  </g>
+  <g data-sm-edit="element" transform="translate(0 0) rotate(0) scale(0.82)" style="transform-box:fill-box;transform-origin:center">
+    <g data-sm-anim="pulse" style="transform-box:fill-box;transform-origin:center;--sm-i:1.56;animation:sm-pulse 1.612s ease-in-out infinite">
+      <g data-sm-edit="element" transform="translate(0 0) rotate(0) scale(0.93)" style="transform-box:fill-box;transform-origin:center">
+        <rect class="spinner_gfyD" x="8.33" y="1" width="7.33" height="7.33" fill="#A04BFF" style="animation:spinner_5QiW 13.465s linear infinite,spinner_4j7o 13.465s linear infinite;animation-delay:1.125s;fill:#A04BFF"/>
+      </g>
+    </g>
+  </g>
+  <g data-sm-edit="element" transform="translate(0 0) rotate(0) scale(0.82)" style="transform-box:fill-box;transform-origin:center">
+    <g data-sm-anim="pulse" style="transform-box:fill-box;transform-origin:center;--sm-i:1.56;animation:sm-pulse 1.612s ease-in-out infinite">
+      <g data-sm-edit="element" transform="translate(0 0) rotate(0) scale(0.93)" style="transform-box:fill-box;transform-origin:center">
+        <rect class="spinner_T5JJ" x="1" y="8.33" width="7.33" height="7.33" fill="#A04BFF" style="animation:spinner_5QiW 13.465s linear infinite,spinner_fLK4 13.465s linear infinite;animation-delay:1.125s;fill:#A04BFF"/>
+      </g>
+    </g>
+  </g>
+  <g data-sm-edit="element" transform="translate(0 0) rotate(0) scale(0.93)" style="transform-box:fill-box;transform-origin:center">
+    <rect class="spinner_E3Wz" x="15.66" y="1" width="7.33" height="7.33" fill="#93C5FD" style="fill:#93C5FD;animation:spinner_5QiW 2.602s linear infinite,spinner_tDji 2.602s linear infinite;animation-delay:0.434s"/>
+  </g>
+  <g data-sm-edit="element" transform="translate(0 0) rotate(0) scale(0.68)" style="transform-box:fill-box;transform-origin:center">
+    <g data-sm-anim="sway" style="transform-box:fill-box;transform-origin:center;--sm-i:1;animation:sm-sway 0.872s ease-in-out infinite">
+      <g data-sm-edit="element" transform="translate(0 0) rotate(0) scale(0.93)" style="transform-box:fill-box;transform-origin:center">
+        <rect class="spinner_g2vs" x="8.33" y="8.33" width="7.33" height="7.33" fill="#EAB308" data-name="Retângulo 5 - central" style="animation:spinner_5QiW 4.051s linear infinite,spinner_CMiT 4.051s linear infinite;animation-delay:0.676s;fill:#EAB308"/>
+      </g>
+    </g>
+  </g>
+  <g data-sm-edit="element" transform="translate(0 0) rotate(0) scale(0.67)" style="transform-box:fill-box;transform-origin:center">
+    <g data-sm-anim="pulse" style="transform-box:fill-box;transform-origin:center;--sm-i:1.56;animation:sm-pulse 1.246s ease-in-out infinite">
+      <g data-sm-edit="element" transform="translate(0 0) rotate(0) scale(0.93)" style="transform-box:fill-box;transform-origin:center">
+        <rect class="spinner_ctYB" x="-0.759" y="13.901" width="10.848" height="10.848" fill="#93C5FD" data-sm-size="1.48" style="animation:spinner_5QiW 10.409s linear infinite,spinner_cHKR 10.409s linear infinite;animation-delay:1.737s;fill:#93C5FD"/>
+      </g>
+    </g>
+  </g>
+  <g data-sm-edit="element" transform="translate(0 0) rotate(0) scale(0.93)" style="transform-box:fill-box;transform-origin:center">
+    <rect class="spinner_BDNj" x="15.66" y="8.33" width="7.33" height="7.33" fill="#A04BFF" style="animation:spinner_5QiW 3.366s linear infinite,spinner_Re6e 3.366s linear infinite;animation-delay:0.841s;fill:#A04BFF"/>
+  </g>
+  <g data-sm-edit="element" transform="translate(0 0) rotate(0) scale(0.93)" style="transform-box:fill-box;transform-origin:center">
+    <rect class="spinner_rCw3" x="8.33" y="15.66" width="7.33" height="7.33" fill="#A04BFF" style="animation:spinner_5QiW 3.366s linear infinite,spinner_EJmJ 3.366s linear infinite;animation-delay:0.841s;fill:#A04BFF"/>
+  </g>
+  <g data-sm-edit="element" transform="translate(0 0) rotate(0) scale(0.93)" style="transform-box:fill-box;transform-origin:center">
+    <rect class="spinner_Rszm" x="16.319" y="16.319" width="6.011" height="6.011" fill="#93C5FD" data-sm-size="0.82" style="fill:#93C5FD;animation:spinner_5QiW 2.602s linear infinite,spinner_YJOP 2.602s linear infinite;animation-delay:0.867s"/>
+  </g>
+  
+</svg>
