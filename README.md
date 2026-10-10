@@ -6,11 +6,11 @@
   <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-2.1.1-2563EB?style=flat-square" />
   <img alt="Flutter 3.47" src="https://img.shields.io/badge/Flutter-3.47-02569B?style=flat-square&logo=flutter&logoColor=white" />
   <img alt="Dart 3.13" src="https://img.shields.io/badge/Dart-3.13-0175C2?style=flat-square&logo=dart&logoColor=white" />
-  <img alt="Plataformas: Android, iOS e Web" src="https://img.shields.io/badge/plataformas-Android%20%C2%B7%20iOS%20%C2%B7%20Web-3DDC84?style=flat-square&logo=android&logoColor=white" />
+  <img alt="Plataforma: Android" src="https://img.shields.io/badge/plataforma-Android-3DDC84?style=flat-square&logo=android&logoColor=white" />
   <img alt="Idiomas: português e inglês" src="https://img.shields.io/badge/idiomas-PT%20%C2%B7%20EN-8B5CF6?style=flat-square" />
 </p>
 
-Aplicativo Flutter para **visualizar, animar e editar arquivos SVG**. Roda em Android e iOS, com build web para preview.
+Aplicativo Flutter para **visualizar, animar e editar arquivos SVG**. Feito para Android.
 
 <img width="100%" src="assets/svg-gallery-interface-v2.webp" />
 
