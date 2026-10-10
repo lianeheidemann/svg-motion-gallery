@@ -75,6 +75,28 @@ void main() {
     expect(find.widgetWithText(TextField, '0'), findsOneWidget);
   });
 
+  testWidgets('SliderField compact has a smaller number field than the default', (tester) async {
+    Future<double> fieldWidth({required bool compact}) async {
+      await tester.pumpWidget(
+        _app(
+          SliderField(
+            label: 'Largura',
+            value: 50,
+            min: 0,
+            max: 100,
+            compact: compact,
+            onChanged: _ignore,
+          ),
+        ),
+      );
+      return tester.getSize(find.byType(TextField)).width;
+    }
+
+    final normal = await fieldWidth(compact: false);
+    final small = await fieldWidth(compact: true);
+    expect(small, lessThan(normal));
+  });
+
   testWidgets('SliderField keeps a usable slider on narrow widths by stacking the label', (
     tester,
   ) async {
