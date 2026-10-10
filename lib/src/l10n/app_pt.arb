@@ -565,5 +565,10 @@
   "alignBottom": "Alinhar à base",
   "alignCenter": "Centralizar no meio",
   "alignFailed": "Não foi possível medir a camada.",
-  "filledShape": "Preenchida"
+  "filledShape": "Preenchida",
+  "shuffleColors": "Gerar cores",
+  "shuffleSurprise": "Surpresa",
+  "shuffleGoldenAngle": "Ângulo áureo",
+  "shuffleCosine": "Paleta cosseno",
+  "shuffleClassic": "Esquemas clássicos"
 }

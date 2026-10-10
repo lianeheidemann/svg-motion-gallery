@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:design_system/design_system.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +8,7 @@ import 'package:svg_core/svg_core.dart';
 import '../../../l10n/l10n.dart';
 import '../color_adjust.dart';
 import '../color_presets.dart';
+import '../color_shuffle.dart';
 import '../editor_controller.dart';
 import 'colors/color_adjuster.dart';
 
@@ -27,6 +30,7 @@ class ColorsPanel extends StatefulWidget {
 
 class _ColorsPanelState extends State<ColorsPanel> {
   var _custom = false;
+  final _random = math.Random();
 
   /// The drawing before the ruler first changed anything, so its changes can
   /// be put back; dropped when something else is edited or the selection moves.
@@ -117,6 +121,30 @@ class _ColorsPanelState extends State<ColorsPanel> {
       final base = shown == null ? null : colorFromHex(shown);
       if (base == null) continue;
       out = _setColor(out, target, colorToHex(adjustColor(base, kind, amount)), property);
+    }
+    return out;
+  }
+
+  /// [svg] with every target's color replaced by a new harmonious palette:
+  /// one mapping for the whole selection, so equal colors stay equal.
+  /// Shapes with no plain color (a gradient, none) and neutrals are left alone.
+  String _shuffle(String svg, ShuffleMode mode) {
+    final targets = _editor.paintTargets;
+    final shown = <Color>[];
+    for (final target in targets) {
+      final hex = _colorOf(svg, target, _property(svg, target));
+      final color = hex == null ? null : colorFromHex(hex);
+      if (color != null) shown.add(color);
+    }
+    final mapping = shuffleColors(shown, mode, _random);
+    if (mapping.isEmpty) return svg;
+    var out = svg;
+    for (final target in targets) {
+      final property = _property(out, target);
+      final hex = _colorOf(out, target, property);
+      final color = hex == null ? null : colorFromHex(hex);
+      final to = color == null ? null : mapping[colorKey(color)];
+      if (to != null) out = _setColor(out, target, colorToHex(to), property);
     }
     return out;
   }
@@ -227,6 +255,17 @@ class _ColorsPanelState extends State<ColorsPanel> {
       title: targets.length > 1 || _editor.selectedLayer == null
           ? l10n.multiSelectCount(targets.length)
           : l10n.layerPaint(l10n.layerLabel(_editor.selectedLayer!, _editor.layers)),
+      trailing: _ShuffleButton(
+        key: const Key('shuffle-colors'),
+        label: l10n.shuffleColors,
+        names: {
+          ShuffleMode.surprise: l10n.shuffleSurprise,
+          ShuffleMode.goldenAngle: l10n.shuffleGoldenAngle,
+          ShuffleMode.cosine: l10n.shuffleCosine,
+          ShuffleMode.classic: l10n.shuffleClassic,
+        },
+        onSelected: (mode) => _editor.commit(_shuffle(_editor.svg, mode)),
+      ),
       children: [
         _presetPalette(
           l10n,
@@ -304,6 +343,37 @@ class _EyedropperButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The dice in the card header: opens the ways to draw a new palette.
+class _ShuffleButton extends StatelessWidget {
+  const _ShuffleButton({
+    super.key,
+    required this.label,
+    required this.names,
+    required this.onSelected,
+  });
+
+  final String label;
+  final Map<ShuffleMode, String> names;
+  final ValueChanged<ShuffleMode> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<ShuffleMode>(
+      tooltip: label,
+      icon: const Icon(Icons.casino_rounded),
+      onSelected: onSelected,
+      itemBuilder: (context) => [
+        for (final entry in names.entries)
+          PopupMenuItem(
+            key: Key('shuffle-${entry.key.name}'),
+            value: entry.key,
+            child: Text(entry.value),
+          ),
+      ],
     );
   }
 }
