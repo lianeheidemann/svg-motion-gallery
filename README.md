@@ -96,7 +96,7 @@ flutter run -d chrome    # web preview
 
 ## Sample SVGs
 
-The samples live in **`assets/svgs/`**. Any `.svg` added to or removed from that folder goes in or out of the next APK; `butterfly` and `sun-moon` (the two theme-adaptive ones) come first and the rest in alphabetical order. Today there are three: `butterfly`, `sun-moon` and `wave`.
+The samples live in **`assets/svgs/`**. Any `.svg` added to or removed from that folder goes in or out of the next APK; `butterfly` and `sun-moon` (the two theme-adaptive ones) come first and the rest in alphabetical order. Today there are fourteen: `butterfly`, `sun-moon`, `bounce-trio`, `bouncing-dots`, `dots-right`, `dots-up`, `grid-pulse`, `hoop-ring`, `matrix-dots`, `orbit-loader`, `particle-orbit`, `radial-bars`, `twin-orbit` and `wave`.
 
 The samples are copied to the gallery **on first launch** or via *Settings → Restore samples*. Anyone who already has the app installed keeps the files they had.
 
