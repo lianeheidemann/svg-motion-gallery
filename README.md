@@ -124,12 +124,14 @@ Dependabot updates packages and actions weekly.
 - The release APK uses the debug key; for a store, set up a keystore.
 - CI does not build iOS.
 
-## License
-
-Academic and portfolio project. See [LICENSE](LICENSE) before redistributing.
+## Other Previews
 
 <div align="center">
 
 <img width="220" src="assets/svg-gallery-interface-v3.webp">
 
 </div>
+
+## License
+
+Academic and portfolio project. See [LICENSE](LICENSE) before redistributing.
