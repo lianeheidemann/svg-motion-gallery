@@ -15,7 +15,11 @@
   
 # SVG Motion Gallery
 
+<img alt="Status: under construction" src="https://img.shields.io/badge/status-under%20construction-F59E0B?style=flat-square&logo=hammer&logoColor=white" />
+
 <p>
+
+    
   <a href="https://github.com/lianeheidemann/svg-motion-gallery/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/svg-motion-gallery/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI" /></a>
   <a href="https://github.com/lianeheidemann/svg-motion-gallery/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/lianeheidemann/svg-motion-gallery?include_prereleases&style=flat-square&logo=github&logoColor=white&label=release&color=2563EB" /></a><br>
   
@@ -25,7 +29,6 @@
   <img alt="Dart 3.13" src="https://img.shields.io/badge/Dart-3.13-0175C2?style=flat-square&logo=dart&logoColor=white" />
   <img alt="Platform: Android" src="https://img.shields.io/badge/platform-Android-3DDC84?style=flat-square&logo=android&logoColor=white" />
   <img alt="Languages: Portuguese and English" src="https://img.shields.io/badge/languages-PT%20%C2%B7%20EN-8B5CF6?style=flat-square" />
-  <img alt="Status: under construction" src="https://img.shields.io/badge/status-under%20construction-F59E0B?style=flat-square&logo=hammer&logoColor=white" />
 </p>
 
 Flutter app to **view, animate and edit SVG files**. Built for Android.
