@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/icon/app_logo.png" alt="Logo do SVG Motion Gallery" width="128" />
+  <img src="docs/logo.png" alt="Logo do SVG Motion Gallery" width="160" />
 </p>
 
 # SVG Motion Gallery
