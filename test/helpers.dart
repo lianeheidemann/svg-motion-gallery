@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -56,4 +58,20 @@ Future<void> pumpApp(WidgetTester tester, AppServices services) async {
     SvgViewScope(forceStill: true, child: SvgMotionGalleryApp(services: services)),
   );
   await tester.pumpAndSettle();
+}
+
+/// The demos bundled in `assets/svgs/`, in the order the library seeds them:
+/// the known [demoAssets] first, then the rest alphabetically.
+List<String> bundledDemos() {
+  final found =
+      Directory('assets/svgs')
+          .listSync()
+          .map((entity) => entity.uri.pathSegments.last)
+          .where((name) => name.endsWith('.svg'))
+          .toList()
+        ..sort();
+  return [
+    ...demoAssets.where(found.contains),
+    ...found.where((name) => !demoAssets.contains(name)),
+  ];
 }

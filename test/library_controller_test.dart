@@ -3,6 +3,8 @@ import 'package:svg_motion_gallery/src/data/svg_repository.dart';
 import 'package:svg_motion_gallery/src/data/svg_storage.dart';
 import 'package:svg_motion_gallery/src/state/library_controller.dart';
 
+import 'helpers.dart';
+
 const _valid =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>';
 
@@ -19,8 +21,8 @@ void main() {
   });
 
   test('seeds the bundled demos on first launch, in order', () {
-    expect(library.documents.map((d) => d.name), demoAssets);
-    expect(storage.contents, hasLength(demoAssets.length));
+    expect(library.documents.map((d) => d.name), bundledDemos());
+    expect(storage.contents, hasLength(bundledDemos().length));
   });
 
   test('filters adaptive, favorite and recent documents and searches by name', () async {
@@ -39,7 +41,7 @@ void main() {
 
     library
       ..setFilter(GalleryFilter.all)
-      ..setQuery('WAV');
+      ..setQuery('WAVE.S');
     expect(library.visible.single.name, 'wave.svg');
   });
 
@@ -89,7 +91,7 @@ void main() {
   test('restores the demos next to existing files', () async {
     await library.importFiles([(name: 'mine.svg', content: _valid)]);
     await library.restoreDemos();
-    expect(library.documents, hasLength(demoAssets.length * 2 + 1));
+    expect(library.documents, hasLength(bundledDemos().length * 2 + 1));
     expect(library.documents.where((d) => d.name == 'mine.svg'), hasLength(1));
   });
 }

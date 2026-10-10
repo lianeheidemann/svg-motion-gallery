@@ -7,6 +7,8 @@ import 'package:svg_motion_gallery/src/services/device_storage.dart';
 import 'package:svg_motion_gallery/src/services/device_storage_memory.dart';
 import 'package:svg_motion_gallery/src/state/library_controller.dart';
 
+import 'helpers.dart';
+
 const _plain =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="4" height="4"/></svg>';
 const _adaptive =
@@ -60,8 +62,9 @@ void main() {
   test('lists library documents first, then phone files newest first', () async {
     final library = await open();
     final names = library.documents.map((doc) => doc.name).toList();
-    expect(names.take(demoAssets.length), demoAssets);
-    expect(names.skip(demoAssets.length), ['new.svg', 'mid.svg', 'old.svg']);
+    final demos = bundledDemos();
+    expect(names.take(demos.length), demos);
+    expect(names.skip(demos.length), ['new.svg', 'mid.svg', 'old.svg']);
     final device = named(library, 'new.svg');
     expect(device.isOnDevice, isTrue);
     expect(device.sourcePath, '$_download/new.svg');
@@ -77,7 +80,7 @@ void main() {
     final indexed = storage.index!.map((entry) => (entry! as Map)['name']).toList();
     expect(indexed, isNot(contains('new.svg')));
     expect(indexed, contains('mine.svg'));
-    expect(storage.contents.length, demoAssets.length + 1);
+    expect(storage.contents.length, bundledDemos().length + 1);
   });
 
   test('markup is read on demand and the adaptive filter loads what it needs', () async {
