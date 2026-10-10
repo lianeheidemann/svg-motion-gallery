@@ -33,7 +33,7 @@
 
 
 ```
-Flutter app to *view, animate and edit SVG files*. Built for Android.
+Flutter app to *view, animate and edit SVG files*. Built for Android; also runs on iOS and in the browser (preview).
 ```
 
 
@@ -43,9 +43,9 @@ Flutter app to *view, animate and edit SVG files*. Built for Android.
 
 <p align="justify">Despite its widespread use in web development, many mobile galleries lack native SVG previews and animation support.</p>
 
-<p align="justify">SVG Motion Gallery is a Flutter-based Android application designed to address these limitations. It supports animated SVG playback directly within the gallery for easier visual identification, with an option to disable automatic playback and display static previews to reduce processing overhead.</p>
+<p align="justify">SVG Motion Gallery was designed to address these limitations: animated SVGs play directly within the gallery, making files easier to identify at a glance.</p>
 
-<p align="justify">The application also includes a visual editor for modifying layers, colors, dimensions, transformations, and animations, alongside a built-in code editor for inspecting and modifying SVG source files.</p>
+<p align="justify">It also includes a visual editor and a code editor for modifying SVG files (see <a href="#the-editor">The editor</a>).</p>
 
 <p align="justify">The project aims to simplify SVG visualization, editing, experimentation, and reuse, particularly for animated icons and interface elements.</p>
 
@@ -69,7 +69,7 @@ Flutter app to *view, animate and edit SVG files*. Built for Android.
 
 ## Highlights
 
-- **Real animations**: thumbnails and the viewer run CSS/SMIL (WebView on Android/iOS, iframe on the web), with automatic playback.
+- **Real animations**: thumbnails and the viewer run CSS/SMIL (WebView on Android/iOS, iframe on the web), with automatic playback that can be turned off in favor of static previews to reduce processing load.
 - **Light and dark SVGs**: detects `prefers-color-scheme`, `light-dark()`, `currentColor` and theme selectors; the viewer shows *App theme*, *Light*, *Dark* or *Side by side*.
 - **Full editor** with undo/redo: nine tabs (see [The editor](#the-editor)) for layers, transform, window, alignment, colors, animation, shapes, text and code with highlighting and live validation.
 - **SVGs on the phone (Android)**: asks for file access, lists every `.svg` on the device and lets you edit, rename, share and delete them, several at once included.
