@@ -127,3 +127,9 @@ Dependabot updates packages and actions weekly.
 ## License
 
 Academic and portfolio project. See [LICENSE](LICENSE) before redistributing.
+
+<div align="center">
+
+<img width="220" src="assets/svg-gallery-interface-v3.webp">
+
+</div>
