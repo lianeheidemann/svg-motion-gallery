@@ -136,6 +136,22 @@ void main() {
     expect(stage()!.isPlaying, isTrue);
   });
 
+  testWidgets('colors: after changing the window, before and after share it', (tester) async {
+    await _openRedInEditor(tester);
+    await _tapTab(tester, 'Janela');
+    await tester.ensureVisible(find.byKey(const Key('ratio-16:9')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('ratio-16:9')));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Cores');
+
+    final views = tester.widgetList<SvgView>(find.byType(SvgView)).toList();
+    expect(views, hasLength(2));
+    String box(SvgView v) => RegExp(r'viewBox="([^"]*)"').firstMatch(v.svg)!.group(1)!;
+    expect(box(views.first), box(views.last));
+    expect(box(views.first), isNot('0 0 10 10'), reason: 'the window really changed');
+  });
+
   testWidgets('colors: an outline-only shape is painted on its stroke, alone or with all', (
     tester,
   ) async {

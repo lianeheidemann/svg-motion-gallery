@@ -292,6 +292,25 @@ class SvgDocumentEdit {
     return document.toXmlString();
   }
 
+  /// [svg] with the window of [from]: its root `viewBox`, `width` and `height`
+  /// (an attribute [from] does not have is removed). The content is untouched,
+  /// so two versions of a drawing can be shown with the same crop and size.
+  static String copyWindow(String svg, {required String from}) {
+    final target = tryParseSvg(svg);
+    final source = tryParseSvg(from);
+    if (target == null || source == null) return svg;
+    final root = target.rootElement;
+    for (final name in const ['viewBox', 'width', 'height']) {
+      final value = source.rootElement.getAttribute(name);
+      if (value == null) {
+        root.removeAttribute(name);
+      } else {
+        root.setAttribute(name, value);
+      }
+    }
+    return target.toXmlString();
+  }
+
   /// Crops the window to the box ([x], [y], [width], [height]) of the content,
   /// grown by [margin] (a fraction of the box's larger side) on every side.
   static String fitWindow(
