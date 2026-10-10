@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="512" height="512">
+  <style>
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin-r { to { transform: rotate(-360deg); } }
+@keyframes pulse { 0%,100% { transform: scale(1); opacity:1 } 50% { transform: scale(0.85); opacity:0.7 } }
+@keyframes bounce { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
+@keyframes blink { 0%,100% { opacity:1 } 50% { opacity:0.2 } }
+@keyframes dash { to { stroke-dashoffset: 0; } }
+@keyframes slide { 0%,100% { transform: translateX(0) } 50% { transform: translateX(8px) } }
+@keyframes swing { 0%,100% { transform: rotate(-12deg) } 50% { transform: rotate(12deg) } }
+@keyframes ripple { 0% { r:4; opacity:0.8 } 100% { r:20; opacity:0 } }
+@keyframes scale-y { 0%,100% { transform: scaleY(0.4) } 50% { transform: scaleY(1) } }
+@keyframes ellipsis { 0%,100% { opacity:0.3; transform:translateY(0) } 50% { opacity:1; transform:translateY(-4px) } }
+@keyframes bounce-dot { 0%,100% { transform:translateY(0) } 40% { transform:translateY(-10px) } }
+@keyframes flip { 0%,100% { transform:scaleX(1) } 50% { transform:scaleX(-1) } }
+@keyframes breathe { 0%,100% { transform:scale(0.92); opacity:0.75 } 50% { transform:scale(1.08); opacity:1 } }
+@keyframes stretch { 0%,100% { transform:scaleX(0.35) } 50% { transform:scaleX(1) } }
+@keyframes ping { 0% { r:6; opacity:0.9 } 100% { r:22; opacity:0 } }
+@keyframes snake { to { stroke-dashoffset: -160; } }
+@keyframes segment-fade { 0%,100% { opacity:0.25 } 50% { opacity:1 } }
+@keyframes ladder { 0%,100% { transform:scaleX(0.2); opacity:0.4 } 50% { transform:scaleX(1); opacity:1 } }
+@keyframes chase { 0% { offset-distance:0% } 100% { offset-distance:100% } }
+</style>
+  <circle cx="20" cy="36" r="5" fill="#3B82F6" style="transform-origin:20px 36px;animation:bounce-dot 0.7s ease-in-out infinite;animation-delay:0s"/><circle cx="32" cy="36" r="5" fill="#8B5CF6" style="transform-origin:32px 36px;animation:bounce-dot 0.7s ease-in-out infinite;animation-delay:0.1s"/><circle cx="44" cy="36" r="5" fill="#3B82F6" style="transform-origin:44px 36px;animation:bounce-dot 0.7s ease-in-out infinite;animation-delay:0.2s"/>
+</svg>

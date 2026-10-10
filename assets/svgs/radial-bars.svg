@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="512" height="512">
+  <style>
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin-r { to { transform: rotate(-360deg); } }
+@keyframes pulse { 0%,100% { transform: scale(1); opacity:1 } 50% { transform: scale(0.85); opacity:0.7 } }
+@keyframes bounce { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
+@keyframes blink { 0%,100% { opacity:1 } 50% { opacity:0.2 } }
+@keyframes dash { to { stroke-dashoffset: 0; } }
+@keyframes slide { 0%,100% { transform: translateX(0) } 50% { transform: translateX(8px) } }
+@keyframes swing { 0%,100% { transform: rotate(-12deg) } 50% { transform: rotate(12deg) } }
+@keyframes ripple { 0% { r:4; opacity:0.8 } 100% { r:20; opacity:0 } }
+@keyframes scale-y { 0%,100% { transform: scaleY(0.4) } 50% { transform: scaleY(1) } }
+@keyframes ellipsis { 0%,100% { opacity:0.3; transform:translateY(0) } 50% { opacity:1; transform:translateY(-4px) } }
+@keyframes bounce-dot { 0%,100% { transform:translateY(0) } 40% { transform:translateY(-10px) } }
+@keyframes flip { 0%,100% { transform:scaleX(1) } 50% { transform:scaleX(-1) } }
+@keyframes breathe { 0%,100% { transform:scale(0.92); opacity:0.75 } 50% { transform:scale(1.08); opacity:1 } }
+@keyframes stretch { 0%,100% { transform:scaleX(0.35) } 50% { transform:scaleX(1) } }
+@keyframes ping { 0% { r:6; opacity:0.9 } 100% { r:22; opacity:0 } }
+@keyframes snake { to { stroke-dashoffset: -160; } }
+@keyframes segment-fade { 0%,100% { opacity:0.25 } 50% { opacity:1 } }
+@keyframes ladder { 0%,100% { transform:scaleX(0.2); opacity:0.4 } 50% { transform:scaleX(1); opacity:1 } }
+@keyframes chase { 0% { offset-distance:0% } 100% { offset-distance:100% } }
+</style>
+  <rect x="30" y="6" width="4" height="10" rx="2" fill="#EF476F" style="transform-origin:32px 12px;transform:rotate(0deg);animation:segment-fade 1s ease-in-out infinite;animation-delay:0s"/><rect x="44.14213562373095" y="11.857864376269049" width="4" height="10" rx="2" fill="#EF476F" style="transform-origin:46.14213562373095px 17.85786437626905px;transform:rotate(45deg);animation:segment-fade 1s ease-in-out infinite;animation-delay:0.08s"/><rect x="50" y="26" width="4" height="10" rx="2" fill="#EF476F" style="transform-origin:52px 32px;transform:rotate(90deg);animation:segment-fade 1s ease-in-out infinite;animation-delay:0.16s"/><rect x="44.14213562373095" y="40.14213562373095" width="4" height="10" rx="2" fill="#EF476F" style="transform-origin:46.14213562373095px 46.14213562373095px;transform:rotate(135deg);animation:segment-fade 1s ease-in-out infinite;animation-delay:0.24s"/><rect x="30" y="46" width="4" height="10" rx="2" fill="#EF476F" style="transform-origin:32px 52px;transform:rotate(180deg);animation:segment-fade 1s ease-in-out infinite;animation-delay:0.32s"/><rect x="15.857864376269049" y="40.14213562373095" width="4" height="10" rx="2" fill="#EF476F" style="transform-origin:17.85786437626905px 46.14213562373095px;transform:rotate(225deg);animation:segment-fade 1s ease-in-out infinite;animation-delay:0.4s"/><rect x="10" y="26.000000000000007" width="4" height="10" rx="2" fill="#EF476F" style="transform-origin:12px 32.00000000000001px;transform:rotate(270deg);animation:segment-fade 1s ease-in-out infinite;animation-delay:0.48s"/><rect x="15.857864376269045" y="11.857864376269053" width="4" height="10" rx="2" fill="#EF476F" style="transform-origin:17.857864376269045px 17.857864376269053px;transform:rotate(315deg);animation:segment-fade 1s ease-in-out infinite;animation-delay:0.56s"/>
+</svg>

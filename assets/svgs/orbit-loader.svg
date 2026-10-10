@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="512" height="512">
+  <style>
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin-r { to { transform: rotate(-360deg); } }
+@keyframes pulse { 0%,100% { transform: scale(1); opacity:1 } 50% { transform: scale(0.85); opacity:0.7 } }
+@keyframes bounce { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
+@keyframes blink { 0%,100% { opacity:1 } 50% { opacity:0.2 } }
+@keyframes dash { to { stroke-dashoffset: 0; } }
+@keyframes slide { 0%,100% { transform: translateX(0) } 50% { transform: translateX(8px) } }
+@keyframes swing { 0%,100% { transform: rotate(-12deg) } 50% { transform: rotate(12deg) } }
+@keyframes ripple { 0% { r:4; opacity:0.8 } 100% { r:20; opacity:0 } }
+@keyframes scale-y { 0%,100% { transform: scaleY(0.4) } 50% { transform: scaleY(1) } }
+@keyframes ellipsis { 0%,100% { opacity:0.3; transform:translateY(0) } 50% { opacity:1; transform:translateY(-4px) } }
+@keyframes bounce-dot { 0%,100% { transform:translateY(0) } 40% { transform:translateY(-10px) } }
+@keyframes flip { 0%,100% { transform:scaleX(1) } 50% { transform:scaleX(-1) } }
+@keyframes breathe { 0%,100% { transform:scale(0.92); opacity:0.75 } 50% { transform:scale(1.08); opacity:1 } }
+@keyframes stretch { 0%,100% { transform:scaleX(0.35) } 50% { transform:scaleX(1) } }
+@keyframes ping { 0% { r:6; opacity:0.9 } 100% { r:22; opacity:0 } }
+@keyframes snake { to { stroke-dashoffset: -160; } }
+@keyframes segment-fade { 0%,100% { opacity:0.25 } 50% { opacity:1 } }
+@keyframes ladder { 0%,100% { transform:scaleX(0.2); opacity:0.4 } 50% { transform:scaleX(1); opacity:1 } }
+@keyframes chase { 0% { offset-distance:0% } 100% { offset-distance:100% } }
+</style>
+  
+        <circle cx="32" cy="32" r="6" fill="#073B4C"/>
+        <g style="transform-origin:32px 32px;animation:spin 3s ease-in-out infinite">
+          <circle cx="32" cy="14" r="4" fill="#4CC9F0"/>
+        </g>
+        <g style="transform-origin:32px 32px;animation:spin-r 2s ease-in-out infinite">
+          <circle cx="50" cy="32" r="3" fill="#073B4C" opacity="0.7"/>
+        </g>
+</svg>

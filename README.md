@@ -24,7 +24,7 @@
   <a href="https://github.com/lianeheidemann/svg-motion-gallery/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/lianeheidemann/svg-motion-gallery?include_prereleases&style=flat-square&logo=github&logoColor=white&label=release&color=2563EB" /></a><br>
   
   
-  <img alt="Version" src="https://img.shields.io/badge/version-2.1.1-2563EB?style=flat-square" />
+  <img alt="Version" src="https://img.shields.io/badge/version-2.2.0-2563EB?style=flat-square" />
   <img alt="Flutter 3.47" src="https://img.shields.io/badge/Flutter-3.47-02569B?style=flat-square&logo=flutter&logoColor=white" />
   <img alt="Dart 3.13" src="https://img.shields.io/badge/Dart-3.13-0175C2?style=flat-square&logo=dart&logoColor=white" />
   <img alt="Platform: Android" src="https://img.shields.io/badge/platform-Android-3DDC84?style=flat-square&logo=android&logoColor=white" />
