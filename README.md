@@ -21,8 +21,6 @@
 
 <p>
   <a href="https://github.com/lianeheidemann/svg-motion-gallery/actions/workflows/ci.yml"><img height="21" alt="CI" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/svg-motion-gallery/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI&labelColor=0D1117" /></a>
-  <a href="https://github.com/lianeheidemann/svg-motion-gallery/actions/workflows/checks.yml"><img height="21" alt="Checks" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/svg-motion-gallery/checks.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=Checks&labelColor=0D1117" /></a>
-  <a href="https://github.com/lianeheidemann/svg-motion-gallery/actions/workflows/android-build.yml"><img height="21" alt="Android build" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/svg-motion-gallery/android-build.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=Android%20build&labelColor=0D1117" /></a>
   <a href="https://github.com/lianeheidemann/svg-motion-gallery/actions/workflows/release.yml"><img height="21" alt="Release" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/svg-motion-gallery/release.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=Release&labelColor=0D1117" /></a>
   <a href="https://github.com/lianeheidemann/svg-motion-gallery/releases/latest"><img height="21" alt="Latest release" src="https://img.shields.io/github/v/release/lianeheidemann/svg-motion-gallery?include_prereleases&style=for-the-badge&logo=github&logoColor=white&label=release&labelColor=0D1117&color=2563EB" /></a>
   <br>
