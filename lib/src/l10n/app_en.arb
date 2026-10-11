@@ -252,6 +252,7 @@
   "layerEditorGroup": "Editor adjustment",
   "hideLayer": "Hide layer",
   "showLayer": "Show layer",
+  "hiddenByFolder": "Hidden because the folder {name} is hidden",
   "bringForward": "Bring forward",
   "sendBackward": "Send backward",
   "textContent": "Text",

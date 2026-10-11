@@ -139,6 +139,17 @@ class _LayersPanelState extends State<LayersPanel> {
     final ticked = editor.multiSelection.toSet();
     final scheme = Theme.of(context).colorScheme;
     final labels = l10n.layerLabels(layers);
+    // The nearest hidden folder around each layer: what is in it is hidden too.
+    final hiddenBy = <ElementPath, SvgLayer>{};
+    final open = <SvgLayer>[];
+    for (final layer in layers) {
+      while (open.isNotEmpty && open.last.depth >= layer.depth) {
+        open.removeLast();
+      }
+      final folder = open.reversed.where((l) => !l.visible).firstOrNull;
+      if (folder != null) hiddenBy[layer.path] = folder;
+      open.add(layer);
+    }
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
@@ -182,7 +193,8 @@ class _LayersPanelState extends State<LayersPanel> {
                 child: Text(l10n.multiSelectNone, style: TextStyle(color: scheme.outline)),
               ),
             for (var i = 0; i < layers.length; i++)
-              if (!_hidden(layers[i])) _row(context, layers, i, ticked, scheme, labels),
+              if (!_hidden(layers[i]))
+                _row(context, layers, i, ticked, scheme, labels, hiddenBy[layers[i].path]),
           ],
         ),
       ],
@@ -196,6 +208,7 @@ class _LayersPanelState extends State<LayersPanel> {
     Set<ElementPath> ticked,
     ColorScheme scheme,
     Map<ElementPath, String> labels,
+    SvgLayer? hiddenFolder,
   ) {
     final l10n = context.l10n;
     final layer = layers[index];
@@ -216,7 +229,10 @@ class _LayersPanelState extends State<LayersPanel> {
     final theme = widget.themeScheme;
     final mark = theme == null || layer.isEditorGroup ? null : editor.themeMarks[layer.path];
     // Hidden, or not drawn in the version being edited: greyed out.
-    final dim = !layer.visible || (mark != null && !mark.shownIn.contains(theme));
+    // Hidden (by itself or by a folder around it), or not drawn in the
+    // version being edited: greyed out.
+    final shown = layer.visible && hiddenFolder == null;
+    final dim = !shown || (mark != null && !mark.shownIn.contains(theme));
     // What the layers inside a folded folder set for each version.
     final inside = folded && theme != null
         ? {
@@ -313,18 +329,30 @@ class _LayersPanelState extends State<LayersPanel> {
               ),
             ),
             if (mark != null && theme != null) _themeMarks(context, layer, mark, theme, isSelected),
-            IconButton(
-              // The eye is for both versions; one version alone is hidden in
-              // the theme settings.
-              tooltip: theme == null
-                  ? (layer.visible ? l10n.hideLayer : l10n.showLayer)
-                  : (layer.visible ? l10n.hideLayerBoth : l10n.showLayerBoth),
-              onPressed: () => editor.commit(SvgLayers.toggleVisibility(editor.svg, layer.path)),
-              icon: Icon(
-                layer.visible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                size: 20,
+            // The eye is for both versions; one version alone is hidden in the
+            // theme settings. Inside a hidden folder it is closed and off:
+            // showing the folder brings each layer back as it was.
+            if (hiddenFolder != null)
+              Tooltip(
+                message: l10n.hiddenByFolder(labels[hiddenFolder.path] ?? l10n.layer(hiddenFolder)),
+                child: IconButton(
+                  key: ValueKey('eye-${layer.path}'),
+                  onPressed: null,
+                  icon: const Icon(Icons.visibility_off_outlined, size: 20),
+                ),
+              )
+            else
+              IconButton(
+                key: ValueKey('eye-${layer.path}'),
+                tooltip: theme == null
+                    ? (layer.visible ? l10n.hideLayer : l10n.showLayer)
+                    : (layer.visible ? l10n.hideLayerBoth : l10n.showLayerBoth),
+                onPressed: () => editor.commit(SvgLayers.toggleVisibility(editor.svg, layer.path)),
+                icon: Icon(
+                  layer.visible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                  size: 20,
+                ),
               ),
-            ),
           ],
         ),
       ),

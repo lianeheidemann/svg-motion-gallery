@@ -277,6 +277,37 @@ void main() {
     expect(find.text('3 camadas selecionadas'), findsNothing);
   });
 
+  testWidgets('layers: hiding a folder closes the eyes of what is in it', (tester) async {
+    await _openRedInEditor(
+      tester,
+      svg:
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+          '<g><rect width="4" height="4" display="none"/><circle r="2"/></g>'
+          '<ellipse rx="1" ry="1"/></svg>',
+    );
+    IconButton eye(String path) => tester.widget<IconButton>(find.byKey(ValueKey('eye-$path')));
+    bool open(String path) => (eye(path).icon as Icon).icon == Icons.visibility_outlined;
+
+    expect(open('/0'), isTrue);
+    expect(open('/0/0'), isFalse, reason: 'hidden on its own');
+    expect(open('/0/1'), isTrue);
+
+    await tester.tap(find.byKey(const ValueKey('eye-/0')));
+    await tester.pumpAndSettle();
+    for (final path in ['/0', '/0/0', '/0/1']) {
+      expect(open(path), isFalse, reason: path);
+    }
+    expect(eye('/0/1').onPressed, isNull, reason: 'it follows the folder');
+    expect(find.byTooltip('Oculta porque a pasta Grupo está oculta'), findsNWidgets(2));
+    expect(open('/1'), isTrue, reason: 'outside the folder');
+
+    await tester.tap(find.byKey(const ValueKey('eye-/0')));
+    await tester.pumpAndSettle();
+    expect(open('/0/1'), isTrue, reason: 'back as it was');
+    expect(open('/0/0'), isFalse, reason: 'it was hidden before, and still is');
+    expect(eye('/0/1').onPressed, isNotNull);
+  });
+
   testWidgets('layers: ticking a folder ticks what is in it; some ticked shows a dash', (
     tester,
   ) async {
