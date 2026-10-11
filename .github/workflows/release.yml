@@ -11,6 +11,10 @@ on:
         description: Run format, analyze and tests before building
         type: boolean
         default: true
+      notes:
+        description: Text of the release description (Markdown or HTML, e.g. an image)
+        type: string
+        default: ""
 
 concurrency:
   group: release
@@ -50,4 +54,5 @@ jobs:
           target_commitish: ${{ github.sha }}
           make_latest: true
           generate_release_notes: false
+          body: ${{ inputs.notes }}
           files: ${{ needs.android.outputs.artifact }}.apk
