@@ -87,6 +87,14 @@
       }
     }
   },
+  "duplicateFailed": "Não foi possível duplicar {name}",
+  "@duplicateFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "deleted": "{name} excluído",
   "@deleted": {
     "placeholders": {
@@ -411,6 +419,45 @@
   "saturation": "Saturação",
   "lightness": "Luminosidade",
   "hex": "Hexadecimal",
+  "paintType": "Tipo de preenchimento",
+  "paintSolid": "Sólido",
+  "paintLinear": "Linear",
+  "paintRadial": "Radial",
+  "gradientAngle": "Ângulo: {degrees}°",
+  "@gradientAngle": {
+    "placeholders": {
+      "degrees": {
+        "type": "String"
+      }
+    }
+  },
+  "gradientOpacity": "Opacidade da parada: {percent}%",
+  "@gradientOpacity": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "gradientReverseTip": "Inverter cores",
+  "gradientAddStopTip": "Adicionar parada",
+  "gradientRemoveStopTip": "Remover parada",
+  "gradientSpanEach": "Cada item com seu degradê (toque para um degradê contínuo)",
+  "gradientSpanAll": "Um degradê contínuo pelos itens (toque para um em cada item)",
+  "gradientReverse": "Inverter",
+  "gradientAddStop": "Adicionar",
+  "gradientRemoveStop": "Remover",
+  "gradientStop": "Parada {number}: {hex}",
+  "@gradientStop": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "hex": {
+        "type": "String"
+      }
+    }
+  },
   "animationsTitle": "Animação",
   "durationSeconds": "Duração: {seconds} s",
   "@durationSeconds": {

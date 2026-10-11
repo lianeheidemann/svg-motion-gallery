@@ -98,25 +98,37 @@ class _HslColorEditorState extends State<HslColorEditor> {
         Row(
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
                 color: color,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
+                borderRadius: BorderRadius.circular(AppSpacing.sm),
                 border: Border.all(color: Theme.of(context).colorScheme.outline),
               ),
             ),
-            const SizedBox(width: AppSpacing.md),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: TextField(
                 controller: _hex,
-                decoration: InputDecoration(labelText: widget.labels.hex),
+                style: Theme.of(context).textTheme.bodyMedium,
+                decoration: InputDecoration(
+                  labelText: widget.labels.hex,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
                 onSubmitted: _applyHex,
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
             FilledButton(
               key: const Key('hex-ok'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(0, 36),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                textStyle: Theme.of(context).textTheme.labelLarge,
+              ),
               onPressed: () => _applyHex(_hex.text),
               child: Text(widget.labels.ok),
             ),

@@ -72,6 +72,95 @@ void main() {
     expect(device.id, SvgDocument.deviceId('$_download/new.svg'));
   });
 
+  test('"All" shows phone files newer than the library first, the rest after it', () async {
+    final library = await open();
+    final demos = bundledDemos();
+    final names = library.visible.map((doc) => doc.name).toList();
+    // The phone files are all older than the demos here: they follow them.
+    expect(names.take(demos.length), demos);
+    expect(names.skip(demos.length), ['new.svg', 'mid.svg', 'old.svg']);
+
+    // A file downloaded now goes to the very top, and the demos keep their order.
+    phone.addFile(
+      '$_download/fresh.svg',
+      _plain,
+      modified: DateTime.now().add(const Duration(days: 1)),
+    );
+    await library.refreshDevice();
+    final after = library.visible.map((doc) => doc.name).toList();
+    expect(after.first, 'fresh.svg');
+    expect(after.skip(1).take(demos.length), demos);
+    expect(
+      library.documents.map((doc) => doc.name).first,
+      isNot('fresh.svg'),
+      reason: 'documents keeps the library first',
+    );
+  });
+
+  const copies = '/storage/emulated/0/SVG Gallery';
+
+  test('duplicating a library document makes a phone file in the app folder', () async {
+    final library = await open();
+    final wave = named(library, 'wave.svg');
+
+    final copy = (await library.duplicate(wave))!;
+    expect(copy.isOnDevice, isTrue);
+    expect(copy.sourcePath, '$copies/wave-2.svg');
+    expect(phone.contentAt(copy.sourcePath!), library.contentOf(wave));
+    expect(library.contentOf(copy), library.contentOf(wave));
+
+    // Under "On the phone", and first in "All" as the newest file; the original
+    // stays where it was and nothing entered the library index.
+    library.setFilter(GalleryFilter.device);
+    expect(library.visible.first, copy);
+    library.setFilter(GalleryFilter.all);
+    expect(library.visible.first, copy);
+    expect(
+      library.documents.where((doc) => !doc.isOnDevice).map((doc) => doc.name),
+      contains('wave.svg'),
+    );
+    expect(storage.contents.keys, isNot(contains(copy.id)));
+
+    // The next scan finds the same file: no duplicate entry.
+    await library.refreshDevice();
+    expect(library.documents.where((doc) => doc.sourcePath == copy.sourcePath), hasLength(1));
+  });
+
+  test('duplicating a phone file also goes to the app folder, original untouched', () async {
+    final library = await open();
+    final original = named(library, 'new.svg');
+    expect(library.hasContent(original), isFalse, reason: 'not read yet');
+
+    final copy = (await library.duplicate(original))!;
+    expect(copy.sourcePath, '$copies/new-2.svg');
+    expect(library.contentOf(copy), _adaptive);
+    expect(phone.contentAt('$_download/new.svg'), _adaptive);
+
+    final again = (await library.duplicate(original))!;
+    expect(again.sourcePath, '$copies/new-3.svg');
+  });
+
+  test('without file access the copy is a library document', () async {
+    final library = await open(granted: false);
+    final wave = named(library, 'wave.svg');
+
+    final copy = (await library.duplicate(wave))!;
+    expect(copy.isOnDevice, isFalse);
+    expect(copy.name, 'wave-2.svg');
+    expect(library.contentOf(copy), library.contentOf(wave));
+    expect(phone.paths.where((path) => path.contains('SVG Gallery')), isEmpty);
+  });
+
+  test('a phone file that cannot be read is not duplicated', () async {
+    final library = await open();
+    final gone = named(library, 'old.svg');
+    phone.granted = false; // the read fails from now on
+    final before = library.documents.length;
+
+    expect(await library.duplicate(gone), isNull);
+    expect(library.documents, hasLength(before));
+  });
+
   test('phone files never enter the library index', () async {
     final library = await open();
     await library.toggleFavorite(named(library, 'new.svg'));

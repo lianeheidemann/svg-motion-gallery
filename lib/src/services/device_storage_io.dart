@@ -63,6 +63,22 @@ class AndroidDeviceStorage implements DeviceStorage {
   }
 
   @override
+  Future<String?> create(String folder, String name, String content) async {
+    final List<String> roots;
+    try {
+      roots = await _channel.invokeListMethod<String>('roots') ?? const [];
+    } on MissingPluginException {
+      return null;
+    }
+    if (roots.isEmpty) return null;
+    // The first root is the phone's main storage.
+    final main = roots.first;
+    final created = await Isolate.run(() => createSvgFile(main, folder, name, content));
+    if (created != null) unawaited(_notifyChanged(created));
+    return created;
+  }
+
+  @override
   Future<String?> rename(String path, String newName) async {
     final renamed = renameSvgFile(path, newName);
     if (renamed != null) {

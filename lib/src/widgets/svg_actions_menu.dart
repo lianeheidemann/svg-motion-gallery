@@ -7,10 +7,6 @@ import '../l10n/l10n.dart';
 /// File actions offered from the gallery card and the viewer.
 enum SvgAction { rename, duplicate, share, delete }
 
-/// Actions for files that live on the phone: duplicating would only create a
-/// second copy inside the app, so it is left out.
-const deviceActions = [SvgAction.rename, SvgAction.share, SvgAction.delete];
-
 /// "⋮" menu with file actions. The same widget (and the same handlers)
 /// serves every screen; each screen only picks which [actions] to show so a
 /// screen never offers the same action twice.
@@ -25,7 +21,8 @@ class SvgActionsMenu extends StatelessWidget {
 
   final SvgDocument document;
 
-  /// Defaults to every action, or [deviceActions] for files on the phone.
+  /// Defaults to every action. Duplicating a file on the phone copies it into
+  /// the app's library and leaves the file on the phone as it is.
   final List<SvgAction>? actions;
   final VoidCallback? onDeleted;
   final ValueChanged<SvgDocument>? onDuplicated;
@@ -39,7 +36,7 @@ class SvgActionsMenu extends StatelessWidget {
       onSelected: (action) =>
           runSvgAction(context, action, document, onDeleted: onDeleted, onDuplicated: onDuplicated),
       itemBuilder: (context) => [
-        for (final action in actions ?? (document.isOnDevice ? deviceActions : SvgAction.values))
+        for (final action in actions ?? SvgAction.values)
           PopupMenuItem(
             value: action,
             child: ListTile(
@@ -91,6 +88,10 @@ Future<void> runSvgAction(
       }
     case SvgAction.duplicate:
       final copy = await library.duplicate(document);
+      if (copy == null) {
+        messenger.showSnackBar(SnackBar(content: Text(l10n.duplicateFailed(document.name))));
+        return;
+      }
       messenger.showSnackBar(SnackBar(content: Text(l10n.duplicated(copy.name))));
       onDuplicated?.call(copy);
     case SvgAction.share:

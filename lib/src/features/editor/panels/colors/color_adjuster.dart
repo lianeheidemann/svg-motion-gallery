@@ -125,30 +125,36 @@ class _ResetButton extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(left: 6),
       child: SizedBox(
-        width: 84,
+        width: 68,
         child: Column(
           children: [
-            IconButton.filled(
-              key: const Key('adjust-reset'),
-              tooltip: label,
-              onPressed: onPressed,
-              style: IconButton.styleFrom(
-                fixedSize: const Size(38, 38),
-                iconSize: 20,
-                padding: EdgeInsets.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                backgroundColor: on ? scheme.tertiary : scheme.surfaceContainerHighest,
-                foregroundColor: on ? scheme.onTertiary : scheme.outline,
+            SizedBox(
+              width: 30,
+              height: 30,
+              child: IconButton.filled(
+                key: const Key('adjust-reset'),
+                tooltip: label,
+                onPressed: onPressed,
+                style: IconButton.styleFrom(
+                  fixedSize: const Size(30, 30),
+                  minimumSize: Size.zero,
+                  iconSize: 17,
+                  padding: EdgeInsets.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  backgroundColor: on ? scheme.tertiary : scheme.surfaceContainerHighest,
+                  foregroundColor: on ? scheme.onTertiary : scheme.outline,
+                ),
+                icon: const Icon(Icons.restart_alt_rounded),
               ),
-              icon: const Icon(Icons.restart_alt_rounded),
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.fade,
               softWrap: false,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                fontSize: 10,
                 color: on ? scheme.tertiary : scheme.outline,
                 fontWeight: FontWeight.w700,
               ),

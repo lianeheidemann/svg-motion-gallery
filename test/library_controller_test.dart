@@ -62,7 +62,7 @@ void main() {
     expect(renamed!.name, 'ocean.svg');
 
     final copy = await library.duplicate(renamed);
-    expect(copy.name, 'ocean-2.svg');
+    expect(copy!.name, 'ocean-2.svg');
     expect(library.contentOf(copy), library.contentOf(renamed));
 
     await library.delete(copy);

@@ -68,6 +68,22 @@ class MemoryDeviceStorage implements DeviceStorage {
     return true;
   }
 
+  /// Where [create] puts files: the phone's main storage.
+  static const mainRoot = '/storage/emulated/0';
+
+  @override
+  Future<String?> create(String folder, String name, String content) async {
+    if (!granted || !name.toLowerCase().endsWith('.svg')) return null;
+    final base = name.substring(0, name.length - 4);
+    var counter = 2;
+    while (_files.containsKey('$mainRoot/$folder/$base-$counter.svg')) {
+      counter++;
+    }
+    final path = '$mainRoot/$folder/$base-$counter.svg';
+    addFile(path, content);
+    return path;
+  }
+
   @override
   Future<String?> rename(String path, String newName) async {
     if (!granted || !_files.containsKey(path)) return null;

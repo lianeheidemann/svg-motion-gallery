@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:svg_core/svg_core.dart';
@@ -84,7 +85,11 @@ class LibraryController extends ChangeNotifier {
   /// Documents matching the current filter and search query.
   List<SvgDocument> get visible {
     final needle = _query.trim().toLowerCase();
-    var list = documents.where((doc) => needle.isEmpty || doc.name.toLowerCase().contains(needle));
+    // "All" puts a phone file that is newer than a library document before it,
+    // so a file just downloaded shows at the top instead of after every demo.
+    var list = (_filter == GalleryFilter.all ? _newestFirst() : documents).where(
+      (doc) => needle.isEmpty || doc.name.toLowerCase().contains(needle),
+    );
     switch (_filter) {
       case GalleryFilter.all:
         break;
@@ -100,6 +105,22 @@ class LibraryController extends ChangeNotifier {
         return recent;
     }
     return list.toList();
+  }
+
+  /// The library in its own order with the phone's files (newest first) woven
+  /// in: each one goes ahead of the first library document it is newer than.
+  /// The library's order is kept, so the demos do not shuffle.
+  List<SvgDocument> _newestFirst() {
+    final phone = [..._deviceDocs]..sort((a, b) => b.modifiedAt.compareTo(a.modifiedAt));
+    final out = <SvgDocument>[];
+    var next = 0;
+    for (final doc in _documents) {
+      while (next < phone.length && phone[next].modifiedAt.isAfter(doc.modifiedAt)) {
+        out.add(phone[next++]);
+      }
+      out.add(doc);
+    }
+    return [...out, ...phone.skip(next)];
   }
 
   SvgDocument? byId(String id) {
@@ -339,14 +360,52 @@ class LibraryController extends ChangeNotifier {
     return _replace(document, (doc) => doc.copyWith(name: _uniqueName(normalized)));
   }
 
-  /// Copies the markup into a new library document (next to the original).
-  Future<SvgDocument> duplicate(SvgDocument document) async {
+  /// Folder of the phone's storage where copies are made.
+  static const deviceCopiesFolder = 'SVG Gallery';
+
+  /// Makes a copy that can be edited without touching the original. With
+  /// access to the phone's files the copy is a new file in
+  /// [deviceCopiesFolder] (so it shows under "On the phone"); without access,
+  /// or when that fails, it is a new library document next to the original.
+  /// Null when the original could not be read.
+  Future<SvgDocument?> duplicate(SvgDocument document) async {
+    // A phone file's markup is read on demand.
+    await ensureContent(document);
+    if (!hasContent(document) || isUnreadable(document)) return null;
     final content = contentOf(document);
+    final onPhone = await _duplicateToDevice(document, content);
+    if (onPhone != null) return onPhone;
     final copy = await _repository.create(_uniqueName(document.name), content);
     _contents[copy.id] = content;
     final index = _documents.indexWhere((doc) => doc.id == document.id);
-    _documents.insert(index + 1, copy);
+    _documents.insert(index == -1 ? 0 : index + 1, copy);
     await _persist();
+    return copy;
+  }
+
+  Future<SvgDocument?> _duplicateToDevice(SvgDocument original, String content) async {
+    if (!_device.isSupported || _access != DeviceAccess.granted) return null;
+    final String? path;
+    try {
+      path = await _device.create(deviceCopiesFolder, original.name, content);
+    } catch (error, stack) {
+      reportStorageError(error, stack);
+      return null;
+    }
+    if (path == null) return null;
+    final now = DateTime.now();
+    final copy = SvgDocument(
+      id: SvgDocument.deviceId(path),
+      name: path.substring(path.lastIndexOf('/') + 1),
+      sizeBytes: utf8.encode(content).length,
+      createdAt: now,
+      modifiedAt: now,
+      sourcePath: path,
+    );
+    _contents[copy.id] = content;
+    _metadata.remove(copy.id);
+    _deviceDocs = [copy, ..._deviceDocs.where((doc) => doc.id != copy.id)];
+    notifyListeners();
     return copy;
   }
 

@@ -77,27 +77,32 @@ class _AdjustTabsState<T> extends State<AdjustTabs<T>> {
       child: InkResponse(
         key: Key('adjust-${tab.id}'),
         onTap: () => _tapped(tab.id),
-        radius: 42,
+        radius: 34,
         child: SizedBox(
-          width: 84,
+          width: 68,
           child: Column(
             children: [
               Container(
-                width: 38,
-                height: 38,
+                width: 30,
+                height: 30,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: on ? scheme.primary : scheme.surfaceContainerHighest,
                 ),
-                child: Icon(tab.icon, color: on ? scheme.onPrimary : scheme.onSurfaceVariant),
+                child: Icon(
+                  tab.icon,
+                  size: 17,
+                  color: on ? scheme.onPrimary : scheme.onSurfaceVariant,
+                ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 2),
               Text(
                 tab.label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 softWrap: false,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontSize: 10,
                   color: on ? scheme.primary : scheme.onSurfaceVariant,
                   fontWeight: on ? FontWeight.w700 : FontWeight.w500,
                 ),
@@ -127,6 +132,6 @@ class _AdjustTabsState<T> extends State<AdjustTabs<T>> {
         ),
       ),
     );
-    return SizedBox(height: 66, child: row);
+    return SizedBox(height: 52, child: row);
   }
 }

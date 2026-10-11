@@ -167,7 +167,7 @@ void main() {
     expect(find.textContaining('apagados definitivamente do celular'), findsOneWidget);
   });
 
-  testWidgets('a phone file card offers rename, share and delete — not duplicate', (tester) async {
+  testWidgets('a phone file card offers rename, duplicate, share and delete', (tester) async {
     final phone = _phone(granted: true);
     await pumpApp(tester, await _services(tester, phone));
     await _showDeviceFilter(tester);
@@ -176,7 +176,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Renomear'), findsOneWidget);
     expect(find.text('Compartilhar'), findsOneWidget);
-    expect(find.text('Duplicar'), findsNothing);
+    expect(find.text('Duplicar'), findsOneWidget);
 
     await tester.tap(find.text('Excluir'));
     await tester.pumpAndSettle();
@@ -185,6 +185,29 @@ void main() {
     await tester.pumpAndSettle();
     expect(phone.contains('$_dir/alpha.svg'), isFalse);
     expect(find.text('alpha.svg excluído'), findsOneWidget);
+  });
+
+  testWidgets('duplicating a phone file makes a new file in the app folder', (tester) async {
+    final phone = _phone(granted: true);
+    final services = await _services(tester, phone);
+    await pumpApp(tester, services);
+    await _showDeviceFilter(tester);
+
+    // Its markup has not been read: duplicating reads it first.
+    await tester.tap(find.byTooltip('Mais ações').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Duplicar'));
+    await tester.pumpAndSettle();
+
+    const copy = '/storage/emulated/0/SVG Gallery/alpha-2.svg';
+    expect(phone.contentAt(copy), _svg);
+    expect(phone.contains('$_dir/alpha.svg'), isTrue);
+    expect(
+      services.library.documents.where((d) => !d.isOnDevice && d.name == 'alpha-2.svg'),
+      isEmpty,
+    );
+    expect(find.text('Cópia criada: alpha-2.svg'), findsOneWidget);
+    expect(find.text('alpha-2.svg'), findsOneWidget, reason: 'listed under "No celular"');
   });
 
   testWidgets('the viewer shows where a phone file lives and editing saves back to it', (

@@ -4,6 +4,7 @@ import 'package:svg_core/svg_core.dart';
 
 import '../../../../l10n/l10n.dart';
 import '../../editor_controller.dart';
+import '../colors/gradient_paint.dart';
 import '../layers_panel.dart';
 import 'theme_badge.dart';
 
@@ -210,9 +211,18 @@ class LayerThemeSheet extends StatelessWidget {
             property: property,
             origin: origin(scheme, property),
             resetKey: Key('theme-reset-$property'),
-            onReset: () => editor.commit(SvgThemeEdit.clearOwn(editor.svg, path, active, property)),
+            onReset: () => editor.commit(
+              // A gradient the editor made for this version goes with it.
+              SvgGradientEdit.collectGarbage(
+                SvgThemeEdit.clearOwn(editor.svg, path, active, property),
+              ),
+            ),
             // Nothing set: a fill is black, an outline is not drawn.
             child: _PaintValue(
+              gradient: switch (SvgGradientEdit.ofScheme(svg, path, property, scheme)) {
+                final gradient? => flutterGradient(gradient),
+                _ => null,
+              },
               value:
                   SvgThemeEdit.paintFor(svg, path, scheme, property) ??
                   (property == 'fill' ? '#000000' : 'none'),
@@ -414,9 +424,12 @@ class _Cell extends StatelessWidget {
 /// A fill or outline: a swatch and its hex code, or what it is when it is
 /// not a plain color (none, a gradient).
 class _PaintValue extends StatelessWidget {
-  const _PaintValue({required this.value});
+  const _PaintValue({required this.value, this.gradient});
 
   final String? value;
+
+  /// The gradient [value] points at, drawn in the swatch.
+  final Gradient? gradient;
 
   @override
   Widget build(BuildContext context) {
@@ -424,12 +437,13 @@ class _PaintValue extends StatelessWidget {
     final paint = value;
     final hex = paint != null && paint.startsWith('#') ? paint : null;
     final color = hex == null ? null : Color(int.parse('FF${hex.substring(1)}', radix: 16));
-    final Widget swatch = color != null
+    final Widget swatch = color != null || gradient != null
         ? Container(
             width: 16,
             height: 16,
             decoration: BoxDecoration(
               color: color,
+              gradient: gradient,
               shape: BoxShape.circle,
               border: Border.all(color: Theme.of(context).colorScheme.outline),
             ),

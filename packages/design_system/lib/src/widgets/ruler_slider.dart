@@ -101,17 +101,17 @@ class _RulerSliderState extends State<RulerSlider> {
         onHorizontalDragEnd: _enabled ? _end : null,
         onHorizontalDragCancel: _enabled ? _end : null,
         child: SizedBox(
-          height: 54,
+          height: 44,
           child: Column(
             children: [
               Text(
                 '${value.round()}${widget.unit}',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: _enabled ? scheme.onSurface : scheme.outline,
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 2),
               Expanded(
                 child: CustomPaint(
                   size: Size.infinite,

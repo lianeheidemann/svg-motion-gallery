@@ -8,6 +8,8 @@ export 'src/colors.dart' show SvgColorValue, SvgColors;
 export 'src/css_inliner.dart' show SvgCssInliner;
 export 'src/editing/animation.dart' show SvgAnimationEdit, SvgAnimationPreset;
 export 'src/editing/element_path.dart' show ElementPath, SvgEditResult;
+export 'src/editing/geometry.dart' show Affine, SvgGeometry;
+export 'src/editing/gradient.dart' show GradientStop, SvgGradient, SvgGradientEdit, SvgGradientKind;
 export 'src/editing/hit_test.dart' show SvgBounds, SvgHitTest, SvgMovable;
 export 'src/editing/insert.dart' show SvgInsertEdit, SvgShapeKind;
 export 'src/editing/layers.dart' show SvgLayer, SvgLayers;

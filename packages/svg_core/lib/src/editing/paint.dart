@@ -74,38 +74,53 @@ class SvgPaintEdit {
   static String setStrokeWidth(String svg, ElementPath path, double width) =>
       _set(svg, path, 'stroke-width', formatNumber(width));
 
-  static XmlElement? _target(XmlDocument? document, ElementPath path) {
-    if (document == null || path.isRoot) return null;
-    final element = path.resolve(document.rootElement);
-    return element == null ? null : unwrapEditorGroups(element);
-  }
+  static XmlElement? _target(XmlDocument? document, ElementPath path) =>
+      paintTarget(document, path);
 
   static String? _normalized(String? value) =>
       value == null ? null : (SvgColorValue.normalize(value) ?? value.trim());
 
-  static String? _get(XmlElement element, String property) {
-    String? fromStyle;
-    mapDeclarations(element.getAttribute('style') ?? '', (name, value) {
-      if (name == property) fromStyle = value.trim();
-      return value;
-    });
-    return fromStyle ?? element.getAttribute(property);
-  }
+  static String? _get(XmlElement element, String property) => ownPaintValue(element, property);
 
   static String _set(String svg, ElementPath path, String property, String value) {
     final document = tryParseSvg(svg);
     final element = _target(document, path);
     if (element == null) return svg;
-    element.setAttribute(property, value);
-    var style = element.getAttribute('style') ?? '';
-    style = mapDeclarations(style, (name, old) => name == property ? null : old);
-    // A stylesheet rule (`.bg{fill:...}`) beats the attribute, so an element
-    // with a class also gets the value inline, which beats the rule.
-    if (element.getAttribute('class') != null) {
-      final glue = style.trim().isEmpty || style.trim().endsWith(';') ? '' : ';';
-      style = '${style.trim()}$glue$property:$value';
-    }
-    element.setAttribute('style', style.trim().isEmpty ? null : style);
+    writePaintProperty(element, property, value);
     return document!.toXmlString();
   }
+}
+
+/// The element an edit at [path] lands on: editor wrappers are skipped so it
+/// is the shape the user drew. Null for the root or a stale path.
+XmlElement? paintTarget(XmlDocument? document, ElementPath path) {
+  if (document == null || path.isRoot) return null;
+  final element = path.resolve(document.rootElement);
+  return element == null ? null : unwrapEditorGroups(element);
+}
+
+/// [property] as [element] itself sets it: inline `style` first, then the
+/// attribute. Null when it does not.
+String? ownPaintValue(XmlElement element, String property) {
+  String? fromStyle;
+  mapDeclarations(element.getAttribute('style') ?? '', (name, value) {
+    if (name == property) fromStyle = value.trim();
+    return value;
+  });
+  return fromStyle ?? element.getAttribute(property);
+}
+
+/// Writes [value] as [property] of [element] (attribute, with the inline
+/// `style` declaration of the same name removed).
+void writePaintProperty(XmlElement element, String property, String value) {
+  element.setAttribute(property, value);
+  var style = element.getAttribute('style') ?? '';
+  style = mapDeclarations(style, (name, old) => name == property ? null : old);
+  // A stylesheet rule (`.bg{fill:...}`) beats the attribute, so an element
+  // with a class also gets the value inline, which beats the rule.
+  if (element.getAttribute('class') != null) {
+    final glue = style.trim().isEmpty || style.trim().endsWith(';') ? '' : ';';
+    style = '${style.trim()}$glue$property:$value';
+  }
+  element.setAttribute('style', style.trim().isEmpty ? null : style);
 }
