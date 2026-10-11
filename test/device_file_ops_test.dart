@@ -20,6 +20,38 @@ void main() {
     return file;
   }
 
+  group('createSvgFile', () {
+    test('makes the folder and a new file, never overwriting', () {
+      final first = createSvgFile(root.path, 'SVG Gallery', 'a.svg', _svg)!;
+      expect(first, '${root.path}/SVG Gallery/a-2.svg');
+      expect(File(first).readAsStringSync(), _svg);
+
+      write('SVG Gallery/a-3.svg', 'other');
+      final second = createSvgFile(root.path, 'SVG Gallery', 'a.svg', _svg)!;
+      expect(second, '${root.path}/SVG Gallery/a-4.svg');
+      expect(File('${root.path}/SVG Gallery/a-3.svg').readAsStringSync(), 'other');
+      expect(
+        Directory('${root.path}/SVG Gallery').listSync().map((e) => e.path),
+        isNot(contains(endsWith('.sm-tmp'))),
+      );
+    });
+
+    test('refuses unsafe folders and names', () {
+      expect(createSvgFile(root.path, '..', 'a.svg', _svg), isNull);
+      expect(createSvgFile(root.path, 'a/b', 'a.svg', _svg), isNull);
+      expect(createSvgFile(root.path, '.hidden', 'a.svg', _svg), isNull);
+      expect(createSvgFile(root.path, 'ok', '../a.svg', _svg), isNull);
+      expect(createSvgFile(root.path, 'ok', '.a.svg', _svg), isNull);
+      expect(createSvgFile(root.path, 'ok', 'a.txt', _svg), isNull);
+      expect(createSvgFile(root.path, 'ok', '', _svg), isNull);
+    });
+
+    test('the new file is found by a scan', () {
+      createSvgFile(root.path, 'SVG Gallery', 'a.svg', _svg);
+      expect(scanRoots([root.path]).map((e) => e.name), ['a-2.svg']);
+    });
+  });
+
   group('scanRoots', () {
     test('finds svgs recursively, newest first, with size and date', () {
       write('Download/old.svg', _svg, modified: DateTime(2020));

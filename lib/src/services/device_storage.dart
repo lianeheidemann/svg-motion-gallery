@@ -51,6 +51,12 @@ abstract interface class DeviceStorage {
   /// Overwrites an existing `.svg`. Returns false when it could not be saved.
   Future<bool> write(String path, String content);
 
+  /// Creates a new `.svg` named after [name] in [folder] (made if missing) of
+  /// the phone's main storage, never overwriting: when the name is taken it
+  /// gets `-2`, `-3`... Returns the new path, or null when it could not be
+  /// saved.
+  Future<String?> create(String folder, String name, String content);
+
   /// Renames [path] inside its folder and returns the new path, or null when
   /// it failed (for example because the name is already taken).
   Future<String?> rename(String path, String newName);
@@ -80,6 +86,9 @@ class UnsupportedDeviceStorage implements DeviceStorage {
 
   @override
   Future<bool> write(String path, String content) async => false;
+
+  @override
+  Future<String?> create(String folder, String name, String content) async => null;
 
   @override
   Future<String?> rename(String path, String newName) async => null;

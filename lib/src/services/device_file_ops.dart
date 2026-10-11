@@ -108,6 +108,37 @@ bool writeSvgFile(String path, String content) {
   }
 }
 
+/// Writes a new `.svg` into `[root]/[folder]`, creating the folder, and
+/// returns its path. The name is [name] with `-2`, `-3`... in front of the
+/// extension, the first one not taken, so nothing is ever overwritten. Null
+/// when [folder] or [name] is unsafe or the file could not be saved.
+String? createSvgFile(String root, String folder, String name, String content) {
+  final clean = name.trim();
+  bool unsafe(String part) => part.isEmpty || part.contains('/') || part.startsWith('.');
+  if (unsafe(folder) || unsafe(clean) || !clean.toLowerCase().endsWith('.svg')) return null;
+  final directory = Directory('$root/$folder');
+  final base = clean.substring(0, clean.length - 4);
+  try {
+    directory.createSync(recursive: true);
+    var counter = 2;
+    var path = '${directory.path}/$base-$counter.svg';
+    while (FileSystemEntity.typeSync(path, followLinks: false) != FileSystemEntityType.notFound) {
+      path = '${directory.path}/$base-${++counter}.svg';
+    }
+    final temp = File('$path.sm-tmp');
+    try {
+      temp.writeAsStringSync(content, flush: true);
+      temp.renameSync(path);
+    } on FileSystemException {
+      if (temp.existsSync()) temp.deleteSync();
+      return null;
+    }
+    return path;
+  } on FileSystemException {
+    return null;
+  }
+}
+
 /// Renames [path] to [newName] in the same folder; returns the new path, or
 /// null if the name is invalid or already used by another file.
 String? renameSvgFile(String path, String newName) {

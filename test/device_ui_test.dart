@@ -187,9 +187,7 @@ void main() {
     expect(find.text('alpha.svg excluído'), findsOneWidget);
   });
 
-  testWidgets('duplicating a phone file copies it into the library and leaves it on the phone', (
-    tester,
-  ) async {
+  testWidgets('duplicating a phone file makes a new file in the app folder', (tester) async {
     final phone = _phone(granted: true);
     final services = await _services(tester, phone);
     await pumpApp(tester, services);
@@ -201,11 +199,15 @@ void main() {
     await tester.tap(find.text('Duplicar'));
     await tester.pumpAndSettle();
 
-    final copies = services.library.documents.where((d) => !d.isOnDevice && d.name == 'alpha.svg');
-    expect(copies, hasLength(1));
-    expect(services.library.contentOf(copies.single), _svg);
+    const copy = '/storage/emulated/0/SVG Gallery/alpha-2.svg';
+    expect(phone.contentAt(copy), _svg);
     expect(phone.contains('$_dir/alpha.svg'), isTrue);
-    expect(find.text('Cópia criada: alpha.svg'), findsOneWidget);
+    expect(
+      services.library.documents.where((d) => !d.isOnDevice && d.name == 'alpha-2.svg'),
+      isEmpty,
+    );
+    expect(find.text('Cópia criada: alpha-2.svg'), findsOneWidget);
+    expect(find.text('alpha-2.svg'), findsOneWidget, reason: 'listed under "No celular"');
   });
 
   testWidgets('the viewer shows where a phone file lives and editing saves back to it', (
