@@ -1,5 +1,6 @@
 import 'package:xml/xml.dart';
 
+import '../css.dart';
 import '../xml_support.dart';
 import 'element_path.dart';
 import 'layer_tree.dart';
@@ -101,7 +102,13 @@ class SvgLayers {
   }
 
   /// Shows a hidden layer or hides a visible one (hidden by itself or by one
-  /// of its editor groups).
+  /// of its editor groups), in both versions of a light/dark SVG.
+  ///
+  /// The layer is hidden with `display:none !important` in its own `style`:
+  /// a `display` attribute loses to any rule of the stylesheet that sets
+  /// `display` (`.night { display: inline }`), the editor's theme rules
+  /// included. Showing it takes that off, and the attribute older versions
+  /// wrote.
   static String toggleVisibility(String svg, ElementPath path) {
     final document = tryParseSvg(svg);
     final element = document == null || path.isRoot ? null : path.resolve(document.rootElement);
@@ -110,17 +117,30 @@ class SvgLayers {
     final chain = [...chainWrappers(top), chainBottom(top)];
     if (chain.any(_isHidden)) {
       for (final node in chain) {
-        node.removeAttribute('display');
-        final style = node.getAttribute('style');
-        if (style != null) {
-          final cleaned = style.replaceAll(RegExp(r'display\s*:\s*none\s*;?'), '').trim();
-          node.setAttribute('style', cleaned.isEmpty ? null : cleaned);
-        }
+        if (node.getAttribute('display') == 'none') node.removeAttribute('display');
+        _setStyle(
+          node,
+          mapDeclarations(node.getAttribute('style') ?? '', (name, value) {
+            return name == 'display' && _hiddenValue.hasMatch(value) ? null : value;
+          }),
+        );
       }
     } else {
-      top.setAttribute('display', 'none');
+      final rest = mapDeclarations(
+        top.getAttribute('style') ?? '',
+        (name, value) => name == 'display' ? null : value,
+      );
+      _setStyle(top, [rest.trim(), 'display:none !important'].where((s) => s.isNotEmpty).join(';'));
     }
     return document!.toXmlString();
+  }
+
+  /// A `display` value that hides, with or without `!important`.
+  static final _hiddenValue = RegExp(r'^\s*none\s*(!\s*important\s*)?$', caseSensitive: false);
+
+  static void _setStyle(XmlElement element, String style) {
+    final cleaned = style.trim().replaceAll(RegExp(r'^;+|;+$'), '').trim();
+    element.setAttribute('style', cleaned.isEmpty ? null : cleaned);
   }
 
   /// Deletes the layer, with its editor groups. Nothing is selected afterwards.

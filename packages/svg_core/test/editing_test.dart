@@ -27,6 +27,65 @@ void main() {
       expect(SvgLayers.list(shown).first.visible, isTrue);
     });
 
+    group('the eye hides a layer in both versions', () {
+      // Like the bundled sun-moon: the stylesheet shows the night in dark.
+      const sunMoon =
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+          '<style>.sun{display:none}.night{display:inline}'
+          '@media (prefers-color-scheme: light){.sun{display:inline}.night{display:none}}</style>'
+          '<g class="night"><circle r="1"/></g><g class="sun"><circle r="2"/></g></svg>';
+      const night = ElementPath([1]);
+      const sun = ElementPath([2]);
+
+      test('even when a rule of the stylesheet shows it', () {
+        final hidden = SvgLayers.toggleVisibility(sunMoon, night);
+        expect(SvgLayers.list(hidden).first.visible, isFalse);
+        for (final scheme in SvgColorScheme.values) {
+          expect(SvgThemeEdit.isShown(hidden, night, scheme), isFalse, reason: '$scheme');
+          expect(SvgThemeEdit.isShown(hidden, const ElementPath([1, 0]), scheme), isFalse);
+        }
+        final marks = SvgThemeMarks.list(hidden);
+        expect(marks[night]!.shownIn, isEmpty);
+        expect(marks[const ElementPath([1, 0])]!.shownIn, isEmpty);
+
+        final shown = SvgLayers.toggleVisibility(hidden, night);
+        expect(shown, isNot(contains('style=')), reason: 'nothing left behind');
+        expect(SvgThemeEdit.isShown(shown, night, SvgColorScheme.dark), isTrue);
+      });
+
+      test('even when the theme settings show it in one version', () {
+        final shownInDark = SvgThemeEdit.setShown(sunMoon, sun, true, SvgColorScheme.dark);
+        expect(SvgThemeEdit.isShown(shownInDark, sun, SvgColorScheme.dark), isTrue);
+        final hidden = SvgLayers.toggleVisibility(shownInDark, sun);
+        expect(SvgThemeEdit.isShown(hidden, sun, SvgColorScheme.dark), isFalse);
+        expect(SvgThemeEdit.isShown(hidden, sun, SvgColorScheme.light), isFalse);
+        final back = SvgLayers.toggleVisibility(hidden, sun);
+        expect(SvgThemeEdit.isShown(back, sun, SvgColorScheme.dark), isTrue, reason: 'kept');
+      });
+
+      test('keeps the rest of the style, and shows what older versions hid', () {
+        const styled =
+            '<svg xmlns="http://www.w3.org/2000/svg"><rect style="fill:red;display:inline"/>'
+            '<circle display="none" r="1"/></svg>';
+        final hidden = SvgLayers.toggleVisibility(styled, const ElementPath([0]));
+        expect(hidden, contains('style="fill:red;display:none !important"'));
+        expect(
+          SvgLayers.toggleVisibility(hidden, const ElementPath([0])),
+          contains('style="fill:red"'),
+        );
+        final old = SvgLayers.toggleVisibility(styled, const ElementPath([1]));
+        expect(old, contains('<circle r="1"/>'), reason: 'the old attribute goes');
+        expect(SvgLayers.list(old).last.visible, isTrue);
+      });
+
+      test('in the still renderer too', () {
+        final hidden = SvgLayers.toggleVisibility(sunMoon, night);
+        final still = SvgCssInliner.inline(SvgThemeResolver.resolve(hidden, SvgColorScheme.dark));
+        expect(still, isNot(contains('!important')), reason: 'flutter_svg reads style too');
+        expect(still, contains('display="none"'));
+      });
+    });
+
     test('renames a layer without touching its id, and clears the name', () {
       final named = SvgLayers.rename(base, const ElementPath([1]), '  Fundo  ');
       expect(named, contains('data-name="Fundo"'));
