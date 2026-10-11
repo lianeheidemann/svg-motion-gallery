@@ -207,6 +207,12 @@ class _LayersPanelState extends State<LayersPanel> {
     }
     final multi = editor.multiMode;
     final isSelected = multi ? ticked.contains(layer.path) : layer.path == editor.selection;
+    // A folder with only some of its layers ticked shows a dash.
+    final partly =
+        multi &&
+        !isSelected &&
+        [for (var j = index + 1; j <= index + insideCount; j++) layers[j].path]
+            .any(ticked.contains);
     final theme = widget.themeScheme;
     final mark = theme == null || layer.isEditorGroup ? null : editor.themeMarks[layer.path];
     // Hidden, or not drawn in the version being edited: greyed out.
@@ -259,7 +265,8 @@ class _LayersPanelState extends State<LayersPanel> {
                       IgnorePointer(
                         child: Checkbox(
                           key: ValueKey('tick-${layer.path}'),
-                          value: isSelected,
+                          tristate: true,
+                          value: isSelected ? true : (partly ? null : false),
                           visualDensity: VisualDensity.compact,
                           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           onChanged: (_) {},

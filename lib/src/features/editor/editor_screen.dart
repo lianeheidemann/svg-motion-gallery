@@ -176,7 +176,7 @@ class _EditorScreenState extends State<EditorScreen> {
     // so the renderer only measures the other ones.
     final others = [
       if (editor.multiMode)
-        for (final path in editor.multiSelection)
+        for (final path in editor.targets)
           if (path != selection) path,
     ];
     final drawn = movablesAmong(editor.svg, others).map((shape) => shape.path).toList();

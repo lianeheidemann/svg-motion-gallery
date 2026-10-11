@@ -25,7 +25,9 @@ class EditorController extends ChangeNotifier {
   ElementPath? _selection;
   bool _multiMode = false;
 
-  /// Layers ticked while [multiMode] is on, in the order they were ticked.
+  /// Layers ticked while [multiMode] is on, in the order they were ticked
+  /// (what is inside a ticked folder is added when shown, see
+  /// [multiSelection]). Always replaced, never changed in place.
   List<ElementPath> _multi = [];
   SvgValidation _validation = const SvgValidation.valid();
   int _revision = 0;
@@ -156,7 +158,7 @@ class EditorController extends ChangeNotifier {
     final from = themeScheme;
     if (from == null) return;
     final to = from.opposite;
-    final chosen = _multiMode ? [..._multi] : [?_selection];
+    final chosen = _multiMode ? targets : [?_selection];
     _variant = to;
     if (chosen.isEmpty) {
       notifyListeners();
@@ -174,13 +176,107 @@ class EditorController extends ChangeNotifier {
   /// Whether tapping layers ticks several of them instead of just one.
   bool get multiMode => _multiMode;
 
-  /// The ticked layers (empty unless [multiMode]).
-  List<ElementPath> get multiSelection => List.unmodifiable(_multi);
+  String? _foldersFor;
+  Map<ElementPath, List<ElementPath>> _folders = const {};
+  Set<ElementPath> _wrappers = const {};
 
-  /// The layers an edit applies to: every ticked layer in [multiMode], else
-  /// the selected one. Always in document order.
+  /// The drawn layers right inside each folder.
+  Map<ElementPath, List<ElementPath>> get _inside {
+    if (_foldersFor != svg) {
+      final folders = <ElementPath, List<ElementPath>>{};
+      for (final layer in layers) {
+        final parent = layer.path.parent;
+        if (parent != null && !parent.isRoot) (folders[parent] ??= []).add(layer.path);
+      }
+      _folders = folders;
+      // Editor wrappers around a single layer ("Ajuste do editor"): ticked
+      // along with that layer, but an edit goes to the layer itself.
+      _wrappers = {
+        for (final layer in layers)
+          if (layer.isEditorGroup && folders[layer.path]?.length == 1) layer.path,
+      };
+      _foldersFor = svg;
+    }
+    return _folders;
+  }
+
+  /// [paths] with everything inside each ticked folder, and every folder
+  /// whose layers are all ticked (inner folders first, up the tree): what
+  /// shows ticked is what is chosen. In the order they were ticked, each
+  /// folder after what is inside it.
+  List<ElementPath> _cascade(Iterable<ElementPath> paths) {
+    final folders = _inside;
+    final out = <ElementPath>[];
+    void add(ElementPath path) => out
+      ..remove(path)
+      ..add(path);
+    void addWithin(ElementPath path) {
+      for (final child in folders[path] ?? const <ElementPath>[]) {
+        addWithin(child);
+      }
+      add(path);
+    }
+
+    for (final path in paths) {
+      addWithin(path);
+    }
+    final ticked = out.toSet();
+    // Depth-first order reversed: a folder comes after everything inside it.
+    for (final layer in layers.reversed) {
+      final inside = folders[layer.path];
+      if (inside != null && !ticked.contains(layer.path) && inside.every(ticked.contains)) {
+        add(layer.path);
+        ticked.add(layer.path);
+      }
+    }
+    return out;
+  }
+
+  /// What edits go to among the ticked [paths]: what is inside a ticked
+  /// folder is covered by the folder, and an editor wrapper around one layer
+  /// stands aside for that layer. In the order of [paths].
+  List<ElementPath> _targetsAmong(List<ElementPath> paths) {
+    final folders = _inside;
+    final ticked = paths.toSet();
+    bool covered(ElementPath path) {
+      for (var parent = path.parent; parent != null && !parent.isRoot; parent = parent.parent) {
+        if (ticked.contains(parent) && !_wrappers.contains(parent)) return true;
+      }
+      return false;
+    }
+
+    return [
+      for (final path in paths)
+        if (!covered(path) && !(_wrappers.contains(path) && ticked.contains(folders[path]!.single)))
+          path,
+    ];
+  }
+
+  String? _tickedFor;
+  List<ElementPath>? _tickedFrom;
+  List<ElementPath> _ticked = const [];
+
+  /// The ticked layers (empty unless [multiMode]): the ones ticked, with
+  /// everything inside a ticked folder and every folder whose layers are all
+  /// ticked.
+  List<ElementPath> get multiSelection {
+    if (_tickedFor != svg || !identical(_tickedFrom, _multi)) {
+      _ticked = List.unmodifiable(_cascade(_multi));
+      _tickedFor = svg;
+      _tickedFrom = _multi;
+    }
+    return _ticked;
+  }
+
+  /// The last ticked layer an edit goes to.
+  ElementPath? get _lastTicked => _targetsAmong(multiSelection).lastOrNull;
+
+  /// The layers an edit applies to, always in document order: in
+  /// [multiMode] every ticked layer, except what is inside a ticked folder
+  /// (the folder stands for it, so nothing gets the edit twice); else the
+  /// selected one.
   List<ElementPath> get targets {
-    final paths = _multiMode ? [..._multi] : [?_selection];
+    final paths = _multiMode ? _targetsAmong(multiSelection) : [?_selection];
     return paths..sort(_compare);
   }
 
@@ -233,28 +329,31 @@ class EditorController extends ChangeNotifier {
   }
 
   /// Turns multi-selection on or off. Turning it on keeps the selected layer
-  /// ticked; turning it off keeps the last ticked one selected.
+  /// ticked (a folder with everything in it); turning it off keeps the last
+  /// ticked one selected.
   void setMultiMode(bool value) {
     if (value == _multiMode) return;
-    _multiMode = value;
     if (value) {
+      _multiMode = true;
       _multi = [?_selection];
+      _selection = _lastTicked;
     } else {
-      _selection = _multi.lastOrNull;
+      _selection = _lastTicked;
+      _multiMode = false;
       _multi = [];
     }
     notifyListeners();
   }
 
-  /// Ticks every drawn layer (not the folders around them), turning
-  /// multi-selection on when it is off.
+  /// Ticks every drawn layer, and so every folder, turning multi-selection on
+  /// when it is off. Edits then go to the layers at the top of the tree.
   void selectAllLayers() {
     if (!_multiMode) setMultiMode(true);
     _multi = [
       for (final layer in layers)
         if (layer.tag != 'g') layer.path,
     ];
-    _selection = _multi.lastOrNull;
+    _selection = _lastTicked;
     notifyListeners();
   }
 
@@ -262,21 +361,30 @@ class EditorController extends ChangeNotifier {
   void replaceSelection(List<ElementPath> paths) {
     if (_multiMode) {
       _multi = [...paths];
-      _selection = _multi.lastOrNull;
+      _selection = _lastTicked;
     } else {
       _selection = paths.firstOrNull;
     }
     notifyListeners();
   }
 
+  /// Selects [path], or in [multiMode] ticks or unticks it. Ticking a folder
+  /// ticks everything in it; unticking a layer also unticks the folders
+  /// around it (they are no longer all ticked), leaving the rest ticked.
   void select(ElementPath? path) {
     if (_multiMode) {
+      final ticked = multiSelection;
       if (path == null) {
         _multi = [];
-      } else if (!_multi.remove(path)) {
-        _multi.add(path);
+      } else if (ticked.contains(path)) {
+        _multi = [
+          for (final other in ticked)
+            if (other != path && !_isInside(other, path) && !_isInside(path, other)) other,
+        ];
+      } else {
+        _multi = _cascade([...ticked, path]);
       }
-      _selection = _multi.lastOrNull;
+      _selection = _lastTicked;
     } else {
       _selection = path == _selection ? null : path;
     }

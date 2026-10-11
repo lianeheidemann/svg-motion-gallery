@@ -144,7 +144,8 @@ class LayerThemeSheet extends StatelessWidget {
               icon: const Icon(Icons.palette_outlined),
               label: Text(l10n.themeEditColors),
               onPressed: () {
-                if (!editor.targets.contains(path)) editor.replaceSelection([path]);
+                final chosen = editor.multiMode ? editor.multiSelection : editor.targets;
+                if (!chosen.contains(path)) editor.replaceSelection([path]);
                 Navigator.of(context).pop();
                 onOpenColors!();
               },

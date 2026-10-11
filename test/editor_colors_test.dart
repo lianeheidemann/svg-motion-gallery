@@ -276,6 +276,37 @@ void main() {
     expect(find.text('3 camadas selecionadas'), findsNothing);
   });
 
+  testWidgets('layers: ticking a folder ticks what is in it; some ticked shows a dash', (
+    tester,
+  ) async {
+    await _openRedInEditor(
+      tester,
+      svg:
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+          '<g><rect width="4" height="4"/><circle r="2"/></g><ellipse rx="1" ry="1"/></svg>',
+    );
+    await tester.tap(find.byKey(const Key('multi-select')));
+    await tester.pumpAndSettle();
+    bool? ticked(String path) => tester.widget<Checkbox>(find.byKey(ValueKey('tick-$path'))).value;
+    // The box sits on the row, which takes the tap.
+    Future<void> tick(String path) async {
+      await tester.tap(find.byKey(ValueKey('tick-$path')), warnIfMissed: false);
+      await tester.pumpAndSettle();
+    }
+
+    await tick('/0');
+    expect([ticked('/0'), ticked('/0/0'), ticked('/0/1'), ticked('/1')], [true, true, true, false]);
+    expect(find.textContaining('Selecionado: Grupo'), findsOneWidget, reason: 'one folder');
+
+    await tick('/0/1');
+    expect(ticked('/0'), isNull, reason: 'partly ticked: a dash');
+    expect(ticked('/0/0'), isTrue);
+    expect(ticked('/0/1'), isFalse);
+
+    await tick('/0/1');
+    expect(ticked('/0'), isTrue, reason: 'everything in it is ticked again');
+  });
+
   testWidgets('colors: a ruler with icon tabs adjusts the painted color', (tester) async {
     final services = await _openRedInEditor(tester);
     await _tapTab(tester, 'Cores');
