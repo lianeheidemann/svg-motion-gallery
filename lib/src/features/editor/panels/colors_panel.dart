@@ -191,35 +191,27 @@ class _ColorsPanelState extends State<ColorsPanel> {
   Widget _themeStrip(AppLocalizations l10n, SvgColorScheme active, ElementPath path) {
     final svg = _editor.svg;
     final property = _property(svg, path);
-    return Column(
+    // The highlighted one is painted; the locked one stays as it is until
+    // it is tapped, which switches to it.
+    return Row(
       key: const Key('colors-theme-strip'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            for (final scheme in SvgColorScheme.values) ...[
-              if (scheme != SvgColorScheme.values.first) const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: _ThemeChip(
-                  key: Key('colors-theme-${scheme.name}'),
-                  scheme: scheme,
-                  active: scheme == active,
-                  color: colorFromHex(SvgThemeEdit.paintFor(svg, path, scheme, property) ?? ''),
-                  label: l10n.themeTitle(scheme),
-                  semanticLabel: scheme == active
-                      ? '${l10n.themeTitle(scheme)} · ${l10n.themeEditing}'
-                      : l10n.themeSwitchTo(l10n.themeName(scheme)),
-                  onTap: scheme == active ? null : _editor.toggleTheme,
-                ),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          l10n.themeOnlyThisChanges(l10n.themeName(active)),
-          style: TextStyle(color: GalleryColors.of(context).muted, fontSize: 12),
-        ),
+        for (final scheme in SvgColorScheme.values) ...[
+          if (scheme != SvgColorScheme.values.first) const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: _ThemeChip(
+              key: Key('colors-theme-${scheme.name}'),
+              scheme: scheme,
+              active: scheme == active,
+              color: colorFromHex(SvgThemeEdit.paintFor(svg, path, scheme, property) ?? ''),
+              label: l10n.themeTitle(scheme),
+              semanticLabel: scheme == active
+                  ? '${l10n.themeTitle(scheme)} · ${l10n.themeEditing}'
+                  : l10n.themeSwitchTo(l10n.themeName(scheme)),
+              onTap: scheme == active ? null : _editor.toggleTheme,
+            ),
+          ),
+        ],
       ],
     );
   }

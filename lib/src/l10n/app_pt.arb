@@ -313,17 +313,6 @@
   },
   "themeInside": "Camadas dentro com ajustes de tema",
   "themeSettings": "Ajustes de tema",
-  "themeEditingOnly": "Você edita o tema {theme}; o {other} não muda.",
-  "@themeEditingOnly": {
-    "placeholders": {
-      "theme": {
-        "type": "String"
-      },
-      "other": {
-        "type": "String"
-      }
-    }
-  },
   "themeSwitchTo": "Mudar para o tema {theme}",
   "@themeSwitchTo": {
     "placeholders": {
@@ -361,14 +350,6 @@
   },
   "themeGroupNote": "Visibilidade ajustada no grupo vale para tudo dentro dele; as cores são aplicadas a cada camada.",
   "themeEditColors": "Editar cores neste tema",
-  "themeOnlyThisChanges": "Só o tema {theme} muda",
-  "@themeOnlyThisChanges": {
-    "placeholders": {
-      "theme": {
-        "type": "String"
-      }
-    }
-  },
   "themeEditing": "editando",
   "themeNoPaint": "Sem cor",
   "themeGradient": "Gradiente",
@@ -414,7 +395,6 @@
   "lockAspect": "Manter proporção",
   "unlockAspect": "Liberar proporção",
   "presetPalette": "Paleta de cores",
-  "eyedropper": "Conta-gotas",
   "customColor": "Cor personalizada",
   "paletteEmpty": "Nenhuma cor sólida encontrada.",
   "layerPaint": "Pintura de {name}",

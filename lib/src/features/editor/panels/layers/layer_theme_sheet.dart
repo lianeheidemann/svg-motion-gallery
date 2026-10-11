@@ -67,91 +67,91 @@ class LayerThemeSheet extends StatelessWidget {
         !SvgThemeEdit.isShown(svg, path, active) && SvgThemeEdit.isOwnShown(svg, path, active);
     final others = mark.ownIn(active).difference({'fill', 'stroke', 'display'});
 
-    return SingleChildScrollView(
-      key: const Key('theme-sheet'),
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Icon(LayersPanel.iconFor(layer), size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  l10n.layerLabel(layer, editor.layers),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleMedium,
+    // Kept clear of the system's navigation bar, which lies over the sheet.
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        key: const Key('theme-sheet'),
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(LayersPanel.iconFor(layer), size: 20),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    l10n.layerLabel(layer, editor.layers),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          Text(l10n.themeSettings, style: TextStyle(color: muted)),
-          const SizedBox(height: AppSpacing.md),
-          SegmentedButton<SvgColorScheme>(
-            key: const Key('theme-segment'),
-            showSelectedIcon: false,
-            segments: [
-              for (final scheme in SvgColorScheme.values)
-                ButtonSegment(
-                  value: scheme,
-                  icon: Icon(themeIcon(scheme), color: themeColor(context, scheme, active: true)),
-                  label: Text(l10n.themeTitle(scheme)),
-                ),
-            ],
-            selected: {active},
-            onSelectionChanged: (chosen) {
-              if (chosen.single != active) editor.toggleTheme();
-            },
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            l10n.themeEditingOnly(l10n.themeName(active), l10n.themeName(active.opposite)),
-            style: TextStyle(color: muted, fontSize: 13),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _table(context, active, mark),
-          if (source != null)
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: TextButton.icon(
-                key: const Key('theme-comes-from'),
-                icon: const Icon(Icons.subdirectory_arrow_right_rounded, size: 18),
-                label: Text(l10n.themeComesFrom(_nameOf(l10n, source))),
-                // Select the group the setting comes from, to change it there.
-                onPressed: source.isRoot
-                    ? null
-                    : () {
-                        editor.replaceSelection([source]);
-                        Navigator.of(context).pop();
-                      },
-              ),
+                const SizedBox(width: 10),
+                Text(l10n.themeSettings, style: TextStyle(color: muted, fontSize: 13)),
+              ],
             ),
-          if (hiddenByGroup && source != null)
-            _note(
-              context,
-              Icons.visibility_off_outlined,
-              l10n.themeHiddenByGroup(_nameOf(l10n, source)),
-            ),
-          if (others.isNotEmpty)
-            _note(context, Icons.info_outline_rounded, l10n.themeAlsoChanges(others.join(', '))),
-          if (layer.tag == 'g') _note(context, Icons.folder_outlined, l10n.themeGroupNote),
-          if (onOpenColors != null) ...[
             const SizedBox(height: AppSpacing.md),
-            FilledButton.tonalIcon(
-              key: const Key('theme-edit-colors'),
-              icon: const Icon(Icons.palette_outlined),
-              label: Text(l10n.themeEditColors),
-              onPressed: () {
-                final chosen = editor.multiMode ? editor.multiSelection : editor.targets;
-                if (!chosen.contains(path)) editor.replaceSelection([path]);
-                Navigator.of(context).pop();
-                onOpenColors!();
+            SegmentedButton<SvgColorScheme>(
+              key: const Key('theme-segment'),
+              showSelectedIcon: false,
+              segments: [
+                for (final scheme in SvgColorScheme.values)
+                  ButtonSegment(
+                    value: scheme,
+                    icon: Icon(themeIcon(scheme), color: themeColor(context, scheme, active: true)),
+                    label: Text(l10n.themeTitle(scheme)),
+                  ),
+              ],
+              selected: {active},
+              onSelectionChanged: (chosen) {
+                if (chosen.single != active) editor.toggleTheme();
               },
             ),
+            const SizedBox(height: AppSpacing.md),
+            _table(context, active, mark),
+            if (source != null)
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton.icon(
+                  key: const Key('theme-comes-from'),
+                  icon: const Icon(Icons.subdirectory_arrow_right_rounded, size: 18),
+                  label: Text(l10n.themeComesFrom(_nameOf(l10n, source))),
+                  // Select the group the setting comes from, to change it there.
+                  onPressed: source.isRoot
+                      ? null
+                      : () {
+                          editor.replaceSelection([source]);
+                          Navigator.of(context).pop();
+                        },
+                ),
+              ),
+            if (hiddenByGroup && source != null)
+              _note(
+                context,
+                Icons.visibility_off_outlined,
+                l10n.themeHiddenByGroup(_nameOf(l10n, source)),
+              ),
+            if (others.isNotEmpty)
+              _note(context, Icons.info_outline_rounded, l10n.themeAlsoChanges(others.join(', '))),
+            if (layer.tag == 'g') _note(context, Icons.folder_outlined, l10n.themeGroupNote),
+            if (onOpenColors != null) ...[
+              const SizedBox(height: AppSpacing.md),
+              FilledButton.tonalIcon(
+                key: const Key('theme-edit-colors'),
+                icon: const Icon(Icons.palette_outlined),
+                label: Text(l10n.themeEditColors),
+                onPressed: () {
+                  final chosen = editor.multiMode ? editor.multiSelection : editor.targets;
+                  if (!chosen.contains(path)) editor.replaceSelection([path]);
+                  Navigator.of(context).pop();
+                  onOpenColors!();
+                },
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -179,10 +179,10 @@ class LayerThemeSheet extends StatelessWidget {
     final l10n = context.l10n;
     final svg = editor.svg;
 
-    String origin(SvgColorScheme scheme, String property) {
-      if (mark.ownIn(scheme).contains(property)) return l10n.themeOwn;
-      if (mark.inheritedIn(scheme).containsKey(property)) return l10n.themeInherited;
-      return l10n.themeShared;
+    SvgThemeOrigin? origin(SvgColorScheme scheme, String property) {
+      if (mark.ownIn(scheme).contains(property)) return SvgThemeOrigin.own;
+      if (mark.inheritedIn(scheme).containsKey(property)) return SvgThemeOrigin.inherited;
+      return null;
     }
 
     Widget pair(Widget Function(SvgColorScheme scheme) cell) => Row(
@@ -196,9 +196,10 @@ class LayerThemeSheet extends StatelessWidget {
         _rowLabel(context, label),
         pair(
           (scheme) => _Cell(
+            scheme: scheme,
             active: scheme == active,
+            property: property,
             origin: origin(scheme, property),
-            own: mark.ownIn(scheme).contains(property),
             resetKey: Key('theme-reset-$property'),
             onReset: () => editor.commit(SvgThemeEdit.clearOwn(editor.svg, path, active, property)),
             // Nothing set: a fill is black, an outline is not drawn.
@@ -221,9 +222,12 @@ class LayerThemeSheet extends StatelessWidget {
         _rowLabel(context, l10n.themeVisible),
         pair(
           (scheme) => _Cell(
+            scheme: scheme,
             active: scheme == active,
+            property: 'display',
             origin: origin(scheme, 'display'),
-            own: false,
+            // On and off is the switch itself.
+            canReset: false,
             child: scheme == active
                 ? Align(
                     alignment: AlignmentDirectional.centerStart,
@@ -303,73 +307,89 @@ class LayerThemeSheet extends StatelessWidget {
 }
 
 /// One value of the table: highlighted in the column being edited, faded in
-/// the other one, with where it comes from under it and, for a setting of
-/// the layer's own in the edited version, a button that gives back the
-/// shared value.
+/// the other one. Where it comes from is told by the marks of the layer list:
+/// a solid sun or moon when the layer sets it for that version, an outlined
+/// one when a group around it does, nothing when it is the value both share
+/// (said in words by the tooltip and to screen readers). A value the layer
+/// sets in the version being edited also gets a button that gives back the
+/// shared one.
 class _Cell extends StatelessWidget {
   const _Cell({
+    required this.scheme,
     required this.active,
+    required this.property,
     required this.origin,
-    required this.own,
     required this.child,
+    this.canReset = true,
     this.onReset,
     this.resetKey,
   });
 
+  final SvgColorScheme scheme;
   final bool active;
-  final String origin;
-  final bool own;
+  final String property;
+  final SvgThemeOrigin? origin;
   final Widget child;
+  final bool canReset;
   final VoidCallback? onReset;
   final Key? resetKey;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final scheme = Theme.of(context).colorScheme;
-    final muted = GalleryColors.of(context).muted;
+    final colors = Theme.of(context).colorScheme;
+    final origin = this.origin;
+    final said = switch (origin) {
+      SvgThemeOrigin.own => l10n.themeOwn,
+      SvgThemeOrigin.inherited => l10n.themeInherited,
+      null => l10n.themeShared,
+    };
     return Padding(
       padding: const EdgeInsets.all(3),
-      child: Opacity(
-        opacity: active ? 1 : .55,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: active ? scheme.primary.withValues(alpha: .08) : null,
-            border: Border.all(
-              color: active ? scheme.primary.withValues(alpha: .6) : scheme.outlineVariant,
+      child: Semantics(
+        container: true,
+        label: said,
+        child: Opacity(
+          opacity: active ? 1 : .55,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: active ? colors.primary.withValues(alpha: .08) : null,
+              border: Border.all(
+                color: active ? colors.primary.withValues(alpha: .6) : colors.outlineVariant,
+              ),
+              borderRadius: BorderRadius.circular(10),
             ),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(8, 4, 2, 4),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      child,
-                      Text(
-                        origin,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: own ? scheme.primary : muted,
-                          fontWeight: own ? FontWeight.w700 : null,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 44),
+              child: Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(8, 2, 4, 2),
+                child: Row(
+                  children: [
+                    Expanded(child: child),
+                    if (origin != null)
+                      Tooltip(
+                        message: said,
+                        child: Icon(
+                          themeIcon(scheme, outlined: origin == SvgThemeOrigin.inherited),
+                          key: Key('theme-${origin.name}-$property-${scheme.name}'),
+                          size: 14,
+                          color: themeColor(context, scheme, active: active),
                         ),
                       ),
-                    ],
-                  ),
+                    if (active && canReset && origin == SvgThemeOrigin.own && onReset != null)
+                      IconButton(
+                        key: resetKey,
+                        tooltip: l10n.themeUseShared,
+                        visualDensity: VisualDensity.compact,
+                        iconSize: 18,
+                        onPressed: onReset,
+                        icon: const Icon(Icons.settings_backup_restore_rounded),
+                      )
+                    else
+                      const SizedBox(width: 4),
+                  ],
                 ),
-                if (active && own && onReset != null)
-                  IconButton(
-                    key: resetKey,
-                    tooltip: l10n.themeUseShared,
-                    visualDensity: VisualDensity.compact,
-                    iconSize: 18,
-                    onPressed: onReset,
-                    icon: const Icon(Icons.settings_backup_restore_rounded),
-                  ),
-              ],
+              ),
             ),
           ),
         ),

@@ -108,8 +108,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('theme-sheet')), findsOneWidget);
     expect(find.text('Escuro · editando'), findsOneWidget);
-    expect(find.text('Você edita o tema escuro; o claro não muda.'), findsOneWidget);
-    expect(find.text('Próprio'), findsOneWidget, reason: 'the light fill of the rect');
+    expect(find.textContaining('Você edita'), findsNothing, reason: 'the columns say it');
+    for (final word in ['Próprio', 'Herdado', 'Comum']) {
+      expect(find.text(word), findsNothing, reason: 'a mark, not a word: $word');
+    }
+    // The light fill of the rect is its own: a solid sun; dark shows the shared one.
+    expect(find.byKey(const Key('theme-own-fill-light')), findsOneWidget);
+    expect(find.byKey(const Key('theme-own-fill-dark')), findsNothing);
+    expect(find.byTooltip('Próprio'), findsOneWidget);
     expect(find.byKey(const Key('theme-reset-fill')), findsNothing, reason: 'dark is shared');
 
     await tester.tap(find.byKey(const Key('theme-visible-switch')));
@@ -121,6 +127,18 @@ void main() {
     expect(SvgThemeEdit.isShown(saved, _rect, SvgColorScheme.dark), isFalse);
     expect(SvgThemeEdit.isShown(saved, _rect, SvgColorScheme.light), isTrue);
     expect(SvgThemeEdit.fillFor(saved, _rect, SvgColorScheme.light), '#EEEEFF');
+  });
+
+  testWidgets('theme settings: the title sits next to the layer name', (tester) async {
+    await _openInEditor(tester);
+    await tester.tap(_mark(_rect));
+    await tester.pumpAndSettle();
+    final name = tester.getRect(
+      find.descendant(of: find.byKey(const Key('theme-sheet')), matching: find.text('Retângulo')),
+    );
+    final title = tester.getRect(find.text('Ajustes de tema'));
+    expect((title.center.dy - name.center.dy).abs(), lessThan(4), reason: 'one line');
+    expect(title.left, greaterThan(name.right));
   });
 
   testWidgets('theme settings: the other column switches, and its own value can be reset', (
@@ -151,7 +169,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(_mark(_sunCircle));
     await tester.pumpAndSettle();
-    expect(find.text('Herdado'), findsOneWidget, reason: 'drawn or not, from the group in light');
+    expect(
+      find.byKey(const Key('theme-inherited-display-light')),
+      findsOneWidget,
+      reason: 'drawn or not, from the group in light: an outlined sun',
+    );
     await tester.tap(find.byKey(const Key('theme-switch-light')));
     await tester.pumpAndSettle();
     final from = find.byKey(const Key('theme-comes-from'));
@@ -173,7 +195,8 @@ void main() {
     await tester.tap(find.byKey(ValueKey('theme-open-$_dot')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('theme-sheet')), findsOneWidget);
-    expect(find.text('Próprio'), findsNothing);
+    expect(find.byTooltip('Próprio'), findsNothing);
+    expect(find.byTooltip('Herdado'), findsNothing);
   });
 
   testWidgets('a layer hidden in both themes has no theme marks', (tester) async {
@@ -216,11 +239,13 @@ void main() {
     await tester.tap(tab);
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('colors-theme-strip')), findsOneWidget);
-    expect(find.text('Só o tema escuro muda'), findsOneWidget);
+    expect(find.textContaining('Só o tema'), findsNothing, reason: 'the strip says it');
+    expect(find.byTooltip('Escuro · editando'), findsOneWidget);
+    expect(find.byTooltip('Mudar para o tema claro'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('colors-theme-light')));
     await tester.pumpAndSettle();
-    expect(find.text('Só o tema claro muda'), findsOneWidget);
+    expect(find.byTooltip('Claro · editando'), findsOneWidget);
     final swatch = find.descendant(
       of: find.byKey(const Key('preset-palette')),
       matching: find.bySemanticsLabel('#3B82F6'),
