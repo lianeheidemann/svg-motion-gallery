@@ -9,9 +9,13 @@ const _red =
 
 /// Imports `red.svg`, opens it in the editor, selects the rectangle and opens
 /// the Colors tab.
-Future<AppServices> _openColors(WidgetTester tester) async {
+Future<AppServices> _openColors(
+  WidgetTester tester, {
+  String svg = _red,
+  bool select = true,
+}) async {
   final services = (await tester.runAsync(
-    () => createTestServices(importFiles: [(name: 'red.svg', content: _red)]),
+    () => createTestServices(importFiles: [(name: 'red.svg', content: svg)]),
   ))!;
   await pumpApp(tester, services);
   await tester.tap(find.text('Importar SVG'));
@@ -27,9 +31,11 @@ Future<AppServices> _openColors(WidgetTester tester) async {
   );
   await tester.tap(find.byKey(const Key('edit-svg')));
   await tester.pumpAndSettle();
-  await _tapTab(tester, 'Camadas');
-  await tester.tap(find.text('Retângulo'));
-  await tester.pumpAndSettle();
+  if (select) {
+    await _tapTab(tester, 'Camadas');
+    await tester.tap(find.text('Retângulo'));
+    await tester.pumpAndSettle();
+  }
   await _tapTab(tester, 'Cores');
   return services;
 }
@@ -189,5 +195,69 @@ void main() {
     await _tapKey(tester, 'adjust-reset');
     final back = await _save(tester, services);
     expect(back, contains('STOP-COLOR="#3B82F6"'));
+  });
+
+  testWidgets('gradient: shapes whose color is not on them (default, stylesheet) get it too', (
+    tester,
+  ) async {
+    const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'
+        '<style>.eye{fill:#223344}.smile{fill:none;stroke:#112233;stroke-width:3}</style>'
+        '<rect width="10" height="10" fill="#FF0000"/>'
+        '<rect x="20" width="10" height="10"/>'
+        '<circle class="eye" cx="50" cy="5" r="5"/>'
+        '<path class="smile" d="M60 5 Q65 15 70 5"/>'
+        '</svg>';
+    final services = await _openColors(tester, svg: svg, select: false);
+    await _pickKind(tester, 'Linear');
+
+    final saved = await _save(tester, services);
+    expect(_count(saved, 'FILL="URL\\(#SM-GRAD'), 3, reason: 'both rects and the circle');
+    expect(_count(saved, 'STROKE="URL\\(#SM-GRAD'), 1, reason: 'the outline-only smile');
+    expect(saved, contains('STOP-COLOR="#000000"'), reason: 'the default black fill');
+    expect(saved, contains('STOP-COLOR="#223344"'), reason: 'the stylesheet color');
+    expect(saved, contains('STOP-COLOR="#112233"'));
+  });
+
+  testWidgets('gradient: one continuous gradient across the selection, and back', (tester) async {
+    const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'
+        '<rect width="10" height="10" fill="#FF0000"/>'
+        '<rect x="90" width="10" height="10" fill="#00FF00"/>'
+        '</svg>';
+    final services = await _openColors(tester, svg: svg, select: false);
+    await _pickKind(tester, 'Linear');
+    var saved = await _save(tester, services);
+    expect(saved, isNot(contains('DATA-SM-SPAN')), reason: 'a gradient on each shape at first');
+    expect(_count(saved, '<LINEARGRADIENT'), 2);
+
+    await _tapKey(tester, 'gradient-span');
+    saved = await _save(tester, services);
+    expect(saved, contains('GRADIENTUNITS="USERSPACEONUSE"'));
+    expect(saved, contains('DATA-SM-SPAN="0 0 100 10"'));
+    expect(_count(saved, '<LINEARGRADIENT'), 1, reason: 'both shapes share the coordinates');
+    expect(saved, contains('X1="0"'));
+    expect(saved, contains('X2="100"'));
+
+    // The angle keeps working across the whole box.
+    final slider = find.byKey(const Key('gradient-angle'));
+    await tester.ensureVisible(slider);
+    await tester.pumpAndSettle();
+    await tester.drag(slider, const Offset(-400, 0));
+    await tester.pumpAndSettle();
+    saved = await _save(tester, services);
+    expect(saved, contains('DATA-SM-SPAN="0 0 100 10"'));
+    expect(saved, isNot(contains('X1="0" Y1="5" X2="100"')));
+
+    await _tapKey(tester, 'gradient-span');
+    saved = await _save(tester, services);
+    expect(saved, isNot(contains('DATA-SM-SPAN')));
+    expect(saved, isNot(contains('USERSPACEONUSE')));
+  });
+
+  testWidgets('gradient: the continuous mode needs more than one shape', (tester) async {
+    await _openColors(tester);
+    await _pickKind(tester, 'Linear');
+    expect(tester.widget<IconButton>(find.byKey(const Key('gradient-span'))).onPressed, isNull);
   });
 }

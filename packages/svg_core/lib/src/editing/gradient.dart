@@ -6,6 +6,8 @@ import '../colors.dart';
 import '../theme/color_scheme.dart';
 import '../xml_support.dart';
 import 'element_path.dart';
+import 'geometry.dart';
+import 'hit_test.dart';
 import 'paint.dart';
 import 'theme_edit.dart';
 
@@ -105,8 +107,90 @@ class SvgGradient {
     id: id ?? this.id,
   );
 
-  /// This gradient pointing at [degrees]; the line spans the whole shape.
+  /// Attribute that marks a gradient laid across several shapes: the box
+  /// (`left top right bottom`, in the drawing's units) it spans.
+  static const spanKey = 'data-sm-span';
+
+  /// The box a continuous gradient spans, null for one that fits each shape.
+  SvgBounds? get span {
+    final parts = attributes[spanKey]?.trim().split(RegExp(r'\s+')).map(double.tryParse).toList();
+    if (parts == null || parts.length != 4 || parts.contains(null)) return null;
+    return SvgBounds(parts[0]!, parts[1]!, parts[2]!, parts[3]!);
+  }
+
+  bool get isSpanning => span != null;
+
+  /// This gradient laid over [box] (the drawing's units) as one continuous
+  /// gradient, keeping its colors and direction. [toLocal] maps the drawing's
+  /// coordinates to those of the shape that uses it (see
+  /// [SvgGradientEdit.spread]).
+  SvgGradient spannedOver(SvgBounds box, {Affine toLocal = Affine.identity}) {
+    final base = {
+      for (final entry in attributes.entries)
+        if (!_geometryKeys.contains(entry.key) && entry.key != spanKey) entry.key: entry.value,
+    };
+    final degrees = isLinear ? angle : 0.0;
+    return copyWith(
+      attributes: {
+        ...base,
+        'gradientUnits': 'userSpaceOnUse',
+        spanKey: [box.left, box.top, box.right, box.bottom].map(formatNumber).join(' '),
+        if (!toLocal.isIdentity) 'gradientTransform': toLocal.toSvg(),
+        ..._spanGeometry(kind, box, degrees),
+      },
+    );
+  }
+
+  /// This gradient fitted to each shape again, with the direction it had.
+  SvgGradient get withoutSpan {
+    if (!isSpanning) return this;
+    final degrees = angle;
+    final plain = copyWith(
+      attributes: {
+        for (final entry in attributes.entries)
+          if (!_geometryKeys.contains(entry.key) && entry.key != spanKey) entry.key: entry.value,
+        if (!isLinear) ...{'cx': '0.5', 'cy': '0.5', 'r': '0.5'},
+      },
+    );
+    return isLinear ? plain.withAngle(degrees) : plain;
+  }
+
+  static Map<String, String> _spanGeometry(SvgGradientKind kind, SvgBounds box, double degrees) {
+    if (kind == SvgGradientKind.radial) {
+      return {
+        'cx': formatNumber(box.centerX),
+        'cy': formatNumber(box.centerY),
+        'r': formatNumber(
+          math.max(math.sqrt(box.width * box.width + box.height * box.height) / 2, 0.001),
+        ),
+      };
+    }
+    final radians = degrees * math.pi / 180;
+    final c = math.cos(radians);
+    final s = math.sin(radians);
+    // Half the box's extent along the direction, so the ends touch its corners.
+    final half = math.max((c.abs() * box.width + s.abs() * box.height) / 2, 0.001);
+    return {
+      'x1': formatNumber(box.centerX - c * half),
+      'y1': formatNumber(box.centerY - s * half),
+      'x2': formatNumber(box.centerX + c * half),
+      'y2': formatNumber(box.centerY + s * half),
+    };
+  }
+
+  /// This gradient pointing at [degrees]; the line spans the whole shape (or
+  /// the whole box of a continuous gradient).
   SvgGradient withAngle(double degrees) {
+    final over = span;
+    if (over != null) {
+      return copyWith(
+        attributes: {
+          for (final entry in attributes.entries)
+            if (!{'x1', 'y1', 'x2', 'y2'}.contains(entry.key)) entry.key: entry.value,
+          ..._spanGeometry(SvgGradientKind.linear, over, degrees),
+        },
+      );
+    }
     final radians = degrees * math.pi / 180;
     final c = math.cos(radians);
     final s = math.sin(radians);
@@ -126,6 +210,20 @@ class SvgGradient {
   /// right line, or a circle centered in the shape).
   SvgGradient withKind(SvgGradientKind kind) {
     if (kind == this.kind) return this;
+    final over = span;
+    if (over != null) {
+      return copyWith(
+        kind: kind,
+        attributes: {
+          for (final entry in attributes.entries)
+            if (!_geometryKeys.contains(entry.key) ||
+                entry.key == 'gradientUnits' ||
+                entry.key == 'gradientTransform')
+              entry.key: entry.value,
+          ..._spanGeometry(kind, over, 0),
+        },
+      );
+    }
     return copyWith(
       kind: kind,
       attributes: {
@@ -327,6 +425,63 @@ class SvgGradientEdit {
     return collectGarbage(out);
   }
 
+  /// Lays [gradient] across the shapes at [paths] as one continuous gradient:
+  /// it runs over the box that holds all of them instead of repeating on each.
+  ///
+  /// The box and where each shape sits come from the markup
+  /// ([SvgGeometry]). A gradient in user space is drawn in the coordinates of
+  /// the shape that uses it, so shapes in differently moved or turned groups
+  /// each get a copy that maps the shared box into their own coordinates.
+  /// [propertyOf] says which paint of a shape (`fill` or `stroke`) takes it
+  /// and [write] stores one gradient for some shapes (see [apply] and
+  /// [applyScheme]).
+  static String spread(
+    String svg,
+    List<ElementPath> paths,
+    SvgGradient gradient, {
+    required String Function(ElementPath path) propertyOf,
+    required String Function(
+      String svg,
+      List<ElementPath> paths,
+      String property,
+      SvgGradient gradient,
+    )
+    write,
+  }) {
+    final document = tryParseSvg(svg);
+    if (document == null) return svg;
+    SvgBounds? box;
+    final groups = <String, ({String property, Affine toLocal, List<ElementPath> paths})>{};
+    final seen = <XmlElement>{};
+    for (final path in paths) {
+      final element = paintTarget(document, path);
+      if (element == null || !seen.add(element)) continue;
+      final here = SvgGeometry.rootBounds(element);
+      if (here != null) box = box == null ? here : SvgGeometry.unionOf(box, here);
+      final toLocal = SvgGeometry.toRoot(element).inverse;
+      if (toLocal == null) continue;
+      final property = propertyOf(path);
+      groups
+          .putIfAbsent(
+            '$property|${toLocal.toSvg()}',
+            () => (property: property, toLocal: toLocal, paths: <ElementPath>[]),
+          )
+          .paths
+          .add(path);
+    }
+    if (box == null) return svg;
+    var out = svg;
+    for (final group in groups.values) {
+      out = write(
+        out,
+        group.paths,
+        group.property,
+        gradient.spannedOver(box, toLocal: group.toLocal),
+      );
+    }
+    return out;
+  }
+
   /// Paints [property] of every element in [paths] with the plain [color]
   /// (null for `none`), dropping gradients nothing uses any more.
   static String toSolid(String svg, List<ElementPath> paths, String property, String? color) {
@@ -382,7 +537,10 @@ class SvgGradientEdit {
         final name = attribute.localName;
         final sameKind = link.localName == element.localName;
         final common = name == 'gradientUnits' || name == 'gradientTransform';
-        if (name == 'spreadMethod' || common || (sameKind && _geometry.contains(name))) {
+        if (name == 'spreadMethod' ||
+            name == SvgGradient.spanKey ||
+            common ||
+            (sameKind && _geometry.contains(name))) {
           attributes[name] = attribute.value;
         }
       }
@@ -457,7 +615,7 @@ class SvgGradientEdit {
       );
       if (element.parent != null) element.replace(target);
     }
-    for (final name in [..._geometry, 'spreadMethod', 'href', 'xlink:href']) {
+    for (final name in [..._geometry, SvgGradient.spanKey, 'spreadMethod', 'href', 'xlink:href']) {
       target.removeAttribute(name);
     }
     for (final entry in gradient.attributes.entries) {

@@ -442,6 +442,8 @@
   "gradientReverseTip": "Inverter cores",
   "gradientAddStopTip": "Adicionar parada",
   "gradientRemoveStopTip": "Remover parada",
+  "gradientSpanEach": "Cada item com seu degradê (toque para um degradê contínuo)",
+  "gradientSpanAll": "Um degradê contínuo pelos itens (toque para um em cada item)",
   "gradientReverse": "Inverter",
   "gradientAddStop": "Adicionar",
   "gradientRemoveStop": "Remover",

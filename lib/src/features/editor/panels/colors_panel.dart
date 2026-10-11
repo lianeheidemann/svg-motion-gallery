@@ -75,16 +75,20 @@ class _ColorsPanelState extends State<ColorsPanel> {
   /// (fill none, with a stroke: an antenna, a smile) has its stroke painted,
   /// since a fill would turn the line into a blob.
   String _property(String svg, ElementPath target) {
-    final scheme = widget.scheme;
-    // What the shape shows, so a fill or stroke set on its group counts.
-    final fill = scheme == null
-        ? SvgPaintEdit.inherited(svg, target, 'fill')
-        : SvgThemeEdit.fillFor(svg, target, scheme);
-    if (fill != 'none') return 'fill';
-    final stroke = scheme == null
-        ? SvgPaintEdit.inherited(svg, target, 'stroke')
-        : SvgThemeEdit.paintFor(svg, target, scheme, 'stroke');
+    // What the shape shows, so a fill or stroke set on its group or by a
+    // stylesheet rule counts.
+    if (_shownPaint(svg, target, 'fill') != 'none') return 'fill';
+    final stroke = _shownPaint(svg, target, 'stroke');
     return stroke != null && stroke != 'none' ? 'stroke' : 'fill';
+  }
+
+  /// The raw [property] [target] shows: from its inline style, its own
+  /// attribute, a stylesheet rule or its groups (in the version being edited
+  /// for a light/dark file); null when nothing sets one.
+  String? _shownPaint(String svg, ElementPath target, String property) {
+    final scheme = widget.scheme;
+    final shown = SvgThemeEdit.paintFor(svg, target, scheme ?? SvgColorScheme.light, property);
+    return shown ?? (scheme == null ? SvgPaintEdit.inherited(svg, target, property) : null);
   }
 
   /// The `#RRGGBB` [property] of [target] as it shows, or null (no plain color).
@@ -95,9 +99,23 @@ class _ColorsPanelState extends State<ColorsPanel> {
       value = SvgThemeEdit.paintFor(svg, target, scheme, property);
     } else {
       final paint = SvgPaintEdit.read(svg, target);
-      value = property == 'stroke' ? paint.strokeColor : paint.fillColor;
+      value =
+          (property == 'stroke' ? paint.strokeColor : paint.fillColor) ??
+          // Set by a stylesheet rule rather than on the shape.
+          SvgColorValue.normalize(_shownPaint(svg, target, property) ?? '');
     }
     return value != null && value.startsWith('#') ? value : null;
+  }
+
+  /// The color a gradient on [target] starts from: the one it shows, or black
+  /// for a fill nothing sets (or `currentColor`). Null for no paint at all, or
+  /// one that is not a plain color (a gradient already, a variable).
+  String? _startColor(String svg, ElementPath target, String property) {
+    final hex = _colorOf(svg, target, property);
+    if (hex != null) return hex;
+    final shown = _shownPaint(svg, target, property);
+    if (shown == null) return property == 'fill' ? '#000000' : null;
+    return {'currentcolor', 'inherit'}.contains(shown.trim().toLowerCase()) ? '#000000' : null;
   }
 
   String _setColor(String svg, ElementPath target, String? color, String property) {
@@ -206,7 +224,7 @@ class _ColorsPanelState extends State<ColorsPanel> {
     final groups = <String, ({String hex, String property, List<ElementPath> paths})>{};
     for (final target in _editor.paintTargets) {
       final property = _property(svg, target);
-      final hex = _colorOf(svg, target, property);
+      final hex = _startColor(svg, target, property);
       if (hex == null) continue;
       groups
           .putIfAbsent(
@@ -243,6 +261,25 @@ class _ColorsPanelState extends State<ColorsPanel> {
           : SvgThemeEdit.setPaint(out, target, color, scheme, property);
     }
     return scheme == null ? out : SvgGradientEdit.collectGarbage(out);
+  }
+
+  /// Lays one gradient across all the targets ([on]) or gives each its own.
+  void _setSpan({required bool on}) {
+    final svg = _editor.svg;
+    final targets = _editor.paintTargets;
+    if (targets.isEmpty) return;
+    if (!on) return _editor.commit(_mapGradients(svg, (gradient) => gradient.withoutSpan));
+    final first = _gradientOf(svg, targets.first, _property(svg, targets.first));
+    if (first == null) return;
+    _editor.commit(
+      SvgGradientEdit.spread(
+        svg,
+        targets,
+        first,
+        propertyOf: (path) => _property(svg, path),
+        write: _writeGradient,
+      ),
+    );
   }
 
   void _setKind(SvgGradientKind? kind) {
@@ -576,8 +613,32 @@ class _ColorsPanelState extends State<ColorsPanel> {
             ],
           ),
         ),
+        Row(
+          children: [
+            Expanded(
+              child: gradient.isLinear
+                  ? Text(l10n.gradientAngle(gradient.angle.round().toString()))
+                  : const SizedBox.shrink(),
+            ),
+            // One gradient for the whole selection, or one on each shape.
+            Builder(
+              builder: (context) {
+                final several = _editor.paintTargets.length > 1;
+                final span = gradient.isSpanning;
+                return IconButton.filledTonal(
+                  key: const Key('gradient-span'),
+                  isSelected: span,
+                  tooltip: span ? l10n.gradientSpanAll : l10n.gradientSpanEach,
+                  icon: const Icon(Icons.grid_view_rounded),
+                  selectedIcon: const Icon(Icons.view_stream_rounded),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: several || span ? () => _setSpan(on: !span) : null,
+                );
+              },
+            ),
+          ],
+        ),
         if (gradient.isLinear) ...[
-          Text(l10n.gradientAngle(gradient.angle.round().toString())),
           Slider(
             key: const Key('gradient-angle'),
             max: 360,

@@ -228,6 +228,8 @@
   "gradientReverseTip": "Reverse colors",
   "gradientAddStopTip": "Add stop",
   "gradientRemoveStopTip": "Remove stop",
+  "gradientSpanEach": "Each item has its own gradient (tap for one continuous gradient)",
+  "gradientSpanAll": "One continuous gradient across the items (tap for one on each)",
   "gradientReverse": "Reverse",
   "gradientAddStop": "Add",
   "gradientRemoveStop": "Remove",

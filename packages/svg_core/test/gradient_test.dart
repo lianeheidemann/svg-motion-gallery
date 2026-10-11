@@ -21,6 +21,7 @@ const _inGroup = ElementPath([3, 0]);
 const _rect = ElementPath([4]);
 
 void main() {
+  spreadTests();
   group('reading', () {
     test('parses stops, defaults and opacity', () {
       final gradient = SvgGradientEdit.read(_butterfly, 'wing')!;
@@ -269,6 +270,70 @@ void main() {
       expect(dark.id, isNot(light.id));
       expect(dark.stops.first.color, '#336699');
       expect(light.stops.first.color, '#CC3300');
+    });
+  });
+}
+
+void spreadTests() {
+  group('continuous gradient across shapes', () {
+    const eyes =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'
+        '<rect width="10" height="10" fill="#FF0000"/>'
+        '<rect x="90" y="0" width="10" height="10" fill="#00FF00"/>'
+        '<g transform="translate(0 50)"><circle cx="50" cy="5" r="5" fill="#0000FF"/></g>'
+        '</svg>';
+    const first = ElementPath([0]);
+    const second = ElementPath([1]);
+    const third = ElementPath([2, 0]);
+    String write(String svg, List<ElementPath> paths, String property, SvgGradient g) =>
+        SvgGradientEdit.apply(svg, paths, property, g);
+
+    String spread(String svg, SvgGradient g) => SvgGradientEdit.spread(
+      svg,
+      const [first, second, third],
+      g,
+      propertyOf: (_) => 'fill',
+      write: write,
+    );
+
+    test('one gradient runs over the whole selection, in each shape\'s own coordinates', () {
+      final out = spread(eyes, SvgGradient.fromColor('#FF0000'));
+      final a = SvgGradientEdit.of(out, first, 'fill')!;
+      final b = SvgGradientEdit.of(out, second, 'fill')!;
+      final c = SvgGradientEdit.of(out, third, 'fill')!;
+      // The two rects share the (identity) coordinates, so they share it.
+      expect(a.id, b.id);
+      expect(c.id, isNot(a.id));
+      expect(a.isSpanning, isTrue);
+      expect(a.span!.left, 0);
+      expect(a.span!.right, 100);
+      expect(a.attributes['gradientUnits'], 'userSpaceOnUse');
+      // Left to right across the box (0..100 wide): from x=0 to x=100.
+      expect(a.attributes['x1'], '0');
+      expect(a.attributes['x2'], '100');
+      // The circle sits in a group moved down 50: its gradient is moved back.
+      expect(c.attributes['gradientTransform'], 'matrix(1 0 0 1 0 -50)');
+    });
+
+    test('the angle and the kind keep working on a continuous gradient', () {
+      final out = spread(eyes, SvgGradient.fromColor('#FF0000'));
+      final g = SvgGradientEdit.of(out, first, 'fill')!;
+      final down = g.withAngle(90);
+      expect(down.isSpanning, isTrue);
+      expect(down.angle, closeTo(90, 1e-6));
+      final radial = g.withKind(SvgGradientKind.radial);
+      expect(radial.attributes['gradientUnits'], 'userSpaceOnUse');
+      expect(radial.centerX, 50);
+      expect(radial.withKind(SvgGradientKind.linear).isSpanning, isTrue);
+    });
+
+    test('back to a gradient for each shape', () {
+      final out = spread(eyes, SvgGradient.fromColor('#FF0000'));
+      final g = SvgGradientEdit.of(out, first, 'fill')!;
+      final each = g.withoutSpan;
+      expect(each.isSpanning, isFalse);
+      expect(each.attributes.containsKey('gradientUnits'), isFalse);
+      expect(each.angle, closeTo(g.angle, 1e-6));
     });
   });
 }
