@@ -228,11 +228,10 @@ class _LayersPanelState extends State<LayersPanel> {
             .any(ticked.contains);
     final theme = widget.themeScheme;
     final mark = theme == null || layer.isEditorGroup ? null : editor.themeMarks[layer.path];
-    // Hidden, or not drawn in the version being edited: greyed out.
-    // Hidden (by itself or by a folder around it), or not drawn in the
-    // version being edited: greyed out.
+    // Hidden, by itself or by a folder around it: greyed out. A layer the
+    // version being edited does not draw keeps its open eye and its colors.
     final shown = layer.visible && hiddenFolder == null;
-    final dim = !shown || (mark != null && !mark.shownIn.contains(theme));
+    final dim = !shown;
     // What the layers inside a folded folder set for each version.
     final inside = folded && theme != null
         ? {

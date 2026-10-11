@@ -276,6 +276,24 @@ void main() {
     }
   });
 
+  testWidgets('only the eye greys a layer out, not the version being edited', (tester) async {
+    await _openInEditor(tester);
+    Color? colorOf(String label) => tester.widget<Text>(find.text(label)).style?.color;
+    // Dark is being edited and the file draws the sun only in light, but its
+    // eye is open: it looks like any other layer.
+    expect(SvgThemeEdit.isShown(_themed, _sun, SvgColorScheme.dark), isFalse);
+    expect(colorOf('Grupo'), isNull);
+    expect(colorOf('Círculo'), isNull);
+
+    await tester.ensureVisible(find.byKey(ValueKey('eye-$_sun')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(ValueKey('eye-$_sun')));
+    await tester.pumpAndSettle();
+    final outline = Theme.of(tester.element(find.text('Grupo'))).colorScheme.outline;
+    expect(colorOf('Grupo'), outline);
+    expect(colorOf('Círculo'), outline, reason: 'inside the hidden folder');
+  });
+
   testWidgets('theme settings: a layer the eye hides cannot be shown in one theme', (tester) async {
     await _openInEditor(tester);
     await tester.tap(find.byKey(ValueKey('eye-$_rect')));
