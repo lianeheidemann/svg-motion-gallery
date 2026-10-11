@@ -328,7 +328,7 @@ class _LayersPanelState extends State<LayersPanel> {
                 ),
               ),
             ),
-            if (mark != null && theme != null) _themeMarks(context, layer, mark, theme, isSelected),
+            if (mark != null && theme != null) _themeMarks(context, layer, mark, theme),
             // The eye is for both versions; one version alone is hidden in the
             // theme settings. Inside a hidden folder it is closed and off:
             // showing the folder brings each layer back as it was.
@@ -359,15 +359,13 @@ class _LayersPanelState extends State<LayersPanel> {
     );
   }
 
-  /// The sun/moon of [layer], which open its theme settings. A selected layer
-  /// with no setting for either version gets a faint button instead, to add
-  /// the first one.
+  /// The sun/moon of [layer], which open its theme settings; nothing when it
+  /// has no setting for either version.
   Widget _themeMarks(
     BuildContext context,
     SvgLayer layer,
     SvgThemeMark mark,
     SvgColorScheme theme,
-    bool isSelected,
   ) {
     final l10n = context.l10n;
     void open() => showLayerThemeSheet(
@@ -376,16 +374,7 @@ class _LayersPanelState extends State<LayersPanel> {
       path: layer.path,
       onOpenColors: widget.onOpenColors,
     );
-    if (mark.isEmpty) {
-      if (!isSelected) return const SizedBox.shrink();
-      return IconButton(
-        key: ValueKey('theme-open-${layer.path}'),
-        tooltip: l10n.themeSettings,
-        visualDensity: VisualDensity.compact,
-        onPressed: open,
-        icon: Icon(Icons.contrast_rounded, size: 18, color: GalleryColors.of(context).muted),
-      );
-    }
+    if (mark.isEmpty) return const SizedBox.shrink();
     final layers = editor.layers;
     // The folder right around the layer (its editor groups are not layers).
     final rows = {for (final l in layers) l.path};

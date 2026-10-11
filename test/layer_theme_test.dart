@@ -226,17 +226,16 @@ void main() {
     expect(find.textContaining('Selecionado: Grupo'), findsOneWidget);
   });
 
-  testWidgets('a selected layer without theme settings gets a button to add one', (tester) async {
+  testWidgets('a layer without theme settings shows nothing for them, even selected', (
+    tester,
+  ) async {
     await _openInEditor(tester);
-    expect(find.byKey(ValueKey('theme-open-$_dot')), findsNothing);
     await tester.tap(find.textContaining('#dot'));
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(ValueKey('theme-open-$_dot')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('theme-sheet')), findsOneWidget);
-    expect(find.byTooltip('Próprio'), findsNothing);
-    expect(find.byTooltip('Herdado'), findsNothing);
+    expect(find.textContaining('Selecionado:'), findsOneWidget);
+    expect(_mark(_dot), findsNothing);
+    expect(find.byIcon(Icons.contrast_rounded), findsNothing);
   });
 
   testWidgets('a layer hidden in both themes has no theme marks', (tester) async {
