@@ -657,13 +657,18 @@ class _ColorsPanelState extends State<ColorsPanel> {
           preview: (to) => _editor.preview(apply(_editor.svg, to)),
           commit: (to) => _editor.commit(apply(_editor.svg, to)),
         ),
-        HslColorEditor(
-          key: ValueKey('paint-$path-$_stop-$hex'),
-          color: colorFromHex(hex ?? '') ?? Theme.of(context).colorScheme.primary,
-          labels: _labels(l10n),
-          showSliders: false,
-          onChanged: (color) => _editor.preview(apply(_editor.svg, colorToHex(color))),
-          onChangeEnd: (color) => _editor.commit(apply(_editor.svg, colorToHex(color))),
+        // Set apart from the palette: it is a different step (a typed color,
+        // then the fine adjustments).
+        Padding(
+          padding: const EdgeInsets.only(top: AppSpacing.sm),
+          child: HslColorEditor(
+            key: ValueKey('paint-$path-$_stop-$hex'),
+            color: colorFromHex(hex ?? '') ?? Theme.of(context).colorScheme.primary,
+            labels: _labels(l10n),
+            showSliders: false,
+            onChanged: (color) => _editor.preview(apply(_editor.svg, colorToHex(color))),
+            onChangeEnd: (color) => _editor.commit(apply(_editor.svg, colorToHex(color))),
+          ),
         ),
         ColorAdjuster(
           amounts: Map.of(_adjustAmounts),
