@@ -52,7 +52,7 @@
 
 <div align="center">
     
-<img width="100%" src="assets/svg-gallery-interface-v2.webp" />
+<img width="100%" src="assets/svg-gallery-interface-v5.webp" />
 
 </div>
 
