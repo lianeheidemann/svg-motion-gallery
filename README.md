@@ -17,7 +17,7 @@
 
 <p><em>View, animate and edit SVG files on Android.</em></p>
 
-<img width="180" alt="Status: under construction" src="assets/badge/badge_under-construction_v2.svg" />
+<img width="220" alt="Status: under construction" src="assets/badge/badge_under-construction_v2.svg" /><br>
 
 <p>
   <a href="https://github.com/lianeheidemann/svg-motion-gallery/actions/workflows/ci.yml"><img height="21" alt="CI" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/svg-motion-gallery/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI&labelColor=0D1117" /></a>
@@ -25,9 +25,7 @@
   <a href="https://github.com/lianeheidemann/svg-motion-gallery/actions/workflows/android-build.yml"><img height="21" alt="Android build" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/svg-motion-gallery/android-build.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=Android%20build&labelColor=0D1117" /></a>
   <a href="https://github.com/lianeheidemann/svg-motion-gallery/actions/workflows/release.yml"><img height="21" alt="Release" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/svg-motion-gallery/release.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=Release&labelColor=0D1117" /></a>
   <a href="https://github.com/lianeheidemann/svg-motion-gallery/releases/latest"><img height="21" alt="Latest release" src="https://img.shields.io/github/v/release/lianeheidemann/svg-motion-gallery?include_prereleases&style=for-the-badge&logo=github&logoColor=white&label=release&labelColor=0D1117&color=2563EB" /></a>
-</p>
-
-<p>
+  <br>
   <img height="21" alt="Version 2.2.0" src="https://img.shields.io/badge/version-2.2.0-2563EB?style=for-the-badge&labelColor=0D1117" />
   <img height="21" alt="Flutter 3.47" src="https://img.shields.io/badge/Flutter-3.47-02569B?style=for-the-badge&labelColor=0D1117&logo=flutter&logoColor=white" />
   <img height="21" alt="Dart 3.13" src="https://img.shields.io/badge/Dart-3.13-0175C2?style=for-the-badge&labelColor=0D1117&logo=dart&logoColor=white" />
