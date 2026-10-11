@@ -118,6 +118,53 @@ class EditorController extends ChangeNotifier {
     return _palette;
   }
 
+  String? _themeFor;
+  var _themeEditable = false;
+  Map<ElementPath, SvgThemeMark> _themeMarks = const {};
+  SvgColorScheme? _variant;
+
+  void _syncTheme() {
+    if (_themeFor == svg) return;
+    _themeEditable = SvgThemeEdit.canEdit(svg);
+    _themeMarks = _themeEditable ? SvgThemeMarks.list(svg) : const {};
+    _themeFor = svg;
+  }
+
+  /// The light/dark version being viewed and edited, or null when the file
+  /// has no such versions in its code (or [startTheme] was not called yet).
+  SvgColorScheme? get themeScheme {
+    _syncTheme();
+    return _themeEditable ? _variant : null;
+  }
+
+  /// Picks the version shown first (the app's theme when editing starts).
+  /// Later calls change nothing: the theme button in the app bar changes the
+  /// app, not the version being edited.
+  void startTheme(SvgColorScheme scheme) => _variant ??= scheme;
+
+  /// What every layer shows differently in the light and the dark version
+  /// (empty when the file has no such versions).
+  Map<ElementPath, SvgThemeMark> get themeMarks {
+    _syncTheme();
+    return _themeMarks;
+  }
+
+  /// Switches between the light and the dark version. What is selected moves
+  /// to its twin in the other version (the "night" group to the "day" one),
+  /// since the selected one may not be drawn there.
+  void toggleTheme() {
+    final from = themeScheme;
+    if (from == null) return;
+    final to = from.opposite;
+    final chosen = _multiMode ? [..._multi] : [?_selection];
+    _variant = to;
+    if (chosen.isEmpty) {
+      notifyListeners();
+      return;
+    }
+    replaceSelection([for (final path in chosen) SvgThemeEdit.counterpart(svg, path, from, to)]);
+  }
+
   /// The selected layer, or null when nothing (the whole drawing) is selected.
   SvgLayer? get selectedLayer {
     final path = _selection;

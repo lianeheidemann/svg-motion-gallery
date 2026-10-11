@@ -124,7 +124,9 @@ class LayerActionsCard extends StatelessWidget {
             action(
               const Key('layer-visibility'),
               Icons.visibility_outlined,
-              l10n.hideLayer,
+              // In a light/dark file it hides in both versions; one version
+              // alone is hidden in a layer's theme settings.
+              themeScheme == null ? l10n.hideLayer : l10n.hideLayerBoth,
               has ? _toggleVisibility : null,
             ),
             action(

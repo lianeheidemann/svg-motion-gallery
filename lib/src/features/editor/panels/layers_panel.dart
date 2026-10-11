@@ -6,13 +6,27 @@ import '../../../l10n/l10n.dart';
 import '../../../widgets/svg_actions_menu.dart';
 import '../editor_controller.dart';
 import 'layers/layer_actions.dart';
+import 'layers/layer_theme_sheet.dart';
+import 'layers/theme_badge.dart';
 
 /// Layer list (select, show/hide) and actions on the selected layer. Double
 /// tap a layer to rename it; the arrow on a folder folds it, and two taps on
 /// the header fold or open every folder. Layers with the
 /// same name next to each other are numbered.
+///
+/// In a file with light and dark versions, a sun and/or a moon after a
+/// layer's name says which version has a setting of its own for it (solid)
+/// or takes one from a group around it (outlined, "↳ herda"); the version
+/// being edited is in color. Layers not drawn in that version are greyed
+/// out, and a tap on the marks opens the layer's theme settings.
 class LayersPanel extends StatefulWidget {
-  const LayersPanel({super.key, required this.editor, this.themeScheme, this.onToggleTheme});
+  const LayersPanel({
+    super.key,
+    required this.editor,
+    this.themeScheme,
+    this.onToggleTheme,
+    this.onOpenColors,
+  });
 
   final EditorController editor;
 
@@ -22,6 +36,9 @@ class LayersPanel extends StatefulWidget {
 
   /// Switches between the light and the dark version.
   final VoidCallback? onToggleTheme;
+
+  /// Goes to the Colors tab (from a layer's theme settings).
+  final VoidCallback? onOpenColors;
 
   static IconData iconFor(SvgLayer layer) => switch (layer.tag) {
     _ when layer.isEditorGroup => Icons.tune_rounded,
@@ -184,14 +201,27 @@ class _LayersPanelState extends State<LayersPanel> {
     final layer = layers[index];
     final isFolder = index + 1 < layers.length && layers[index + 1].depth > layer.depth;
     final folded = _folded.contains(layer.path);
-    var inside = 0;
+    var insideCount = 0;
     for (var j = index + 1; j < layers.length && layers[j].depth > layer.depth; j++) {
-      inside++;
+      insideCount++;
     }
     final multi = editor.multiMode;
     final isSelected = multi ? ticked.contains(layer.path) : layer.path == editor.selection;
-    // The arrow and the eye sit outside the InkWell: it waits for a possible
-    // second tap (rename), which would make them feel slow.
+    final theme = widget.themeScheme;
+    final mark = theme == null || layer.isEditorGroup ? null : editor.themeMarks[layer.path];
+    // Hidden, or not drawn in the version being edited: greyed out.
+    final dim = !layer.visible || (mark != null && !mark.shownIn.contains(theme));
+    // What the layers inside a folded folder set for each version.
+    final inside = folded && theme != null
+        ? {
+            for (var j = index + 1; j <= index + insideCount; j++)
+              for (final scheme in SvgColorScheme.values)
+                if (editor.themeMarks[layers[j].path]?.originIn(scheme) == SvgThemeOrigin.own)
+                  scheme,
+          }
+        : const <SvgColorScheme>{};
+    // The arrow, the marks and the eye sit outside the InkWell: it waits for a
+    // possible second tap (rename), which would make them feel slow.
     return Material(
       color: isSelected ? scheme.primary.withValues(alpha: .16) : Colors.transparent,
       borderRadius: BorderRadius.circular(10),
@@ -235,11 +265,7 @@ class _LayersPanelState extends State<LayersPanel> {
                           onChanged: (_) {},
                         ),
                       ),
-                    Icon(
-                      LayersPanel.iconFor(layer),
-                      size: 20,
-                      color: layer.visible ? null : scheme.outline,
-                    ),
+                    Icon(LayersPanel.iconFor(layer), size: 20, color: dim ? scheme.outline : null),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -247,7 +273,7 @@ class _LayersPanelState extends State<LayersPanel> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: layer.visible ? null : scheme.outline,
+                          color: dim ? scheme.outline : null,
                           fontWeight: isSelected ? FontWeight.w700 : null,
                         ),
                       ),
@@ -255,9 +281,18 @@ class _LayersPanelState extends State<LayersPanel> {
                     if (folded)
                       Padding(
                         padding: const EdgeInsets.only(right: 4),
-                        child: Text(
-                          '+$inside',
-                          style: TextStyle(color: scheme.primary, fontWeight: FontWeight.w700),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '+$insideCount',
+                              style: TextStyle(color: scheme.primary, fontWeight: FontWeight.w700),
+                            ),
+                            if (inside.isNotEmpty) ...[
+                              const SizedBox(width: 2),
+                              ThemeInsideMarks(schemes: inside, active: theme!),
+                            ],
+                          ],
                         ),
                       ),
                     if (layer.isAnimated)
@@ -270,8 +305,13 @@ class _LayersPanelState extends State<LayersPanel> {
                 ),
               ),
             ),
+            if (mark != null && theme != null) _themeMarks(context, layer, mark, theme, isSelected),
             IconButton(
-              tooltip: layer.visible ? l10n.hideLayer : l10n.showLayer,
+              // The eye is for both versions; one version alone is hidden in
+              // the theme settings.
+              tooltip: theme == null
+                  ? (layer.visible ? l10n.hideLayer : l10n.showLayer)
+                  : (layer.visible ? l10n.hideLayerBoth : l10n.showLayerBoth),
               onPressed: () => editor.commit(SvgLayers.toggleVisibility(editor.svg, layer.path)),
               icon: Icon(
                 layer.visible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -281,6 +321,55 @@ class _LayersPanelState extends State<LayersPanel> {
           ],
         ),
       ),
+    );
+  }
+
+  /// The sun/moon of [layer], which open its theme settings. A selected layer
+  /// with no setting for either version gets a faint button instead, to add
+  /// the first one.
+  Widget _themeMarks(
+    BuildContext context,
+    SvgLayer layer,
+    SvgThemeMark mark,
+    SvgColorScheme theme,
+    bool isSelected,
+  ) {
+    final l10n = context.l10n;
+    void open() => showLayerThemeSheet(
+      context,
+      editor: editor,
+      path: layer.path,
+      onOpenColors: widget.onOpenColors,
+    );
+    if (mark.isEmpty) {
+      if (!isSelected) return const SizedBox.shrink();
+      return IconButton(
+        key: ValueKey('theme-open-${layer.path}'),
+        tooltip: l10n.themeSettings,
+        visualDensity: VisualDensity.compact,
+        onPressed: open,
+        icon: Icon(Icons.contrast_rounded, size: 18, color: GalleryColors.of(context).muted),
+      );
+    }
+    final layers = editor.layers;
+    // The group right around the layer, editor wrappers skipped.
+    var parent = layer.path.parent;
+    while (parent != null &&
+        !parent.isRoot &&
+        (layers.where((l) => l.path == parent).firstOrNull?.isEditorGroup ?? false)) {
+      parent = parent.parent;
+    }
+    return ThemeMarkBadge(
+      key: ValueKey('theme-mark-${layer.path}'),
+      mark: mark,
+      active: theme,
+      startsHere: SvgColorScheme.values.any((scheme) => mark.sourceIn(scheme) == parent),
+      label: themeMarkSummary(l10n, mark, theme, (path) {
+        if (path.isRoot) return l10n.themeWholeDrawing;
+        final source = layers.where((l) => l.path == path).firstOrNull;
+        return source == null ? '' : l10n.layerLabel(source, layers);
+      }),
+      onTap: open,
     );
   }
 }

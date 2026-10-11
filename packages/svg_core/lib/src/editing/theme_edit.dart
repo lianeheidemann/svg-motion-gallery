@@ -8,14 +8,17 @@ import '../theme/theme_resolver.dart';
 import '../theme/theme_support.dart';
 import '../xml_support.dart';
 import 'element_path.dart';
+import 'theme_marks.dart';
 
 /// Editing one variant (light or dark) of an SVG that changes with
 /// `@media (prefers-color-scheme)`, leaving the other one as it was.
 ///
-/// A shape's color for one variant is kept in a managed `<style
-/// data-sm-theme>` block, keyed by a `data-sm-t` number on the shape:
+/// A shape's color (or whether it is drawn) for one variant is kept in a
+/// managed `<style data-sm-theme>` block, keyed by a `data-sm-t` number on the
+/// shape:
 /// `@media (prefers-color-scheme: light){[data-sm-t="3"]{fill:#abc !important}}`.
-/// Both variants are always written, so the other one keeps what it showed.
+/// A color is written for both variants, so the other one keeps what it
+/// showed.
 class SvgThemeEdit {
   const SvgThemeEdit._();
 
@@ -114,35 +117,118 @@ class SvgThemeEdit {
     String property,
   ) {
     final keep = paintFor(svg, path, scheme.opposite, property) ?? '#000000';
+    return _editManaged(svg, path, (element, values, id) {
+      final style = element.getAttribute('style');
+      if (style != null) {
+        final cleaned = mapDeclarations(style, (name, old) => name == property ? null : old);
+        element.setAttribute('style', cleaned.trim().isEmpty ? null : cleaned);
+      }
+      values[scheme]!['$property|$id'] = color;
+      values[scheme.opposite]!['$property|$id'] = keep;
+    });
+  }
+
+  /// Whether the element at [path] itself is drawn in the [scheme] variant,
+  /// whatever its groups do (see [isShown] for what ends up on screen).
+  static bool isOwnShown(String svg, ElementPath path, SvgColorScheme scheme) {
+    final document = _resolved(svg, scheme);
+    final element = _target(document, path);
+    if (document == null || element == null) return true;
+    final rules = simpleRules(document.rootElement, (p) => p == 'display');
+    return cssValueOf(element, rules, 'display')?.trim() != 'none';
+  }
+
+  /// Shows or hides the element at [path] in the [scheme] variant only; the
+  /// other variant is left as it is. Nothing is kept when the element already
+  /// does that without the editor's help.
+  static String setShown(String svg, ElementPath path, bool shown, SvgColorScheme scheme) {
+    final cleared = _editManaged(
+      svg,
+      path,
+      (_, values, id) => values[scheme]!.remove('display|$id'),
+      assign: false,
+    );
+    if (isOwnShown(cleared, path, scheme) == shown) return cleared;
+    return _editManaged(
+      cleared,
+      path,
+      (_, values, id) => values[scheme]!['display|$id'] = shown ? 'inline' : 'none',
+    );
+  }
+
+  /// What a property shows when nothing sets it.
+  static const _initial = {
+    'fill': '#000000',
+    'stroke': 'none',
+    'display': 'inline',
+    'visibility': 'visible',
+    'opacity': '1',
+    'fill-opacity': '1',
+    'stroke-opacity': '1',
+    'stroke-width': '1',
+  };
+
+  /// Gives [property] of the element at [path] back the value both variants
+  /// share, in the [scheme] variant only: what the editor set there goes, and
+  /// when a rule of the file still sets something else for that variant, the
+  /// shared value is set over it.
+  static String clearOwn(String svg, ElementPath path, SvgColorScheme scheme, String property) {
+    final cleared = _editManaged(
+      svg,
+      path,
+      (_, values, id) => values[scheme]!.remove('$property|$id'),
+      assign: false,
+    );
+    final document = tryParseSvg(cleared);
+    final element = _target(document, path);
+    if (element == null) return cleared;
+    final mark = SvgThemeMarks.list(cleared)[ElementPath.of(element)];
+    if (mark == null || !mark.ownIn(scheme).contains(property)) return cleared;
+    final shared = SvgThemeMarks.sharedValue(cleared, path, property) ?? _initial[property];
+    if (shared == null) return cleared;
+    return _editManaged(
+      cleared,
+      path,
+      (_, values, id) => values[scheme]!['$property|$id'] = shared,
+    );
+  }
+
+  /// Runs [change] on the editor's per-variant values (`property|id` →
+  /// value, for each variant) with the `data-sm-t` id of the element at
+  /// [path], then writes them back. A new id is given to the element unless
+  /// [assign] is false, in which case an element without one is left alone.
+  static String _editManaged(
+    String svg,
+    ElementPath path,
+    void Function(XmlElement element, Map<SvgColorScheme, Map<String, String>> values, String id)
+    change, {
+    bool assign = true,
+  }) {
     final document = tryParseSvg(svg);
     final element = _target(document, path);
     if (document == null || element == null) return svg;
     final root = document.rootElement;
 
-    final id = element.getAttribute(_attribute) ?? _nextId(root);
-    element.setAttribute(_attribute, id);
-    final style = element.getAttribute('style');
-    if (style != null) {
-      final cleaned = mapDeclarations(style, (name, old) => name == property ? null : old);
-      element.setAttribute('style', cleaned.trim().isEmpty ? null : cleaned);
+    var id = element.getAttribute(_attribute);
+    if (id == null) {
+      if (!assign) return svg;
+      id = _nextId(root);
+      element.setAttribute(_attribute, id);
     }
 
     final block = root.childElements.where((e) => e.getAttribute(_marker) != null).firstOrNull;
     final values = {for (final s in SvgColorScheme.values) s: <String, String>{}};
     if (block != null) {
-      for (final rule in findAtRules(styleText(block), 'media')) {
-        final text = styleText(block);
+      final text = styleText(block);
+      for (final rule in findAtRules(text, 'media')) {
         final which = rule.prelude.contains('dark') ? SvgColorScheme.dark : SvgColorScheme.light;
         final inner = text.substring(rule.blockStart + 1, rule.blockEnd);
-        for (final match in RegExp(
-          r'\[data-sm-t="(\d+)"\]\s*\{\s*(fill|stroke)\s*:\s*([^;}!]+)',
-        ).allMatches(inner)) {
+        for (final match in _managedRule.allMatches(inner)) {
           values[which]!['${match.group(2)}|${match.group(1)}'] = match.group(3)!.trim();
         }
       }
     }
-    values[scheme]!['$property|$id'] = color;
-    values[scheme.opposite]!['$property|$id'] = keep;
+    change(element, values, id);
 
     final css = StringBuffer();
     for (final s in SvgColorScheme.values) {
@@ -162,6 +248,9 @@ class SvgThemeEdit {
     }
     return document.toXmlString();
   }
+
+  /// One entry of the editor's block: `[data-sm-t="3"]{fill:#abc !important}`.
+  static final _managedRule = RegExp(r'\[data-sm-t="(\d+)"\]\s*\{\s*([a-z-]+)\s*:\s*([^;}!]+)');
 
   static XmlElement? _target(XmlDocument? document, ElementPath path) {
     if (document == null || path.isRoot) return null;

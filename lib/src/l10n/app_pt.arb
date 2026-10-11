@@ -276,6 +276,104 @@
   "eyedropperNoColor": "Não há uma cor sólida aqui",
   "editingLight": "Editando a versão clara — toque para a escura",
   "editingDark": "Editando a versão escura — toque para a clara",
+  "themeLight": "Claro",
+  "themeDark": "Escuro",
+  "themeLightName": "claro",
+  "themeDarkName": "escuro",
+  "themeInherits": "herda",
+  "themeOwn": "Próprio",
+  "themeInherited": "Herdado",
+  "themeShared": "Comum",
+  "themeMarkOwn": "Ajuste próprio no tema {theme}",
+  "@themeMarkOwn": {
+    "placeholders": {
+      "theme": {
+        "type": "String"
+      }
+    }
+  },
+  "themeMarkInherited": "Herdado de {name} no tema {theme}",
+  "@themeMarkInherited": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "theme": {
+        "type": "String"
+      }
+    }
+  },
+  "themeNotShown": "Não aparece no tema {theme}",
+  "@themeNotShown": {
+    "placeholders": {
+      "theme": {
+        "type": "String"
+      }
+    }
+  },
+  "themeInside": "Camadas dentro com ajustes de tema",
+  "themeSettings": "Ajustes de tema",
+  "themeEditingOnly": "Você edita o tema {theme}; o {other} não muda.",
+  "@themeEditingOnly": {
+    "placeholders": {
+      "theme": {
+        "type": "String"
+      },
+      "other": {
+        "type": "String"
+      }
+    }
+  },
+  "themeSwitchTo": "Mudar para o tema {theme}",
+  "@themeSwitchTo": {
+    "placeholders": {
+      "theme": {
+        "type": "String"
+      }
+    }
+  },
+  "themeVisible": "Visível",
+  "themeUseShared": "Usar o valor comum",
+  "themeComesFrom": "Vem de {name}",
+  "@themeComesFrom": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themeWholeDrawing": "o desenho",
+  "themeHiddenByGroup": "Oculta pelo grupo {name} neste tema",
+  "@themeHiddenByGroup": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themeAlsoChanges": "Também muda neste tema: {properties}",
+  "@themeAlsoChanges": {
+    "placeholders": {
+      "properties": {
+        "type": "String"
+      }
+    }
+  },
+  "themeGroupNote": "Visibilidade ajustada no grupo vale para tudo dentro dele; as cores são aplicadas a cada camada.",
+  "themeEditColors": "Editar cores neste tema",
+  "themeOnlyThisChanges": "Só o tema {theme} muda",
+  "@themeOnlyThisChanges": {
+    "placeholders": {
+      "theme": {
+        "type": "String"
+      }
+    }
+  },
+  "themeEditing": "editando",
+  "themeNoPaint": "Sem cor",
+  "themeGradient": "Gradiente",
+  "hideLayerBoth": "Ocultar nos dois temas",
+  "showLayerBoth": "Mostrar nos dois temas",
   "keepProportion": "Travar escala (manter proporção)",
   "selectAllLayers": "Selecionar tudo",
   "adjustBrightness": "Brilho",

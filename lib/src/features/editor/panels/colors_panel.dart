@@ -11,6 +11,7 @@ import '../color_presets.dart';
 import '../color_shuffle.dart';
 import '../editor_controller.dart';
 import 'colors/color_adjuster.dart';
+import 'layers/theme_badge.dart';
 
 /// Paints the selected layers (all of them at once when several are ticked).
 /// Colors are picked from a palette of ready-made colors and fine-tuned with
@@ -186,6 +187,43 @@ class _ColorsPanelState extends State<ColorsPanel> {
     _adjustTargets = _editor.paintTargets;
   }
 
+  /// Which version the paint goes to, with the color [path] has in each.
+  Widget _themeStrip(AppLocalizations l10n, SvgColorScheme active, ElementPath path) {
+    final svg = _editor.svg;
+    final property = _property(svg, path);
+    return Column(
+      key: const Key('colors-theme-strip'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            for (final scheme in SvgColorScheme.values) ...[
+              if (scheme != SvgColorScheme.values.first) const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: _ThemeChip(
+                  key: Key('colors-theme-${scheme.name}'),
+                  scheme: scheme,
+                  active: scheme == active,
+                  color: colorFromHex(SvgThemeEdit.paintFor(svg, path, scheme, property) ?? ''),
+                  label: l10n.themeTitle(scheme),
+                  semanticLabel: scheme == active
+                      ? '${l10n.themeTitle(scheme)} · ${l10n.themeEditing}'
+                      : l10n.themeSwitchTo(l10n.themeName(scheme)),
+                  onTap: scheme == active ? null : _editor.toggleTheme,
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          l10n.themeOnlyThisChanges(l10n.themeName(active)),
+          style: TextStyle(color: GalleryColors.of(context).muted, fontSize: 12),
+        ),
+      ],
+    );
+  }
+
   HslLabels _labels(AppLocalizations l10n) => HslLabels(
     hue: l10n.hue,
     saturation: l10n.saturation,
@@ -288,6 +326,7 @@ class _ColorsPanelState extends State<ColorsPanel> {
     final hex = _colorOf(_editor.svg, path, _property(_editor.svg, path));
     String apply(String svg, String? color) => _paint(svg, color);
 
+    final scheme = widget.scheme;
     return SectionCard(
       icon: Icons.format_color_fill_rounded,
       title: targets.length > 1 || _editor.selectedLayer == null
@@ -305,6 +344,7 @@ class _ColorsPanelState extends State<ColorsPanel> {
         onSelected: (mode) => _editor.commit(_shuffle(_editor.svg, mode)),
       ),
       children: [
+        if (scheme != null) _themeStrip(l10n, scheme, path),
         _presetPalette(
           l10n,
           colorFromHex(hex ?? '') ?? Theme.of(context).colorScheme.primary,
@@ -333,6 +373,86 @@ class _ColorsPanelState extends State<ColorsPanel> {
           },
         ),
       ],
+    );
+  }
+}
+
+/// The two versions of a light/dark file over the palette: the one being
+/// painted (highlighted, the only one that changes) and the other, which a tap
+/// switches to. Each shows the color [path] has there.
+class _ThemeChip extends StatelessWidget {
+  const _ThemeChip({
+    super.key,
+    required this.scheme,
+    required this.active,
+    required this.color,
+    required this.label,
+    required this.semanticLabel,
+    this.onTap,
+  });
+
+  final SvgColorScheme scheme;
+  final bool active;
+  final Color? color;
+  final String label;
+
+  /// Says which one is being edited, or that a tap switches to it.
+  final String semanticLabel;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final mark = themeColor(context, scheme, active: active);
+    return Semantics(
+      button: onTap != null,
+      selected: active,
+      label: semanticLabel,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: semanticLabel,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Ink(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: active ? colors.primary.withValues(alpha: .1) : null,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: active ? colors.primary.withValues(alpha: .7) : colors.outlineVariant,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(themeIcon(scheme), size: 18, color: mark),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    label,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontWeight: active ? FontWeight.w700 : null),
+                  ),
+                ),
+                Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: color,
+                    border: Border.all(color: colors.outline),
+                  ),
+                  child: color == null ? const Icon(Icons.block_rounded, size: 12) : null,
+                ),
+                if (!active) ...[
+                  const SizedBox(width: 4),
+                  Icon(Icons.lock_outline_rounded, size: 14, color: mark),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
