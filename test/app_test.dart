@@ -1127,6 +1127,74 @@ void main() {
     expect(code, isNot(contains('sm-spin 2s')));
   });
 
+  testWidgets('animation: the card and the effects work on what is selected', (tester) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.ensureVisible(find.text('dots-up.svg'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('dots-up.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+
+    Future<String> code() async {
+      await _tapTab(tester, 'Código');
+      final text = tester.widget<TextField>(find.byKey(const Key('code-field'))).controller!.text;
+      await _tapTab(tester, 'Camadas');
+      return text;
+    }
+
+    int pulses(String svg) => RegExp('animation:pulse').allMatches(svg).length;
+    Future<void> selectThenAnimation(String layer) async {
+      await tester.tap(find.text(layer));
+      await tester.pumpAndSettle();
+      await _tapTab(tester, 'Animação');
+    }
+
+    Future<void> tapOnCard(String label) async {
+      final target = find.text(label);
+      await tester.ensureVisible(target);
+      await tester.pumpAndSettle();
+      await tester.tap(target);
+      await tester.pumpAndSettle();
+    }
+
+    final original = await code();
+    expect(pulses(original), 5);
+
+    // One circle: "Remover animações" takes only its pulse off.
+    await selectThenAnimation('Círculo 1');
+    expect(find.text('Efeitos'), findsOneWidget);
+    expect(find.text('Animações do arquivo'), findsNothing);
+    await tapOnCard('Remover animações');
+    expect(pulses(await code()), 4, reason: 'the other circles keep theirs');
+    await tester.tap(find.byTooltip('Desfazer'));
+    await tester.pumpAndSettle();
+
+    // An effect replaces the circle's own animation, and only its.
+    await selectThenAnimation('Círculo 2');
+    await tapOnCard('Girar');
+    final spun = await code();
+    expect(pulses(spun), 4);
+    expect(spun, contains('sm-spin'));
+    await tester.tap(find.byTooltip('Desfazer'));
+    await tester.pumpAndSettle();
+
+    // Nothing selected: the effect replaces the file's animations everywhere.
+    await tester.tap(find.byKey(const Key('clear-selection')));
+    await tester.pumpAndSettle();
+    await _tapTab(tester, 'Animação');
+    await tapOnCard('Flutuar');
+    final floated = await code();
+    expect(pulses(floated), 0);
+    expect(
+      RegExp('data-sm-anim="float"').allMatches(floated),
+      hasLength(6),
+      reason: '5 dots + arrow',
+    );
+  });
+
   testWidgets('animation: the intensity bar changes how strong the chosen motion is', (
     tester,
   ) async {

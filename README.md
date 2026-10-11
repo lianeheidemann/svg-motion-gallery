@@ -79,7 +79,7 @@
 | **Window** | Crop of the drawing: aspect ratio (1:1, 4:3, 3:4, 16:9, 9:16), width, height and a margin around the content. |
 | **Align** | Aligns the layer to the canvas. |
 | **Colors** | On light/dark SVGs a strip on top says which theme is being painted (only that one changes) and switches to the other. Before/After side by side with the same crop; palette, free picker, hex and eyedropper; an adjustment row (hue, saturation, lightness, brightness, contrast…) that swipes sideways. Outline-only shapes get their stroke painted, even when `fill="none"` comes from the group. The stage starts paused and the play button still works. |
-| **Animation** | Animation presets and speed. |
+| **Animation** | Works on what is selected (the whole drawing when nothing is): **Animation** shows its length and changes its speed or removes it; **Effects** (spin, pulse, float, sway, fade) replace whatever animation the selected layers had. |
 | **Insert** / **Text** | Add shapes and text. Color, size, width, height, outline and "Filled" stay greyed out until a shape (or text) from that tab is selected. |
 | **Code** | Editor with highlighting, line numbers, search, format and **Wrap lines**, which keeps the indent of the line it comes from (including the text of `<title>` and `<desc>`). |
 

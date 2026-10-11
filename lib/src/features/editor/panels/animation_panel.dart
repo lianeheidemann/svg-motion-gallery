@@ -6,8 +6,9 @@ import 'package:svg_view/svg_view.dart';
 import '../../../l10n/l10n.dart';
 import '../editor_controller.dart';
 
-/// Speed and removal of existing animations, and ready-made motions for the
-/// selected layer.
+/// The animation of what is selected (all of it when nothing is): its speed,
+/// its length and taking it off; and ready-made effects, each one replacing
+/// whatever animation the selected layers had.
 class AnimationPanel extends StatefulWidget {
   const AnimationPanel({super.key, required this.editor, this.playback});
 
@@ -41,10 +42,11 @@ class _AnimationPanelState extends State<AnimationPanel> {
   var _intensity = 1.0;
   double? _liveIntensity;
 
-  /// The cycle of [_base] (at speed 1), kept so the text under the title can
-  /// follow the speed bar without reading the document on every move.
-  Duration? _baseCycle;
-  String? _baseCycleOf;
+  /// What [_base] (at speed 1) animates in the selection, and its cycle, kept
+  /// so the duration can follow the speed bar without reading the document on
+  /// every move.
+  ({bool animated, Duration? cycle}) _baseAnimation = (animated: false, cycle: null);
+  String? _baseAnimationOf;
 
   EditorController get _editor => widget.editor;
 
@@ -62,23 +64,40 @@ class _AnimationPanelState extends State<AnimationPanel> {
       _seconds = seconds ?? _seconds;
       _intensity = intensity ?? _intensity;
     });
+    // An effect replaces whatever animation the layers had.
     String edit(String svg, ElementPath target) => SvgAnimationEdit.addPreset(
       svg,
       target,
       preset,
       seconds: _seconds,
       intensity: _intensity,
+      replace: true,
     ).svg;
     // Several layers ticked, or nothing selected ("Todas"): every one of them.
+    // With nothing selected the whole drawing takes the effect, so the file's
+    // animations go first (groups included), then each drawn layer gets it.
+    String everyTarget(String svg) {
+      var out = svg;
+      var paths = _motionTargets();
+      if (_editor.targets.isEmpty) {
+        out = SvgAnimationEdit.removeAll(out);
+        paths = [
+          for (final layer in SvgLayers.list(out))
+            if (layer.tag != 'g') layer.path,
+        ];
+      }
+      for (final target in paths.reversed) {
+        out = edit(out, target);
+      }
+      return out;
+    }
+
     if (_editor.multiMode || _editor.selection == null) {
+      final out = everyTarget(_editor.svg);
       if (preview) {
-        var out = _editor.svg;
-        for (final target in _motionTargets().reversed) {
-          out = edit(out, target);
-        }
         _editor.preview(out);
-      } else {
-        _editor.applyToTargets(edit, paths: _motionTargets());
+      } else if (out != _editor.svg) {
+        _editor.commit(out);
       }
     } else if (preview) {
       _editor.preview(edit(_editor.svg, path));
@@ -90,6 +109,7 @@ class _AnimationPanelState extends State<AnimationPanel> {
           preset,
           seconds: _seconds,
           intensity: _intensity,
+          replace: true,
         ),
       );
     }
@@ -124,7 +144,6 @@ class _AnimationPanelState extends State<AnimationPanel> {
     _syncBase();
     final l10n = context.l10n;
     final muted = TextStyle(color: GalleryColors.of(context).muted);
-    final metadata = _editor.metadata;
     final layer = _editor.selectedLayer;
     // With several layers ticked the chips show the first one's motion.
     final presetPath = _editor.multiMode || layer == null
@@ -133,13 +152,15 @@ class _AnimationPanelState extends State<AnimationPanel> {
     final currentPreset = presetPath == null
         ? null
         : SvgAnimationEdit.presetAt(_editor.svg, presetPath);
-    // The cycle at the speed on the bar: the document at speed 1 divided by it.
+    // The selection's cycle at the speed on the bar: at speed 1 divided by it.
+    final targets = _editor.targets;
     final baseText = _base ?? _editor.svg;
-    if (_baseCycleOf != baseText) {
-      _baseCycleOf = baseText;
-      _baseCycle = SvgMetadata.parse(baseText).cycleDuration;
+    final baseKey = '${targets.join(',')}|$baseText';
+    if (_baseAnimationOf != baseKey) {
+      _baseAnimationOf = baseKey;
+      _baseAnimation = SvgAnimationEdit.animationIn(baseText, only: targets);
     }
-    final baseCycle = _baseCycle;
+    final baseCycle = _baseAnimation.cycle;
     final seconds = baseCycle == null ? null : baseCycle.inMilliseconds / 1000 / _speed;
     // The chips show what the layer has; tapping one applies it right away.
     final chosen = currentPreset;
@@ -152,7 +173,7 @@ class _AnimationPanelState extends State<AnimationPanel> {
           title: l10n.animationsTitle,
           spacing: 8,
           children: [
-            if (!metadata.isAnimated)
+            if (!_baseAnimation.animated)
               Text(l10n.animationsNone)
             else ...[
               SliderField(
@@ -181,7 +202,8 @@ class _AnimationPanelState extends State<AnimationPanel> {
                 },
               ),
               // At the bottom: the duration (it follows the speed bar while it
-              // moves) and, across from it, taking every animation out.
+              // moves) and, across from it, taking the animation off what is
+              // selected.
               Row(
                 children: [
                   Expanded(
@@ -190,7 +212,9 @@ class _AnimationPanelState extends State<AnimationPanel> {
                         : Text(l10n.durationSeconds(l10n.decimal(seconds))),
                   ),
                   TextButton.icon(
-                    onPressed: () => _editor.commit(SvgAnimationEdit.removeAll(_editor.svg)),
+                    onPressed: () => _editor.commit(
+                      SvgAnimationEdit.removeAll(_editor.svg, only: _editor.targets),
+                    ),
                     icon: const Icon(Icons.motion_photos_off_outlined),
                     label: Text(l10n.removeAnimations),
                   ),
