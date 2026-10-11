@@ -2,6 +2,7 @@ import 'package:xml/xml.dart';
 
 import '../css.dart';
 import '../css_rules.dart';
+import '../metadata.dart';
 import '../time.dart';
 import '../xml_support.dart';
 import 'element_path.dart';
@@ -57,22 +58,9 @@ class SvgAnimationEdit {
     String? scaleCss(String property, String value) =>
         property.startsWith('animation') ? scaleCssTimes(value, scale) : value;
 
-    final scoped = only != null && only.isNotEmpty;
-    final Iterable<XmlElement> elements;
-    if (scoped) {
-      final chosen = <XmlElement>{};
-      for (final path in only) {
-        final target = path.isRoot ? root : path.resolve(root);
-        if (target == null) continue;
-        chosen.addAll([target, ...target.descendantElements]);
-        for (final up in target.ancestorElements) {
-          if (up.getAttribute(animationAttribute) != null) chosen.add(up);
-        }
-      }
-      elements = chosen;
-    } else {
-      elements = [root, ...root.descendantElements];
-    }
+    final scope = _scope(root, only, around: true);
+    final scoped = scope != null;
+    final Iterable<XmlElement> elements = scope ?? [root, ...root.descendantElements];
 
     final sheetRules = scoped
         ? simpleRules(root, (property) => property.startsWith('animation'))
@@ -123,29 +111,122 @@ class SvgAnimationEdit {
     return document.toXmlString();
   }
 
-  /// Removes all SMIL elements, CSS `animation*` declarations and
-  /// `@keyframes`, leaving a static drawing.
-  static String removeAll(String svg) {
+  /// The elements an edit limited to [only] reaches: each layer (from the
+  /// outermost of its editor groups) and everything inside it, plus, with
+  /// [around], the animation groups that hold it with other elements. Null
+  /// when [only] is null or empty: the whole document.
+  static Set<XmlElement>? _scope(XmlElement root, List<ElementPath>? only, {required bool around}) {
+    if (only == null || only.isEmpty) return null;
+    final chosen = <XmlElement>{};
+    for (final path in only) {
+      final found = path.isRoot ? root : path.resolve(root);
+      if (found == null) continue;
+      final target = path.isRoot ? root : chainTop(found);
+      chosen.addAll([target, ...target.descendantElements]);
+      if (!around) continue;
+      for (final up in target.ancestorElements) {
+        if (up.getAttribute(animationAttribute) != null) chosen.add(up);
+      }
+    }
+    return chosen;
+  }
+
+  static String? _dropAnimation(String property, String value) =>
+      property.startsWith('animation') ? null : value;
+
+  static bool _plays(String property, String value) =>
+      (property == 'animation' || property == 'animation-name') &&
+      !RegExp(r'^\s*none\s*(!important)?\s*$').hasMatch(value);
+
+  /// Removes the animations, leaving a still drawing: SMIL elements, CSS
+  /// `animation*` declarations and the editor's motion groups. Without [only],
+  /// everywhere (`@keyframes` included). With [only], just in those layers and
+  /// what is inside them; a shared `<style>` rule that animates one of them is
+  /// left for the others, and that layer gets `animation:none` of its own.
+  static String removeAll(String svg, {List<ElementPath>? only}) {
     final document = tryParseSvg(svg);
     if (document == null) return svg;
     final root = document.rootElement;
-    for (final element in root.descendantElements.toList()) {
+    final scope = _scope(root, only, around: false);
+    final elements = (scope ?? {root, ...root.descendantElements}).toList();
+    final sheetRules = scope == null
+        ? const <CssRule>[]
+        : simpleRules(root, (property) => property.startsWith('animation'));
+    for (final element in elements) {
       if (smilTags.contains(element.localName)) element.remove();
     }
-    String? dropAnimation(String property, String value) =>
-        property.startsWith('animation') ? null : value;
-    for (final element in [root, ...root.descendantElements]) {
+    for (final element in elements) {
+      if (smilTags.contains(element.localName)) continue;
       final style = element.getAttribute('style');
-      if (style != null) {
-        final cleaned = mapDeclarations(style, dropAnimation);
-        element.setAttribute('style', cleaned.trim().isEmpty ? null : cleaned);
-      }
-      if (element.localName == 'style') {
+      var cleaned = style == null ? '' : mapDeclarations(style, _dropAnimation).trim();
+      if (scope == null && element.localName == 'style') {
         final css = removeAtRules(styleText(element), 'keyframes');
-        setStyleText(element, mapStylesheetDeclarations(css, dropAnimation));
+        setStyleText(element, mapStylesheetDeclarations(css, _dropAnimation));
+      }
+      final ruled = sheetRules.any(
+        (rule) =>
+            rule.matches(element) && rule.declarations.entries.any((d) => _plays(d.key, d.value)),
+      );
+      if (ruled) {
+        final glue = cleaned.isEmpty || cleaned.endsWith(';') ? '' : ';';
+        cleaned = '$cleaned${glue}animation:none';
+      }
+      if (style != null || ruled) element.setAttribute('style', cleaned.isEmpty ? null : cleaned);
+    }
+    for (final wrapper in elements) {
+      if (wrapper.localName == 'g' && wrapper.getAttribute(animationAttribute) != null) {
+        unwrapGroup(wrapper);
       }
     }
     return document.toXmlString();
+  }
+
+  /// Whether anything in [only] (the whole document without it) is animated,
+  /// and how long its longest cycle is: SMIL `dur`, and the CSS animations of
+  /// each element, its own `style` before the stylesheet's simple rules.
+  static ({bool animated, Duration? cycle}) animationIn(String svg, {List<ElementPath>? only}) {
+    final document = tryParseSvg(svg);
+    if (document == null) return (animated: false, cycle: null);
+    final root = document.rootElement;
+    final scope = _scope(root, only, around: true);
+    if (scope == null) {
+      final metadata = SvgMetadata.parse(svg);
+      return (animated: metadata.isAnimated, cycle: metadata.cycleDuration);
+    }
+    final rules = simpleRules(root, (property) => property.startsWith('animation'));
+    var animated = false;
+    var longest = 0.0;
+    for (final element in scope) {
+      if (smilTags.contains(element.localName)) {
+        animated = true;
+        final duration = parseClockValue(element.getAttribute('dur'));
+        if (duration != null && duration > longest) longest = duration;
+        continue;
+      }
+      final declarations = <String, String>{
+        for (final rule in rules)
+          if (rule.matches(element)) ...rule.declarations,
+      };
+      mapDeclarations(element.getAttribute('style') ?? '', (property, value) {
+        if (property.startsWith('animation')) declarations[property] = value.trim();
+        return value;
+      });
+      for (final MapEntry(key: property, value: value) in declarations.entries) {
+        if (_plays(property, value)) animated = true;
+        if (property != 'animation' && property != 'animation-duration') continue;
+        if (RegExp(r'^\s*none').hasMatch(value)) continue;
+        for (final item in splitTopLevel(value, ',')) {
+          final times = cssTimes(item);
+          if (times.isNotEmpty && times.first > longest) longest = times.first;
+        }
+      }
+    }
+    return (
+      animated: animated,
+      cycle: longest > 0
+          ? Duration(microseconds: (longest * Duration.microsecondsPerSecond).round())
+          : null,
+    );
   }
 
   /// Adds [preset] to the layer at [path] through an animation wrapper
@@ -155,19 +236,30 @@ class SvgAnimationEdit {
   /// and extra ones an older version left are taken out.
   ///
   /// [intensity] is how strong the motion is (1 = the original: a pulse grows
-  /// 15 %, a sway turns 8 degrees, and so on). A spin ignores it.
+  /// 15 %, a sway turns 8 degrees, and so on). A spin ignores it. With
+  /// [replace], every other animation of the layer (its own SMIL and CSS too)
+  /// is removed first, so the preset is all it plays.
   static SvgEditResult addPreset(
     String svg,
     ElementPath path,
     SvgAnimationPreset preset, {
     double seconds = 2,
     double intensity = 1,
+    bool replace = false,
   }) {
-    final document = tryParseSvg(svg);
+    var document = tryParseSvg(svg);
     if (document == null || path.isRoot) return SvgEditResult(svg, selection: path);
-    final root = document.rootElement;
-    final element = path.resolve(root);
+    var element = path.resolve(document.rootElement);
     if (element == null) return SvgEditResult(svg, selection: path);
+    if (replace) {
+      // Any other animation of the layer goes first, so this one is all it
+      // plays. The layer stays where it starts (its groups are unwrapped in
+      // place), so its path still finds it.
+      final top = ElementPath.of(chainTop(element));
+      document = tryParseSvg(removeAll(svg, only: [top]))!;
+      element = top.resolve(document.rootElement)!;
+    }
+    final root = document.rootElement;
 
     final existing = _animationWrappers(element);
     final XmlElement wrapper;

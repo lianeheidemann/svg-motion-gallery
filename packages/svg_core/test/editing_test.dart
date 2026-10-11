@@ -292,6 +292,110 @@ void main() {
         '<circle><animate attributeName="r" dur="4s" begin="1s;x.end" repeatCount="indefinite"/></circle>'
         '<rect style="animation: pulse 1.5s"/></svg>';
 
+    group('in the chosen layers only', () {
+      const dots =
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+          '<style>@keyframes pulse{50%{opacity:.5}}.s{animation:spin 3s linear infinite}</style>'
+          '<circle r="1" style="animation:pulse 0.7s ease-in-out infinite"/>'
+          '<circle r="2" style="animation:pulse 1.1s ease-in-out infinite"/>'
+          '<rect class="s" width="1" height="1"/><rect class="s" width="2" height="2"/>'
+          '<g><circle r="3"><animate attributeName="r" dur="4s" repeatCount="indefinite"/></circle></g>'
+          '</svg>';
+      const first = ElementPath([1]);
+      const second = ElementPath([2]);
+      const firstRect = ElementPath([3]);
+      const group = ElementPath([5]);
+
+      test('removing takes the animation off those layers and leaves the others', () {
+        final out = SvgAnimationEdit.removeAll(dots, only: const [first, group]);
+        expect(out, isNot(contains('0.7s')));
+        expect(out, contains('1.1s'), reason: 'the other circle keeps its pulse');
+        expect(out, isNot(contains('<animate')), reason: 'SMIL inside the group goes too');
+        expect(out, contains('@keyframes pulse'), reason: 'the others still use it');
+        expect(SvgAnimationEdit.animationIn(out, only: const [second]).animated, isTrue);
+        expect(SvgAnimationEdit.animationIn(out, only: const [first]).animated, isFalse);
+      });
+
+      test('a shared stylesheet rule stays, and only the chosen layer stops', () {
+        final out = SvgAnimationEdit.removeAll(dots, only: const [firstRect]);
+        expect(out, contains('.s{animation:spin 3s linear infinite}'));
+        expect(SvgAnimationEdit.animationIn(out, only: const [firstRect]).animated, isFalse);
+        expect(
+          SvgAnimationEdit.animationIn(
+            out,
+            only: const [
+              ElementPath([4]),
+            ],
+          ).animated,
+          isTrue,
+        );
+      });
+
+      test('what is animated and for how long is read for the chosen layers', () {
+        expect(
+          SvgAnimationEdit.animationIn(dots, only: const [first]).cycle,
+          const Duration(milliseconds: 700),
+        );
+        expect(
+          SvgAnimationEdit.animationIn(dots, only: const [firstRect]).cycle,
+          const Duration(seconds: 3),
+        );
+        expect(
+          SvgAnimationEdit.animationIn(dots, only: const [group]).cycle,
+          const Duration(seconds: 4),
+        );
+        expect(SvgAnimationEdit.animationIn(dots).cycle, const Duration(seconds: 4), reason: 'all');
+        const still = '<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>';
+        expect(
+          SvgAnimationEdit.animationIn(
+            still,
+            only: const [
+              ElementPath([0]),
+            ],
+          ).animated,
+          isFalse,
+        );
+      });
+
+      test('a preset that replaces leaves it as the only animation of the layer', () {
+        final spun = SvgAnimationEdit.addPreset(
+          dots,
+          first,
+          SvgAnimationPreset.spin,
+          replace: true,
+        );
+        expect(spun.selection, first);
+        expect(spun.svg, isNot(contains('0.7s')), reason: 'its own pulse is gone');
+        expect(spun.svg, contains('1.1s'), reason: 'the other circle is not touched');
+        final pulsed = SvgAnimationEdit.addPreset(
+          spun.svg,
+          spun.selection!,
+          SvgAnimationPreset.pulse,
+          replace: true,
+        );
+        expect(RegExp('<g[^>]*data-sm-anim=').allMatches(pulsed.svg), hasLength(1));
+        expect(SvgAnimationEdit.presetAt(pulsed.svg, first), SvgAnimationPreset.pulse);
+        final ruled = SvgAnimationEdit.addPreset(
+          dots,
+          firstRect,
+          SvgAnimationPreset.fade,
+          replace: true,
+        );
+        expect(
+          SvgAnimationEdit.animationIn(ruled.svg, only: const [firstRect]).cycle,
+          const Duration(seconds: 2),
+          reason: 'the shared spin is off, only the fade plays',
+        );
+      });
+
+      test('removing everything also takes the presets off', () {
+        final spun = SvgAnimationEdit.addPreset(dots, first, SvgAnimationPreset.spin);
+        final still = SvgAnimationEdit.removeAll(spun.svg);
+        expect(RegExp('<g[^>]*data-sm-anim=').allMatches(still), isEmpty);
+        expect(SvgAnimationEdit.animationIn(still).animated, isFalse);
+      });
+    });
+
     test('changes speed of SMIL and CSS animation', () {
       final faster = SvgAnimationEdit.changeSpeed(animated, 2);
       expect(faster, contains('dur="2s"'));

@@ -410,7 +410,7 @@
   "saturation": "Saturação",
   "lightness": "Luminosidade",
   "hex": "Hexadecimal",
-  "animationsTitle": "Animações do arquivo",
+  "animationsTitle": "Animação",
   "durationSeconds": "Duração: {seconds} s",
   "@durationSeconds": {
     "placeholders": {
@@ -421,7 +421,7 @@
   },
   "speed": "Velocidade",
   "removeAnimations": "Remover animações",
-  "presetsTitle": "Adicionar movimento",
+  "presetsTitle": "Efeitos",
   "presetSpin": "Girar",
   "presetPulse": "Pulsar",
   "presetFloat": "Flutuar",
@@ -473,6 +473,14 @@
   "layerEditorGroup": "Ajuste do editor",
   "hideLayer": "Ocultar camada",
   "showLayer": "Mostrar camada",
+  "hiddenByFolder": "Oculta porque a pasta {name} está oculta",
+  "@hiddenByFolder": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "bringForward": "Trazer para frente",
   "sendBackward": "Enviar para trás",
   "textContent": "Texto",

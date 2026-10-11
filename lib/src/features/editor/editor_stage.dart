@@ -10,6 +10,7 @@ import '../../widgets/svg_preview.dart';
 import 'before_after.dart';
 import 'editor_controller.dart';
 import 'editor_tabs.dart';
+import 'panels/layers/theme_badge.dart';
 import 'panels/layers_panel.dart';
 import 'selection_highlight.dart';
 import 'selection_outlines.dart';
@@ -239,6 +240,11 @@ class EditorStage extends StatelessWidget {
                       showHandles: isInsertTab && _selectedIsInserted(),
                     ),
                   ),
+                // Which version is on the stage, said quietly in a corner
+                // (switched in the Layers tab). The eyedropper's hint takes
+                // the bottom while it is on.
+                if (scheme case final shown? when !(tab == EditorTab.colors && editor.eyedropper))
+                  Positioned(left: 10, bottom: 10, child: _ThemeTag(scheme: shown)),
               ],
             ),
           ),
@@ -311,6 +317,42 @@ class EditorStage extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The small "Claro"/"Escuro" in the corner of the stage: which version is
+/// shown and edited. Only a reminder: it takes no taps.
+class _ThemeTag extends StatelessWidget {
+  const _ThemeTag({required this.scheme});
+
+  final SvgColorScheme scheme;
+
+  @override
+  Widget build(BuildContext context) {
+    const color = Color(0xCCFFFFFF);
+    return IgnorePointer(
+      child: DecoratedBox(
+        key: const Key('stage-theme'),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: .45),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(themeIcon(scheme), size: 12, color: color),
+              const SizedBox(width: 4),
+              Text(
+                context.l10n.themeTitle(scheme),
+                style: const TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
