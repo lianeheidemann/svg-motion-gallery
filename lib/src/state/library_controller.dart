@@ -84,7 +84,11 @@ class LibraryController extends ChangeNotifier {
   /// Documents matching the current filter and search query.
   List<SvgDocument> get visible {
     final needle = _query.trim().toLowerCase();
-    var list = documents.where((doc) => needle.isEmpty || doc.name.toLowerCase().contains(needle));
+    // "All" puts a phone file that is newer than a library document before it,
+    // so a file just downloaded shows at the top instead of after every demo.
+    var list = (_filter == GalleryFilter.all ? _newestFirst() : documents).where(
+      (doc) => needle.isEmpty || doc.name.toLowerCase().contains(needle),
+    );
     switch (_filter) {
       case GalleryFilter.all:
         break;
@@ -100,6 +104,22 @@ class LibraryController extends ChangeNotifier {
         return recent;
     }
     return list.toList();
+  }
+
+  /// The library in its own order with the phone's files (newest first) woven
+  /// in: each one goes ahead of the first library document it is newer than.
+  /// The library's order is kept, so the demos do not shuffle.
+  List<SvgDocument> _newestFirst() {
+    final phone = [..._deviceDocs]..sort((a, b) => b.modifiedAt.compareTo(a.modifiedAt));
+    final out = <SvgDocument>[];
+    var next = 0;
+    for (final doc in _documents) {
+      while (next < phone.length && phone[next].modifiedAt.isAfter(doc.modifiedAt)) {
+        out.add(phone[next++]);
+      }
+      out.add(doc);
+    }
+    return [...out, ...phone.skip(next)];
   }
 
   SvgDocument? byId(String id) {

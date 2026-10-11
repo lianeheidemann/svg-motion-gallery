@@ -72,6 +72,31 @@ void main() {
     expect(device.id, SvgDocument.deviceId('$_download/new.svg'));
   });
 
+  test('"All" shows phone files newer than the library first, the rest after it', () async {
+    final library = await open();
+    final demos = bundledDemos();
+    final names = library.visible.map((doc) => doc.name).toList();
+    // The phone files are all older than the demos here: they follow them.
+    expect(names.take(demos.length), demos);
+    expect(names.skip(demos.length), ['new.svg', 'mid.svg', 'old.svg']);
+
+    // A file downloaded now goes to the very top, and the demos keep their order.
+    phone.addFile(
+      '$_download/fresh.svg',
+      _plain,
+      modified: DateTime.now().add(const Duration(days: 1)),
+    );
+    await library.refreshDevice();
+    final after = library.visible.map((doc) => doc.name).toList();
+    expect(after.first, 'fresh.svg');
+    expect(after.skip(1).take(demos.length), demos);
+    expect(
+      library.documents.map((doc) => doc.name).first,
+      isNot('fresh.svg'),
+      reason: 'documents keeps the library first',
+    );
+  });
+
   test('phone files never enter the library index', () async {
     final library = await open();
     await library.toggleFavorite(named(library, 'new.svg'));
