@@ -526,6 +526,56 @@ class _ColorsPanelState extends State<ColorsPanel> {
           onMoveEnd: _commitPreview,
           onAdd: (offset) => _addStop(gradient, offset),
         ),
+        // Right under the strip, since these act on its stops: the discreet
+        // ones first, the one used most (a new stop) filled.
+        Padding(
+          padding: const EdgeInsets.only(top: AppSpacing.sm),
+          child: Row(
+            children: [
+              Expanded(
+                child: Tooltip(
+                  message: l10n.gradientReverseTip,
+                  child: OutlinedButton.icon(
+                    key: const Key('gradient-reverse'),
+                    icon: const Icon(Icons.swap_horiz_rounded),
+                    label: _actionLabel(l10n.gradientReverse),
+                    onPressed: () => _editor.commit(_mapGradients(_editor.svg, (g) => g.reversed)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Tooltip(
+                  message: l10n.gradientRemoveStopTip,
+                  child: OutlinedButton.icon(
+                    key: const Key('gradient-remove'),
+                    icon: const Icon(Icons.remove_rounded),
+                    label: _actionLabel(l10n.gradientRemoveStop),
+                    // A gradient keeps at least two stops.
+                    onPressed: stops.length > 2 ? () => _removeStop(gradient) : null,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Tooltip(
+                  message: l10n.gradientAddStopTip,
+                  child: FilledButton.icon(
+                    key: const Key('gradient-add'),
+                    icon: const Icon(Icons.add_rounded),
+                    label: _actionLabel(l10n.gradientAddStop),
+                    onPressed: () => _addStop(
+                      gradient,
+                      selected < stops.length - 1
+                          ? (stop.offset + stops[selected + 1].offset) / 2
+                          : (stops[selected - 1].offset + stop.offset) / 2,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
         if (gradient.isLinear) ...[
           Text(l10n.gradientAngle(gradient.angle.round().toString())),
           Slider(
@@ -551,37 +601,11 @@ class _ColorsPanelState extends State<ColorsPanel> {
           ),
           onChangeEnd: (_) => _commitPreview(),
         ),
-        Wrap(
-          spacing: AppSpacing.sm,
-          children: [
-            OutlinedButton.icon(
-              key: const Key('gradient-reverse'),
-              icon: const Icon(Icons.swap_horiz_rounded),
-              label: Text(l10n.gradientReverse),
-              onPressed: () => _editor.commit(_mapGradients(_editor.svg, (g) => g.reversed)),
-            ),
-            OutlinedButton.icon(
-              key: const Key('gradient-add'),
-              icon: const Icon(Icons.add_rounded),
-              label: Text(l10n.gradientAddStop),
-              onPressed: () => _addStop(
-                gradient,
-                selected < stops.length - 1
-                    ? (stop.offset + stops[selected + 1].offset) / 2
-                    : (stops[selected - 1].offset + stop.offset) / 2,
-              ),
-            ),
-            OutlinedButton.icon(
-              key: const Key('gradient-remove'),
-              icon: const Icon(Icons.remove_rounded),
-              label: Text(l10n.gradientRemoveStop),
-              onPressed: stops.length > 2 ? () => _removeStop(gradient) : null,
-            ),
-          ],
-        ),
       ],
     );
   }
+
+  Text _actionLabel(String text) => Text(text, maxLines: 1, overflow: TextOverflow.ellipsis);
 
   Widget _layerColors(AppLocalizations l10n) {
     // Another edit, undo or a new selection: the ruler's changes are no

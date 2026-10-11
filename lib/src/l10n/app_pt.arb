@@ -431,9 +431,12 @@
       }
     }
   },
-  "gradientReverse": "Inverter cores",
-  "gradientAddStop": "Adicionar parada",
-  "gradientRemoveStop": "Remover parada",
+  "gradientReverseTip": "Inverter cores",
+  "gradientAddStopTip": "Adicionar parada",
+  "gradientRemoveStopTip": "Remover parada",
+  "gradientReverse": "Inverter",
+  "gradientAddStop": "Adicionar",
+  "gradientRemoveStop": "Remover",
   "gradientStop": "Parada {number}: {hex}",
   "@gradientStop": {
     "placeholders": {

@@ -113,6 +113,20 @@ void main() {
   testWidgets('gradient: add, remove, reverse and the radial kind', (tester) async {
     final services = await _openColors(tester);
     await _pickKind(tester, 'Linear');
+    // One row, with the stop buttons right under the strip and "add" filled.
+    double middle(String key) => tester.getCenter(find.byKey(Key(key))).dy;
+    expect(middle('gradient-reverse'), middle('gradient-remove'));
+    expect(middle('gradient-remove'), middle('gradient-add'));
+    expect(
+      middle('gradient-add'),
+      greaterThan(tester.getBottomLeft(find.byKey(const Key('gradient-bar'))).dy),
+    );
+    expect(
+      middle('gradient-add'),
+      lessThan(tester.getTopLeft(find.byKey(const Key('gradient-angle'))).dy),
+    );
+    expect(find.byType(FilledButton), findsWidgets);
+    expect(tester.widget(find.byKey(const Key('gradient-add'))), isA<FilledButton>());
     expect(
       tester.widget<OutlinedButton>(find.byKey(const Key('gradient-remove'))).onPressed,
       isNull,
