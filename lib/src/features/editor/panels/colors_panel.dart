@@ -11,6 +11,7 @@ import '../color_presets.dart';
 import '../color_shuffle.dart';
 import '../editor_controller.dart';
 import 'colors/color_adjuster.dart';
+import 'colors/gradient_paint.dart';
 import 'layers/theme_badge.dart';
 
 /// Paints the selected layers (all of them at once when several are ticked).
@@ -31,6 +32,9 @@ class ColorsPanel extends StatefulWidget {
 
 class _ColorsPanelState extends State<ColorsPanel> {
   var _custom = false;
+
+  /// The stop of the gradient the palette and the hex field paint.
+  var _stop = 0;
   final _random = math.Random();
 
   /// The drawing before the ruler first changed anything, so its changes can
@@ -109,6 +113,10 @@ class _ColorsPanelState extends State<ColorsPanel> {
   /// Paints every target: fills get the color, and so do the strokes of
   /// outline-only shapes, so everything ends up the same color.
   String _paint(String svg, String? color) {
+    // A gradient is painted a stop at a time: the palette sets the selected one.
+    if (color != null && _firstGradient(svg) != null) {
+      return _mapGradients(svg, (gradient) => _editStop(gradient, (s) => s.copyWith(color: color)));
+    }
     var out = svg;
     for (final target in _editor.paintTargets) {
       out = _setColor(out, target, color, _property(out, target));
@@ -116,9 +124,135 @@ class _ColorsPanelState extends State<ColorsPanel> {
     return out;
   }
 
+  /// The gradient the first target paints with, if it paints with one.
+  SvgGradient? _firstGradient(String svg) {
+    final targets = _editor.paintTargets;
+    if (targets.isEmpty) return null;
+    return _gradientOf(svg, targets.first, _property(svg, targets.first));
+  }
+
+  SvgGradient? _gradientOf(String svg, ElementPath target, String property) {
+    final scheme = widget.scheme;
+    return scheme == null
+        ? SvgGradientEdit.of(svg, target, property)
+        : SvgGradientEdit.ofScheme(svg, target, property, scheme);
+  }
+
+  String _writeGradient(
+    String svg,
+    List<ElementPath> paths,
+    String property,
+    SvgGradient gradient,
+  ) {
+    final scheme = widget.scheme;
+    return scheme == null
+        ? SvgGradientEdit.apply(svg, paths, property, gradient)
+        : SvgGradientEdit.applyScheme(svg, paths, property, scheme, gradient);
+  }
+
+  /// [svg] with [change] applied to every gradient the targets paint with. A
+  /// gradient shared by several targets is changed once for all of them.
+  String _mapGradients(String svg, SvgGradient Function(SvgGradient gradient) change) {
+    final groups = <String, ({SvgGradient gradient, String property, List<ElementPath> paths})>{};
+    for (final target in _editor.paintTargets) {
+      final property = _property(svg, target);
+      final gradient = _gradientOf(svg, target, property);
+      if (gradient == null) continue;
+      final group = groups.putIfAbsent(
+        '$property|${gradient.id}',
+        () => (gradient: gradient, property: property, paths: <ElementPath>[]),
+      );
+      group.paths.add(target);
+    }
+    var out = svg;
+    for (final group in groups.values) {
+      out = _writeGradient(out, group.paths, group.property, change(group.gradient));
+    }
+    return out;
+  }
+
+  /// [gradient] with the selected stop changed by [change].
+  SvgGradient _editStop(SvgGradient gradient, GradientStop Function(GradientStop stop) change) =>
+      _withStop(gradient, _stop, change);
+
+  /// [gradient] with stop [index] (kept in range) changed by [change].
+  SvgGradient _withStop(
+    SvgGradient gradient,
+    int index,
+    GradientStop Function(GradientStop stop) change,
+  ) {
+    final at = index.clamp(0, gradient.stops.length - 1);
+    return gradient.withStop(at, change(gradient.stops[at]));
+  }
+
+  /// Puts what is being previewed on the drawing as one undoable step.
+  void _commitPreview() => _editor.commit(_editor.displaySvg);
+
+  /// A new stop at [offset] on every gradient of the targets; it is selected.
+  void _addStop(SvgGradient gradient, double offset) {
+    _stop = gradient.indexForOffset(offset);
+    _editor.commit(_mapGradients(_editor.svg, (g) => g.withStopAt(offset)));
+  }
+
+  void _removeStop(SvgGradient gradient) {
+    final index = _stop.clamp(0, gradient.stops.length - 1);
+    _stop = math.max(0, math.min(index, gradient.stops.length - 2));
+    _editor.commit(_mapGradients(_editor.svg, (g) => g.withoutStop(index)));
+  }
+
+  /// Every target's paint becomes a [kind] gradient: one that fades from its
+  /// color if it was plain, else the gradient it has, turned into [kind].
+  String _toGradient(String svg, SvgGradientKind kind) {
+    final groups = <String, ({String hex, String property, List<ElementPath> paths})>{};
+    for (final target in _editor.paintTargets) {
+      final property = _property(svg, target);
+      final hex = _colorOf(svg, target, property);
+      if (hex == null) continue;
+      groups
+          .putIfAbsent(
+            '$property|$hex',
+            () => (hex: hex, property: property, paths: <ElementPath>[]),
+          )
+          .paths
+          .add(target);
+    }
+    var out = svg;
+    for (final group in groups.values) {
+      out = _writeGradient(
+        out,
+        group.paths,
+        group.property,
+        SvgGradient.fromColor(group.hex, kind: kind),
+      );
+    }
+    return _mapGradients(out, (gradient) => gradient.withKind(kind));
+  }
+
+  /// Every gradient the targets paint with becomes the plain color of its
+  /// first stop.
+  String _toSolid(String svg) {
+    final scheme = widget.scheme;
+    var out = svg;
+    for (final target in _editor.paintTargets) {
+      final property = _property(out, target);
+      final gradient = _gradientOf(out, target, property);
+      if (gradient == null || gradient.stops.isEmpty) continue;
+      final color = gradient.stops.first.color;
+      out = scheme == null
+          ? SvgGradientEdit.toSolid(out, [target], property, color)
+          : SvgThemeEdit.setPaint(out, target, color, scheme, property);
+    }
+    return scheme == null ? out : SvgGradientEdit.collectGarbage(out);
+  }
+
+  void _setKind(SvgGradientKind? kind) {
+    _stop = 0;
+    _editor.commit(kind == null ? _toSolid(_editor.svg) : _toGradient(_editor.svg, kind));
+  }
+
   /// [svg] with every target's own color moved by [amount] of [kind]: each
   /// shape keeps its place in the palette, they are not all set to one color.
-  /// Shapes with no plain fill color (a gradient, none) are left alone.
+  /// Shapes with no color (none) are left alone.
   String _adjust(String svg, ColorAdjustment kind, double amount) {
     var out = svg;
     for (final target in _editor.paintTargets) {
@@ -128,12 +262,25 @@ class _ColorsPanelState extends State<ColorsPanel> {
       if (base == null) continue;
       out = _setColor(out, target, colorToHex(adjustColor(base, kind, amount)), property);
     }
-    return out;
+    // Gradients move every one of their stops.
+    return _mapGradients(
+      out,
+      (gradient) => gradient.copyWith(
+        stops: [
+          for (final stop in gradient.stops)
+            stop.copyWith(
+              color: colorToHex(
+                adjustColor(colorFromHex(stop.color) ?? const Color(0xFF000000), kind, amount),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   /// [svg] with every target's color replaced by a new harmonious palette:
   /// one mapping for the whole selection, so equal colors stay equal.
-  /// Shapes with no plain color (a gradient, none) and neutrals are left alone.
+  /// Shapes with no color (none) and neutrals are left alone.
   String _shuffle(String svg, ShuffleMode mode) {
     final targets = _editor.paintTargets;
     final shown = <Color>[];
@@ -141,6 +288,11 @@ class _ColorsPanelState extends State<ColorsPanel> {
       final hex = _colorOf(svg, target, _property(svg, target));
       final color = hex == null ? null : colorFromHex(hex);
       if (color != null) shown.add(color);
+      final gradient = _gradientOf(svg, target, _property(svg, target));
+      for (final stop in gradient?.stops ?? const <GradientStop>[]) {
+        final stopColor = colorFromHex(stop.color);
+        if (stopColor != null) shown.add(stopColor);
+      }
     }
     final mapping = shuffleColors(shown, mode, _random);
     if (mapping.isEmpty) return svg;
@@ -152,7 +304,20 @@ class _ColorsPanelState extends State<ColorsPanel> {
       final to = color == null ? null : mapping[colorKey(color)];
       if (to != null) out = _setColor(out, target, colorToHex(to), property);
     }
-    return out;
+    return _mapGradients(
+      out,
+      (gradient) => gradient.copyWith(
+        stops: [
+          for (final stop in gradient.stops)
+            stop.copyWith(
+              color: switch (colorFromHex(stop.color)) {
+                final color? => colorToHex(mapping[colorKey(color)] ?? color),
+                _ => stop.color,
+              },
+            ),
+        ],
+      ),
+    );
   }
 
   /// [base] with every adjustment of [amounts] applied, in order.
@@ -204,6 +369,10 @@ class _ColorsPanelState extends State<ColorsPanel> {
               scheme: scheme,
               active: scheme == active,
               color: colorFromHex(SvgThemeEdit.paintFor(svg, path, scheme, property) ?? ''),
+              gradient: switch (SvgGradientEdit.ofScheme(svg, path, property, scheme)) {
+                final gradient? => flutterGradient(gradient),
+                _ => null,
+              },
               label: l10n.themeTitle(scheme),
               semanticLabel: scheme == active
                   ? '${l10n.themeTitle(scheme)} · ${l10n.themeEditing}'
@@ -304,6 +473,116 @@ class _ColorsPanelState extends State<ColorsPanel> {
     );
   }
 
+  /// Solid, linear or radial: what the targets are painted with.
+  Widget _kindSelector(AppLocalizations l10n, SvgGradientKind? kind) {
+    final current = switch (kind) {
+      null => _PaintKind.solid,
+      SvgGradientKind.linear => _PaintKind.linear,
+      SvgGradientKind.radial => _PaintKind.radial,
+    };
+    return Semantics(
+      container: true,
+      label: l10n.paintType,
+      child: SegmentedButton<_PaintKind>(
+        key: const Key('paint-kind'),
+        showSelectedIcon: false,
+        segments: [
+          ButtonSegment(value: _PaintKind.solid, label: Text(l10n.paintSolid)),
+          ButtonSegment(value: _PaintKind.linear, label: Text(l10n.paintLinear)),
+          ButtonSegment(value: _PaintKind.radial, label: Text(l10n.paintRadial)),
+        ],
+        selected: {current},
+        onSelectionChanged: (picked) => _setKind(switch (picked.first) {
+          _PaintKind.solid => null,
+          _PaintKind.linear => SvgGradientKind.linear,
+          _PaintKind.radial => SvgGradientKind.radial,
+        }),
+      ),
+    );
+  }
+
+  /// The gradient strip with its stops, the angle, the stop's opacity and the
+  /// buttons that reverse it or add and remove stops.
+  Widget _gradientEditor(AppLocalizations l10n, SvgGradient gradient) {
+    final stops = gradient.stops;
+    final selected = _stop.clamp(0, stops.length - 1);
+    final stop = stops[selected];
+    final opacity = (stop.opacity * 100).round();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        GradientBar(
+          colors: [
+            for (final s in stops)
+              (colorFromHex(s.color) ?? Colors.black).withValues(alpha: s.opacity),
+          ],
+          offsets: [for (final s in stops) s.offset],
+          selected: selected,
+          semanticLabel: (i) => l10n.gradientStop(i + 1, stops[i].color),
+          onSelect: (i) => setState(() => _stop = i),
+          onMove: (i, offset) => _editor.preview(
+            _mapGradients(_editor.svg, (g) => _withStop(g, i, (s) => s.copyWith(offset: offset))),
+          ),
+          onMoveEnd: _commitPreview,
+          onAdd: (offset) => _addStop(gradient, offset),
+        ),
+        if (gradient.isLinear) ...[
+          Text(l10n.gradientAngle(gradient.angle.round().toString())),
+          Slider(
+            key: const Key('gradient-angle'),
+            max: 360,
+            value: gradient.angle.clamp(0, 360),
+            onChanged: (degrees) => _editor.preview(
+              _mapGradients(_editor.svg, (g) => g.isLinear ? g.withAngle(degrees) : g),
+            ),
+            onChangeEnd: (_) => _commitPreview(),
+          ),
+        ],
+        Text(l10n.gradientOpacity('$opacity')),
+        Slider(
+          key: const Key('gradient-opacity'),
+          max: 100,
+          value: opacity.toDouble(),
+          onChanged: (percent) => _editor.preview(
+            _mapGradients(
+              _editor.svg,
+              (g) => _editStop(g, (s) => s.copyWith(opacity: percent / 100)),
+            ),
+          ),
+          onChangeEnd: (_) => _commitPreview(),
+        ),
+        Wrap(
+          spacing: AppSpacing.sm,
+          children: [
+            OutlinedButton.icon(
+              key: const Key('gradient-reverse'),
+              icon: const Icon(Icons.swap_horiz_rounded),
+              label: Text(l10n.gradientReverse),
+              onPressed: () => _editor.commit(_mapGradients(_editor.svg, (g) => g.reversed)),
+            ),
+            OutlinedButton.icon(
+              key: const Key('gradient-add'),
+              icon: const Icon(Icons.add_rounded),
+              label: Text(l10n.gradientAddStop),
+              onPressed: () => _addStop(
+                gradient,
+                selected < stops.length - 1
+                    ? (stop.offset + stops[selected + 1].offset) / 2
+                    : (stops[selected - 1].offset + stop.offset) / 2,
+              ),
+            ),
+            OutlinedButton.icon(
+              key: const Key('gradient-remove'),
+              icon: const Icon(Icons.remove_rounded),
+              label: Text(l10n.gradientRemoveStop),
+              onPressed: stops.length > 2 ? () => _removeStop(gradient) : null,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _layerColors(AppLocalizations l10n) {
     // Another edit, undo or a new selection: the ruler's changes are no
     // longer the last thing done, so there is nothing to put back.
@@ -315,7 +594,11 @@ class _ColorsPanelState extends State<ColorsPanel> {
     // Every ticked layer takes the change; the card shows the first one's paint.
     final targets = _editor.paintTargets;
     final path = targets.first;
-    final hex = _colorOf(_editor.svg, path, _property(_editor.svg, path));
+    final property = _property(_editor.svg, path);
+    final gradient = _gradientOf(_editor.svg, path, property);
+    if (gradient != null) _stop = _stop.clamp(0, gradient.stops.length - 1);
+    // With a gradient the palette and the hex field edit the selected stop.
+    final hex = gradient?.stops[_stop].color ?? _colorOf(_editor.svg, path, property);
     String apply(String svg, String? color) => _paint(svg, color);
 
     final scheme = widget.scheme;
@@ -337,6 +620,13 @@ class _ColorsPanelState extends State<ColorsPanel> {
       ),
       children: [
         if (scheme != null) _themeStrip(l10n, scheme, path),
+        _kindSelector(l10n, gradient?.kind),
+        if (gradient != null)
+          // What the drag is showing, so the handles follow the finger.
+          _gradientEditor(
+            l10n,
+            _gradientOf(_editor.displaySvg, path, _property(_editor.displaySvg, path)) ?? gradient,
+          ),
         _presetPalette(
           l10n,
           colorFromHex(hex ?? '') ?? Theme.of(context).colorScheme.primary,
@@ -344,7 +634,7 @@ class _ColorsPanelState extends State<ColorsPanel> {
           commit: (to) => _editor.commit(apply(_editor.svg, to)),
         ),
         HslColorEditor(
-          key: ValueKey('paint-$path-$hex'),
+          key: ValueKey('paint-$path-$_stop-$hex'),
           color: colorFromHex(hex ?? '') ?? Theme.of(context).colorScheme.primary,
           labels: _labels(l10n),
           showSliders: false,
@@ -369,6 +659,9 @@ class _ColorsPanelState extends State<ColorsPanel> {
   }
 }
 
+/// What the Colors tab paints a layer with.
+enum _PaintKind { solid, linear, radial }
+
 /// The two versions of a light/dark file over the palette: the one being
 /// painted (highlighted, the only one that changes) and the other, which a tap
 /// switches to. Each shows the color [path] has there.
@@ -380,12 +673,16 @@ class _ThemeChip extends StatelessWidget {
     required this.color,
     required this.label,
     required this.semanticLabel,
+    this.gradient,
     this.onTap,
   });
 
   final SvgColorScheme scheme;
   final bool active;
   final Color? color;
+
+  /// What the version paints with when that is a gradient (then [color] is null).
+  final Gradient? gradient;
   final String label;
 
   /// Says which one is being edited, or that a tap switches to it.
@@ -432,9 +729,12 @@ class _ThemeChip extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: color,
+                    gradient: gradient,
                     border: Border.all(color: colors.outline),
                   ),
-                  child: color == null ? const Icon(Icons.block_rounded, size: 12) : null,
+                  child: color == null && gradient == null
+                      ? const Icon(Icons.block_rounded, size: 12)
+                      : null,
                 ),
                 if (!active) ...[
                   const SizedBox(width: 4),

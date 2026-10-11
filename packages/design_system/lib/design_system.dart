@@ -13,6 +13,7 @@ export 'src/widgets/color_area_picker.dart';
 export 'src/widgets/color_palette_grid.dart';
 export 'src/widgets/color_swatch_picker.dart';
 export 'src/widgets/empty_state.dart';
+export 'src/widgets/gradient_bar.dart';
 export 'src/widgets/hsl_color_editor.dart';
 export 'src/widgets/key_value_table.dart';
 export 'src/widgets/pill_tabs.dart';
