@@ -97,6 +97,30 @@ void main() {
     );
   });
 
+  test('duplicating a phone file copies it into the library, content included', () async {
+    final library = await open();
+    final original = named(library, 'new.svg');
+    expect(library.hasContent(original), isFalse, reason: 'not read yet');
+
+    final copy = (await library.duplicate(original))!;
+    expect(copy.isOnDevice, isFalse);
+    expect(copy.name, 'new.svg');
+    expect(library.contentOf(copy), _adaptive);
+    expect(phone.contains('$_download/new.svg'), isTrue);
+    expect(library.documents.first, copy, reason: 'at the top of the library');
+    expect(library.documents.where((doc) => doc.isOnDevice), hasLength(3));
+  });
+
+  test('a phone file that cannot be read is not duplicated', () async {
+    final library = await open();
+    final gone = named(library, 'old.svg');
+    phone.granted = false; // the read fails from now on
+    final before = library.documents.length;
+
+    expect(await library.duplicate(gone), isNull);
+    expect(library.documents, hasLength(before));
+  });
+
   test('phone files never enter the library index', () async {
     final library = await open();
     await library.toggleFavorite(named(library, 'new.svg'));

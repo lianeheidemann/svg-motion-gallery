@@ -59,6 +59,7 @@
   "renameTitle": "Rename file",
   "fileName": "File name",
   "duplicated": "Copy created: {name}",
+  "duplicateFailed": "Could not duplicate {name}",
   "deleted": "{name} deleted",
   "deleteTitle": "Delete file?",
   "deleteMessage": "\"{name}\" will be removed from the gallery. This cannot be undone.",

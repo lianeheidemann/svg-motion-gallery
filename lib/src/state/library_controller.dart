@@ -359,13 +359,19 @@ class LibraryController extends ChangeNotifier {
     return _replace(document, (doc) => doc.copyWith(name: _uniqueName(normalized)));
   }
 
-  /// Copies the markup into a new library document (next to the original).
-  Future<SvgDocument> duplicate(SvgDocument document) async {
+  /// Copies the markup into a new library document, next to the original. A
+  /// phone file is copied into the library too (the file on the phone is left
+  /// alone) and the copy goes to the top of it. Null when the phone file could
+  /// not be read.
+  Future<SvgDocument?> duplicate(SvgDocument document) async {
+    // A phone file's markup is read on demand.
+    await ensureContent(document);
+    if (!hasContent(document) || isUnreadable(document)) return null;
     final content = contentOf(document);
     final copy = await _repository.create(_uniqueName(document.name), content);
     _contents[copy.id] = content;
     final index = _documents.indexWhere((doc) => doc.id == document.id);
-    _documents.insert(index + 1, copy);
+    _documents.insert(index == -1 ? 0 : index + 1, copy);
     await _persist();
     return copy;
   }

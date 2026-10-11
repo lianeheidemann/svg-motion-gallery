@@ -87,6 +87,14 @@
       }
     }
   },
+  "duplicateFailed": "Não foi possível duplicar {name}",
+  "@duplicateFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "deleted": "{name} excluído",
   "@deleted": {
     "placeholders": {
