@@ -20,13 +20,19 @@
 <img width="180" alt="Status: under construction" src="assets/badge/badge_under-construction_v2.svg" />
 
 <p>
-  <a href="https://github.com/lianeheidemann/svg-motion-gallery/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/svg-motion-gallery/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI" /></a>
-  <a href="https://github.com/lianeheidemann/svg-motion-gallery/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/lianeheidemann/svg-motion-gallery?include_prereleases&style=flat-square&logo=github&logoColor=white&label=release&color=2563EB" /></a><br>
-  <img alt="Version" src="https://img.shields.io/badge/version-2.2.0-2563EB?style=flat-square" />
-  <img alt="Flutter 3.47" src="https://img.shields.io/badge/Flutter-3.47-02569B?style=flat-square&logo=flutter&logoColor=white" />
-  <img alt="Dart 3.13" src="https://img.shields.io/badge/Dart-3.13-0175C2?style=flat-square&logo=dart&logoColor=white" />
-  <img alt="Platform: Android" src="https://img.shields.io/badge/platform-Android-3DDC84?style=flat-square&logo=android&logoColor=white" />
-  <img alt="Languages: Portuguese and English" src="https://img.shields.io/badge/languages-PT%20%C2%B7%20EN-8B5CF6?style=flat-square" />
+  <a href="https://github.com/lianeheidemann/svg-motion-gallery/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/svg-motion-gallery/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI&labelColor=0D1117" /></a>
+  <a href="https://github.com/lianeheidemann/svg-motion-gallery/actions/workflows/checks.yml"><img alt="Checks" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/svg-motion-gallery/checks.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=Checks&labelColor=0D1117" /></a>
+  <a href="https://github.com/lianeheidemann/svg-motion-gallery/actions/workflows/android-build.yml"><img alt="Android build" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/svg-motion-gallery/android-build.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=Android%20build&labelColor=0D1117" /></a>
+  <a href="https://github.com/lianeheidemann/svg-motion-gallery/actions/workflows/release.yml"><img alt="Release" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/svg-motion-gallery/release.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=Release&labelColor=0D1117" /></a>
+  <a href="https://github.com/lianeheidemann/svg-motion-gallery/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/lianeheidemann/svg-motion-gallery?include_prereleases&style=for-the-badge&logo=github&logoColor=white&label=release&labelColor=0D1117&color=2563EB" /></a>
+</p>
+
+<p>
+  <img alt="Version 2.2.0" src="https://img.shields.io/badge/version-2.2.0-2563EB?style=for-the-badge&labelColor=0D1117" />
+  <img alt="Flutter 3.47" src="https://img.shields.io/badge/Flutter-3.47-02569B?style=for-the-badge&labelColor=0D1117&logo=flutter&logoColor=white" />
+  <img alt="Dart 3.13" src="https://img.shields.io/badge/Dart-3.13-0175C2?style=for-the-badge&labelColor=0D1117&logo=dart&logoColor=white" />
+  <img alt="Platform: Android" src="https://img.shields.io/badge/platform-Android-3DDC84?style=for-the-badge&labelColor=0D1117&logo=android&logoColor=white" />
+  <img alt="Languages: Portuguese and English" src="https://img.shields.io/badge/languages-PT%20%C2%B7%20EN-8B5CF6?style=for-the-badge&labelColor=0D1117" />
 </p>
 
 </div>
