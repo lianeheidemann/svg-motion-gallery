@@ -68,7 +68,8 @@
 - **Real animations**: thumbnails and the viewer run CSS/SMIL (WebView on Android/iOS, iframe on the web), with automatic playback that can be turned off in favor of static previews to reduce processing load.
 - **Light and dark SVGs**: detects `prefers-color-scheme`, `light-dark()`, `currentColor` and theme selectors; the viewer shows *App theme*, *Light*, *Dark* or *Side by side*.
 - **Full editor** with undo/redo: nine tabs (see [The editor](#the-editor)) for layers, transform, window, alignment, colors, animation, shapes, text and code with highlighting and live validation.
-- **SVGs on the phone (Android)**: asks for file access, lists every `.svg` on the device and lets you edit, rename, share and delete them, several at once included.
+- **Gradients**: paint a layer with a linear or radial gradient, edit it stop by stop (color, opacity, position, angle) and, when several layers are selected, choose between one gradient on each shape or one continuous gradient across the whole selection.
+- **SVGs on the phone (Android)**: asks for file access, lists every `.svg` on the device (a file just downloaded shows at the top of *All*) and lets you edit, rename, duplicate, share and delete them, several at once included.
 - **Slider settings** across the app, including the **interface size** (50% to 120%, default 80%).
 - **Light/dark theme and Portuguese/English** switched with buttons on the home screen; all texts come from ARB files.
 
@@ -82,7 +83,7 @@ On SVGs with light and dark variants, a small *Light*/*Dark* label in the bottom
 | **Transform** | Position, scale (with a proportion lock), width and height (sub-options of scale, free once the lock is open), rotation and opacity. A layer's move/rotation and its preset motion are kept in two editor groups around it (`data-sm-edit`, `data-sm-anim`), so its own transform and animations keep working; they are part of the layer, not rows of their own, and edits reuse them instead of stacking more. |
 | **Window** | Crop of the drawing: aspect ratio (1:1, 4:3, 3:4, 16:9, 9:16), width, height and a margin around the content. |
 | **Align** | Aligns the layer to the canvas. |
-| **Colors** | On light/dark SVGs a strip on top says which theme is being painted (only that one changes) and switches to the other. Before/After side by side with the same crop; palette, free picker, hex and eyedropper; an adjustment row (hue, saturation, lightness, brightness, contrast…) that swipes sideways. Outline-only shapes get their stroke painted, even when `fill="none"` comes from the group. The stage starts paused and the play button still works. |
+| **Colors** | On light/dark SVGs a strip on top says which theme is being painted (only that one changes) and switches to the other. Before/After side by side with the same crop; **Solid / Linear / Radial** selector; palette, free picker, hex and eyedropper; an adjustment row (hue, saturation, lightness, brightness, contrast…) that swipes sideways. With a gradient, the palette and the hex field paint the selected stop; a strip shows the stops (drag to move, tap to select or add), with reverse, add and remove, angle and stop opacity. A toggle next to the angle lays one continuous gradient over the box that holds all the selected shapes instead of repeating it on each. A gradient shared by several layers is copied before an edit, so only the selection changes, and in light/dark SVGs each theme has its own. The adjustment row and *shuffle* move every stop. Outline-only shapes get their stroke painted, even when `fill="none"` comes from the group. The stage starts paused and the play button still works. |
 | **Animation** | Works on what is selected (the whole drawing when nothing is): **Animation** shows its length and changes its speed or removes it; **Effects** (spin, pulse, float, sway, fade) replace whatever animation the selected layers had. |
 | **Insert** / **Text** | Add shapes and text. Color, size, width, height, outline and "Filled" stay greyed out until a shape (or text) from that tab is selected. |
 | **Code** | Editor with highlighting, line numbers, search, format and **Wrap lines**, which keeps the indent of the line it comes from (including the text of `<title>` and `<desc>`). |
@@ -101,7 +102,7 @@ design_system   svg_view ─────▶ svg_core
 
 | Module | Responsibility |
 |---|---|
-| `packages/svg_core` | Pure Dart: validation, metadata, theme resolution, sanitizing, immutable edits (`String → String`) and history. |
+| `packages/svg_core` | Pure Dart: validation, metadata, theme resolution, sanitizing, immutable edits (`String → String`, gradients and geometry included) and history. |
 | `packages/svg_view` | `SvgView` and playback control (WebView, iframe or `flutter_svg`). |
 | `packages/design_system` | Tokens, themes, `UiScale` and reusable widgets. |
 | `lib/` | Screens (`gallery`, `viewer`, `editor`, `settings`), `ChangeNotifier` state, data, services and i18n. |
@@ -128,6 +129,8 @@ The samples are copied to the gallery **on first launch** or via *Settings → R
 - **Android 11+**: the app opens the system "All files access" screen, where you turn the switch on. **Android 10 or earlier**: regular storage permission.
 - Hidden folders and `Android/data` are left out. This feature does not exist on iOS or the web.
 - Deleting is permanent and always asks for confirmation. Phone SVGs never enter the gallery index: the file is the source of truth.
+- *Duplicate* makes a copy that can be edited without touching the original: a new file in the **`SVG Gallery`** folder of the phone's storage (`name-2.svg`, `name-3.svg`…), listed under *On the phone*. Without file access the copy stays in the app's library instead.
+- In *All*, a phone file newer than a library document is listed before it, so a file just downloaded is at the top.
 - The Play Store restricts this permission; it only matters if you publish there.
 
 ## Continuous integration
@@ -135,7 +138,7 @@ The samples are copied to the gallery **on first launch** or via *Settings → R
 | Workflow | Purpose |
 |---|---|
 | `ci.yml` | On every push and PR: checks, APK and web preview as artifacts. With **release** ticked in *Run workflow*, it publishes the Release. |
-| `release.yml` | *Actions → Release → Run workflow*: optional checks, APK and publishing as `v<version>-build<n>`. Only listed once the file is on the default branch. |
+| `release.yml` | *Actions → Release → Run workflow*: optional checks, APK and publishing as `v<version>-build<n>`, with an optional `notes` text (Markdown or HTML, e.g. an image) as the release description. Only listed once the file is on the default branch. |
 | `checks.yml`, `android-build.yml` | Reusable parts. |
 
 Dependabot updates packages and actions weekly.
@@ -144,6 +147,7 @@ Dependabot updates packages and actions weekly.
 
 - The lightweight mode (`flutter_svg`) does not run animations or filters.
 - Editing `path` nodes and opening files through Android's "Share/Open with" do not exist yet.
+- Gradients: the center and radius of a radial gradient, `spreadMethod` and `gradientTransform` are kept but not editable. The continuous mode works from the markup (shape and path boxes, transforms, editor groups), so it ignores stroke width, text metrics and animations.
 - The release APK uses the debug key; for a store, set up a keystore.
 - CI does not build iOS.
 
