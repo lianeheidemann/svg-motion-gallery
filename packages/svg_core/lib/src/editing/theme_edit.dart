@@ -94,6 +94,8 @@ class SvgThemeEdit {
     if (document == null) return true;
     var element = path.isRoot ? null : path.resolve(document.rootElement);
     if (element == null) return true;
+    // What the user drew, then up through its editor groups and folders.
+    element = unwrapEditorGroups(element);
     final rules = simpleRules(document.rootElement, (p) => p == 'display');
     while (element != null) {
       final value = cssValueOf(element, rules, 'display');
@@ -182,7 +184,7 @@ class SvgThemeEdit {
     final document = tryParseSvg(cleared);
     final element = _target(document, path);
     if (element == null) return cleared;
-    final mark = SvgThemeMarks.list(cleared)[ElementPath.of(element)];
+    final mark = SvgThemeMarks.list(cleared)[ElementPath.of(chainTop(element))];
     if (mark == null || !mark.ownIn(scheme).contains(property)) return cleared;
     final shared = SvgThemeMarks.sharedValue(cleared, path, property) ?? _initial[property];
     if (shared == null) return cleared;

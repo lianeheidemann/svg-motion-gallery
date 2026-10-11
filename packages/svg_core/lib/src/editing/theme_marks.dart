@@ -7,6 +7,7 @@ import '../theme/theme_resolver.dart';
 import '../theme/theme_support.dart';
 import '../xml_support.dart';
 import 'element_path.dart';
+import 'layer_tree.dart';
 
 /// Where what a layer shows in one theme comes from.
 enum SvgThemeOrigin {
@@ -94,9 +95,10 @@ class SvgThemeMarks {
   /// Every property looked at.
   static final properties = {..._passedDown, ..._wholeGroup.keys};
 
-  /// The mark of every layer, by path. Empty when [svg] has no light and dark
-  /// versions in its code (no `prefers-color-scheme` media query) or does not
-  /// parse.
+  /// The mark of every layer, by its [SvgLayer] path (where its editor
+  /// groups begin; the groups a setting comes from are given the same way).
+  /// Empty when [svg] has no light and dark versions in its code (no
+  /// `prefers-color-scheme` media query) or does not parse.
   static Map<ElementPath, SvgThemeMark> list(String svg) {
     if (!SvgThemeSupport.detect(svg).uses(SvgThemeMechanism.mediaQuery)) return const {};
     final shared = _Version.parse(withoutThemeVariants(svg));
@@ -185,7 +187,32 @@ class SvgThemeMarks {
       ElementPath.root,
       {for (final scheme in SvgColorScheme.values) scheme: _Context.empty},
     );
-    return marks;
+
+    // From elements to layers: a layer is what the user drew, standing where
+    // its editor groups begin.
+    final slots = layerSlots(shared.root);
+    final layerOf = <ElementPath, ElementPath>{
+      for (final slot in slots) ...{
+        for (final wrapper in slot.wrappers) ElementPath.of(wrapper): slot.path,
+        slot.elementPath: slot.path,
+      },
+    };
+    return {
+      for (final slot in slots)
+        if (marks[slot.elementPath] case final mark?)
+          slot.path: SvgThemeMark(
+            path: slot.path,
+            own: mark.own,
+            inherited: {
+              for (final MapEntry(key: scheme, value: sources) in mark.inherited.entries)
+                scheme: {
+                  for (final MapEntry(key: property, value: source) in sources.entries)
+                    property: layerOf[source] ?? source,
+                },
+            },
+            shownIn: mark.shownIn,
+          ),
+    };
   }
 
   /// What [property] of the element at [path] shows with no theme: its own

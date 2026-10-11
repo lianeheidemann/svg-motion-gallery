@@ -321,18 +321,28 @@ void main() {
       await tester.pumpAndSettle();
     }
 
+    // The move is kept in an editor group, which is not a layer of its own.
+    Future<void> expectMoved(String reason) async {
+      await _tapTab(tester, 'Camadas');
+      expect(find.text('Ajuste do editor'), findsNothing, reason: reason);
+      expect(find.textContaining('Selecionado: Retângulo'), findsOneWidget, reason: reason);
+      await _tapTab(tester, 'Código');
+      final code = tester.widget<TextField>(find.byKey(const Key('code-field'))).controller!.text;
+      expect(code, contains('data-sm-edit="element"'), reason: reason);
+      await _tapTab(tester, 'Camadas');
+    }
+
     for (final tab in ['Inserir', 'Texto']) {
       await _tapTab(tester, tab);
       await dragShape();
-      await _tapTab(tester, 'Camadas');
-      expect(find.text('Ajuste do editor'), findsWidgets, reason: 'moved from $tab');
+      await expectMoved('moved from $tab');
       await tester.tap(find.byTooltip('Desfazer').first);
       await tester.pumpAndSettle();
     }
 
-    // Layers: the same drag moves it (inside an editor transform group).
+    // Layers: the same drag moves it.
     await dragShape();
-    expect(find.text('Ajuste do editor'), findsWidgets, reason: 'moved in Layers');
+    await expectMoved('moved in Layers');
   });
 
   testWidgets('code tab: with wrapping on, an applied edit is no longer pending and saves', (
@@ -436,7 +446,8 @@ void main() {
     await tester.drag(find.byKey(const Key('rotate-handle')), const Offset(-40, 30));
     await tester.pumpAndSettle();
     await _tapTab(tester, 'Camadas');
-    expect(find.text('Ajuste do editor'), findsWidgets, reason: 'turning adds a transform group');
+    expect(find.text('Ajuste do editor'), findsNothing, reason: 'its group is not a layer');
+    expect(find.textContaining('Selecionado: Retângulo'), findsOneWidget);
     await tester.tap(find.byTooltip('Desfazer'));
     await tester.pumpAndSettle();
     await _tapTab(tester, 'Inserir');
@@ -1066,6 +1077,53 @@ void main() {
     await tester.tap(find.byKey(const Key('preset-none')));
     await tester.pumpAndSettle();
     expect(none().selected, isTrue, reason: '"None" took the motion off');
+  });
+
+  testWidgets('moving and animating in turns leaves one layer, its move and one motion', (
+    tester,
+  ) async {
+    final services = await _services(tester);
+    await pumpApp(tester, services);
+    await tester.tap(find.text('sun-moon.svg'));
+    await tester.pumpAndSettle();
+    await _scrollToEdit(tester);
+    await tester.tap(find.byKey(const Key('edit-svg')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Retângulo').first);
+    await tester.pumpAndSettle();
+
+    double positionX() => tester.widget<Slider>(find.byType(Slider).at(0)).value;
+    Future<void> move() async {
+      await _tapTab(tester, 'Transformar');
+      await tester.drag(find.byType(Slider).at(0), const Offset(30, 0));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> animate(String preset) async {
+      await _tapTab(tester, 'Animação');
+      await tester.ensureVisible(find.text(preset));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(preset));
+      await tester.pumpAndSettle();
+    }
+
+    await move();
+    final moved = positionX();
+    expect(moved, isNot(0));
+    await animate('Girar');
+    await _tapTab(tester, 'Transformar');
+    expect(positionX(), moved, reason: 'the motion does not hide the move');
+    await move();
+    await animate('Pulsar');
+
+    await _tapTab(tester, 'Camadas');
+    expect(find.text('Ajuste do editor'), findsNothing);
+    expect(find.textContaining('Selecionado: Retângulo'), findsOneWidget);
+    await _tapTab(tester, 'Código');
+    final code = tester.widget<TextField>(find.byKey(const Key('code-field'))).controller!.text;
+    expect(RegExp('data-sm-edit="element"').allMatches(code), hasLength(1));
+    expect(RegExp('<g[^>]*data-sm-anim=').allMatches(code), hasLength(1), reason: 'pulse only');
+    expect(code, isNot(contains('sm-spin 2s')));
   });
 
   testWidgets('animation: the intensity bar changes how strong the chosen motion is', (

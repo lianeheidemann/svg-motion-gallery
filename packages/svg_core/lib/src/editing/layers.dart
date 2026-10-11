@@ -2,6 +2,7 @@ import 'package:xml/xml.dart';
 
 import '../xml_support.dart';
 import 'element_path.dart';
+import 'layer_tree.dart';
 
 /// A drawable element shown in the editor's layer list.
 class SvgLayer {
@@ -29,10 +30,11 @@ class SvgLayer {
   final int depth;
   final bool visible;
 
-  /// True for groups the editor created to hold a transform/animation.
+  /// True for a group the editor created that is not folded into a layer
+  /// (one holding several elements, after the code was edited by hand).
   final bool isEditorGroup;
 
-  /// Has SMIL children or a CSS animation of its own.
+  /// Has SMIL children or a CSS animation of its own, or a preset motion.
   final bool isAnimated;
 }
 
@@ -40,40 +42,37 @@ class SvgLayer {
 class SvgLayers {
   const SvgLayers._();
 
-  /// Drawable elements in document (paint) order, depth-first.
+  /// Drawable elements in document (paint) order, depth-first. The groups
+  /// the editor adds to keep a layer's transform or animation are not listed:
+  /// the layer stands where they begin (its [SvgLayer.path] is the outermost
+  /// one), so it moves, orders and deletes along with them.
   static List<SvgLayer> list(String svg) {
     final document = tryParseSvg(svg);
     if (document == null) return const [];
-    final layers = <SvgLayer>[];
-    void visit(XmlElement parent, ElementPath parentPath, int depth) {
-      var index = 0;
-      for (final child in parent.childElements) {
-        final path = parentPath.child(index++);
-        if (!isVisual(child)) continue;
-        final text = child.localName == 'text' ? child.innerText.trim() : null;
-        layers.add(
-          SvgLayer(
-            path: path,
-            tag: child.localName,
-            id: child.getAttribute('id'),
-            name: _nameOf(child),
-            text: text == null || text.isEmpty
-                ? null
-                : (text.length > 24 ? '${text.substring(0, 24)}…' : text),
-            depth: depth,
-            visible: !_isHidden(child),
-            isEditorGroup: isEditorGroup(child),
-            isAnimated:
-                child.childElements.any((e) => smilTags.contains(e.localName)) ||
-                (child.getAttribute('style')?.contains('animation') ?? false),
-          ),
-        );
-        visit(child, path, depth + 1);
-      }
-    }
+    return [for (final slot in layerSlots(document.rootElement)) _layerOf(slot)];
+  }
 
-    visit(document.rootElement, ElementPath.root, 0);
-    return layers;
+  static SvgLayer _layerOf(LayerSlot slot) {
+    final element = slot.element;
+    final text = element.localName == 'text' ? element.innerText.trim() : null;
+    return SvgLayer(
+      path: slot.path,
+      tag: element.localName,
+      id: element.getAttribute('id'),
+      name: _nameOf(element),
+      text: text == null || text.isEmpty
+          ? null
+          : (text.length > 24 ? '${text.substring(0, 24)}…' : text),
+      depth: slot.depth,
+      visible: ![...slot.wrappers, element].any(_isHidden),
+      isEditorGroup: isEditorGroup(element),
+      isAnimated:
+          element.childElements.any((e) => smilTags.contains(e.localName)) ||
+          [
+            ...slot.wrappers,
+            element,
+          ].any((e) => e.getAttribute('style')?.contains('animation') ?? false),
+    );
   }
 
   static String? _nameOf(XmlElement element) {
@@ -85,38 +84,56 @@ class SvgLayers {
       element.getAttribute('display') == 'none' ||
       RegExp(r'display\s*:\s*none').hasMatch(element.getAttribute('style') ?? '');
 
-  static String _edit(String svg, ElementPath path, void Function(XmlElement) change) {
+  /// Runs [change] on the element at [path]: the layer's outermost editor
+  /// group with [whole] (so its transform and animation go along), else
+  /// what the user drew inside them.
+  static String _edit(
+    String svg,
+    ElementPath path,
+    void Function(XmlElement) change, {
+    required bool whole,
+  }) {
     final document = tryParseSvg(svg);
     final element = document == null || path.isRoot ? null : path.resolve(document.rootElement);
     if (element == null) return svg;
-    change(element);
+    change(whole ? chainTop(element) : chainBottom(element));
     return document!.toXmlString();
   }
 
-  /// Shows a hidden element or hides a visible one.
-  static String toggleVisibility(String svg, ElementPath path) => _edit(svg, path, (element) {
-    if (_isHidden(element)) {
-      element.removeAttribute('display');
-      final style = element.getAttribute('style');
-      if (style != null) {
-        final cleaned = style.replaceAll(RegExp(r'display\s*:\s*none\s*;?'), '').trim();
-        element.setAttribute('style', cleaned.isEmpty ? null : cleaned);
-      }
-    } else {
-      element.setAttribute('display', 'none');
-    }
-  });
-
-  /// Deletes the element. Nothing is selected afterwards.
-  static SvgEditResult remove(String svg, ElementPath path) =>
-      SvgEditResult(_edit(svg, path, (element) => element.remove()));
-
-  /// Inserts a copy right after the element and selects the copy. `id`s in
-  /// the copy are suffixed so they stay unique.
-  static SvgEditResult duplicate(String svg, ElementPath path) {
+  /// Shows a hidden layer or hides a visible one (hidden by itself or by one
+  /// of its editor groups).
+  static String toggleVisibility(String svg, ElementPath path) {
     final document = tryParseSvg(svg);
     final element = document == null || path.isRoot ? null : path.resolve(document.rootElement);
-    if (element == null) return SvgEditResult(svg, selection: path);
+    if (element == null) return svg;
+    final top = chainTop(element);
+    final chain = [...chainWrappers(top), chainBottom(top)];
+    if (chain.any(_isHidden)) {
+      for (final node in chain) {
+        node.removeAttribute('display');
+        final style = node.getAttribute('style');
+        if (style != null) {
+          final cleaned = style.replaceAll(RegExp(r'display\s*:\s*none\s*;?'), '').trim();
+          node.setAttribute('style', cleaned.isEmpty ? null : cleaned);
+        }
+      }
+    } else {
+      top.setAttribute('display', 'none');
+    }
+    return document!.toXmlString();
+  }
+
+  /// Deletes the layer, with its editor groups. Nothing is selected afterwards.
+  static SvgEditResult remove(String svg, ElementPath path) =>
+      SvgEditResult(_edit(svg, path, (element) => element.remove(), whole: true));
+
+  /// Inserts a copy right after the layer (with its editor groups) and
+  /// selects the copy. `id`s in the copy are suffixed so they stay unique.
+  static SvgEditResult duplicate(String svg, ElementPath path) {
+    final document = tryParseSvg(svg);
+    final found = document == null || path.isRoot ? null : path.resolve(document.rootElement);
+    if (found == null) return SvgEditResult(svg, selection: path);
+    final element = chainTop(found);
     final copy = element.copy();
     for (final node in [copy, ...copy.descendantElements]) {
       final id = node.getAttribute('id');
@@ -135,8 +152,9 @@ class SvgLayers {
 
   static SvgEditResult _move(String svg, ElementPath path, int direction) {
     final document = tryParseSvg(svg);
-    final element = document == null || path.isRoot ? null : path.resolve(document.rootElement);
-    if (element == null) return SvgEditResult(svg, selection: path);
+    final found = document == null || path.isRoot ? null : path.resolve(document.rootElement);
+    if (found == null) return SvgEditResult(svg, selection: path);
+    final element = chainTop(found);
     final parent = element.parent!;
     final siblings = parent.childElements.where(isVisual).toList();
     final position = siblings.indexOf(element);
@@ -157,11 +175,11 @@ class SvgLayers {
   static String rename(String svg, ElementPath path, String name) => _edit(svg, path, (element) {
     final trimmed = name.trim();
     element.setAttribute(nameAttribute, trimmed.isEmpty ? null : trimmed);
-  });
+  }, whole: false);
 
   static String setText(String svg, ElementPath path, String text) => _edit(svg, path, (element) {
     element.children
       ..clear()
       ..add(XmlText(text));
-  });
+  }, whole: false);
 }

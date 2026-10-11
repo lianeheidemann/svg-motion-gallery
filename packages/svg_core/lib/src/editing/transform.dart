@@ -93,6 +93,10 @@ class SvgTransformValues {
 /// element's own `transform` is never rewritten and edits stay reversible.
 /// Rotation and scale pivot on the wrapper's bounding-box center via
 /// `transform-box: fill-box; transform-origin: center`.
+///
+/// A layer has one such wrapper, the outermost of its editor groups (an
+/// animation wrapper sits inside it): it is found from any of them, or from
+/// the element, and reused, so edits never pile wrappers up.
 class SvgTransformEdit {
   const SvgTransformEdit._();
 
@@ -119,15 +123,16 @@ class SvgTransformEdit {
 
     var wrapper = _existingWrapper(root, target);
     if (wrapper == null && values.isIdentity) return SvgEditResult(svg, selection: target);
-    wrapper ??= isDocument ? _wrapDocument(root) : _wrapElement(element!);
+    wrapper ??= isDocument ? _wrapDocument(root) : _wrapElement(chainTop(element!));
     if (wrapper == null) return SvgEditResult(svg, selection: target);
+    if (!isDocument) _dropEmptyWrappers(wrapper);
 
     if (values.isIdentity) {
-      final firstChild = wrapper.childElements.firstOrNull;
-      _unwrap(wrapper);
+      final firstChild = wrapper.childElements.where(isVisual).firstOrNull;
+      unwrapGroup(wrapper);
       return SvgEditResult(
         document.toXmlString(),
-        selection: isDocument || firstChild == null ? null : ElementPath.of(firstChild),
+        selection: isDocument || firstChild == null ? null : ElementPath.of(chainTop(firstChild)),
       );
     }
     wrapper
@@ -144,27 +149,38 @@ class SvgTransformEdit {
       ..setAttribute('style', _wrapperStyle);
     return SvgEditResult(
       document.toXmlString(),
-      selection: isDocument ? null : ElementPath.of(wrapper),
+      selection: isDocument ? null : ElementPath.of(chainTop(wrapper)),
     );
   }
 
   static bool _isRootWrapper(XmlElement? element) =>
       element?.getAttribute(editorAttribute) == 'root';
 
+  static bool _isTransformWrapper(XmlElement element) =>
+      element.getAttribute(editorAttribute) == 'element';
+
+  /// The transform wrapper of the layer at [target] (the outermost one, when
+  /// an older version left several), or the document's.
   static XmlElement? _existingWrapper(XmlElement root, ElementPath? target) {
     if (target == null || target.isRoot) {
       return root.childElements.where(_isRootWrapper).firstOrNull;
     }
     final element = target.resolve(root);
     if (element == null) return null;
-    if (element.getAttribute(editorAttribute) != null) return element;
-    final parent = element.parentElement;
-    if (parent != null &&
-        parent.getAttribute(editorAttribute) == 'element' &&
-        parent.childElements.where(isVisual).length == 1) {
-      return parent;
+    final own = chainWrappers(element).where(_isTransformWrapper).firstOrNull;
+    if (own != null) return own;
+    return element.getAttribute(editorAttribute) != null ? element : null;
+  }
+
+  /// Transform wrappers left in [wrapper]'s layer with nothing in them (by an
+  /// older version of the editor) are taken out.
+  static void _dropEmptyWrappers(XmlElement wrapper) {
+    for (final other in chainWrappers(wrapper)) {
+      if (other == wrapper || !_isTransformWrapper(other)) continue;
+      if (other.getAttribute('transform') == null && other.getAttribute('opacity') == null) {
+        unwrapGroup(other);
+      }
     }
-    return null;
   }
 
   static XmlElement? _wrapDocument(XmlElement root) {
@@ -182,14 +198,6 @@ class SvgTransformEdit {
     siblings.insert(siblings.indexOf(element), wrapper);
     wrapper.children.add(element);
     return wrapper;
-  }
-
-  static void _unwrap(XmlElement wrapper) {
-    final nodes = wrapper.parent!.children;
-    final index = nodes.indexOf(wrapper);
-    final children = wrapper.children.toList();
-    wrapper.remove();
-    nodes.insertAll(index, children);
   }
 
   static final _function = RegExp(r'(translate|rotate|scale)\(([^)]*)\)');

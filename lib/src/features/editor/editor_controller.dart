@@ -178,23 +178,21 @@ class EditorController extends ChangeNotifier {
 
   String? _foldersFor;
   Map<ElementPath, List<ElementPath>> _folders = const {};
-  Set<ElementPath> _wrappers = const {};
 
-  /// The drawn layers right inside each folder.
+  /// The layers right inside each folder (by depth: a folder's own path and
+  /// its layers' paths may have the editor groups of the folder in between).
   Map<ElementPath, List<ElementPath>> get _inside {
     if (_foldersFor != svg) {
       final folders = <ElementPath, List<ElementPath>>{};
+      final open = <SvgLayer>[];
       for (final layer in layers) {
-        final parent = layer.path.parent;
-        if (parent != null && !parent.isRoot) (folders[parent] ??= []).add(layer.path);
+        while (open.isNotEmpty && open.last.depth >= layer.depth) {
+          open.removeLast();
+        }
+        if (open.isNotEmpty) (folders[open.last.path] ??= []).add(layer.path);
+        open.add(layer);
       }
       _folders = folders;
-      // Editor wrappers around a single layer ("Ajuste do editor"): ticked
-      // along with that layer, but an edit goes to the layer itself.
-      _wrappers = {
-        for (final layer in layers)
-          if (layer.isEditorGroup && folders[layer.path]?.length == 1) layer.path,
-      };
       _foldersFor = svg;
     }
     return _folders;
@@ -233,22 +231,19 @@ class EditorController extends ChangeNotifier {
   }
 
   /// What edits go to among the ticked [paths]: what is inside a ticked
-  /// folder is covered by the folder, and an editor wrapper around one layer
-  /// stands aside for that layer. In the order of [paths].
-  List<ElementPath> _targetsAmong(List<ElementPath> paths) {
-    final folders = _inside;
+  /// folder is covered by the folder. In the order of [paths].
+  static List<ElementPath> _targetsAmong(List<ElementPath> paths) {
     final ticked = paths.toSet();
     bool covered(ElementPath path) {
       for (var parent = path.parent; parent != null && !parent.isRoot; parent = parent.parent) {
-        if (ticked.contains(parent) && !_wrappers.contains(parent)) return true;
+        if (ticked.contains(parent)) return true;
       }
       return false;
     }
 
     return [
       for (final path in paths)
-        if (!covered(path) && !(_wrappers.contains(path) && ticked.contains(folders[path]!.single)))
-          path,
+        if (!covered(path)) path,
     ];
   }
 

@@ -359,11 +359,10 @@ class _LayersPanelState extends State<LayersPanel> {
       );
     }
     final layers = editor.layers;
-    // The group right around the layer, editor wrappers skipped.
+    // The folder right around the layer (its editor groups are not layers).
+    final rows = {for (final l in layers) l.path};
     var parent = layer.path.parent;
-    while (parent != null &&
-        !parent.isRoot &&
-        (layers.where((l) => l.path == parent).firstOrNull?.isEditorGroup ?? false)) {
+    while (parent != null && !parent.isRoot && !rows.contains(parent)) {
       parent = parent.parent;
     }
     return ThemeMarkBadge(

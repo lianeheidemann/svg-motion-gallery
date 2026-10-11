@@ -189,24 +189,30 @@ void main() {
       ]);
     });
 
-    test('an editor wrapper is ticked with its layer, which keeps the edits', () {
-      const wrapped =
+    test('a moved folder ticks what is in it, through its editor group', () {
+      const moved =
           '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
-          '<g data-sm-edit="element"><rect width="1" height="1"/></g><circle r="1"/></svg>';
-      final editor = EditorController(wrapped)
+          '<g data-sm-edit="element"><g><rect width="1" height="1"/><circle r="1"/></g></g>'
+          '<ellipse rx="1" ry="1"/></svg>';
+      final editor = EditorController(moved)
         ..setMultiMode(true)
-        ..select(const ElementPath([0, 0]));
-      expect(editor.multiSelection, contains(const ElementPath([0])));
-      expect(editor.targets, const [
-        ElementPath([0, 0]),
-      ]);
-      expect(editor.selection, const ElementPath([0, 0]));
-      editor
-        ..select(null)
         ..select(const ElementPath([0]));
+      expect(editor.layers.map((l) => l.tag), ['g', 'rect', 'circle', 'ellipse']);
+      expect(editor.multiSelection.toSet(), {
+        const ElementPath([0]),
+        const ElementPath([0, 0, 0]),
+        const ElementPath([0, 0, 1]),
+      });
       expect(editor.targets, const [
-        ElementPath([0, 0]),
-      ], reason: 'ticking the wrapper row too');
+        ElementPath([0]),
+      ]);
+      editor
+        ..select(const ElementPath([0]))
+        ..select(const ElementPath([0, 0, 0]))
+        ..select(const ElementPath([0, 0, 1]));
+      expect(editor.targets, const [
+        ElementPath([0]),
+      ], reason: 'all inside: the folder');
     });
 
     test('redo brings the ticked layers back', () {
