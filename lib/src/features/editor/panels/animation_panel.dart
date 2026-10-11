@@ -152,12 +152,9 @@ class _AnimationPanelState extends State<AnimationPanel> {
           title: l10n.animationsTitle,
           spacing: 8,
           children: [
-            // Only the duration, which follows the speed bar while it moves.
             if (!metadata.isAnimated)
               Text(l10n.animationsNone)
-            else if (seconds != null)
-              Text(l10n.durationSeconds(l10n.decimal(seconds))),
-            if (metadata.isAnimated) ...[
+            else ...[
               SliderField(
                 label: l10n.speed,
                 value: _speed,
@@ -183,13 +180,21 @@ class _AnimationPanelState extends State<AnimationPanel> {
                   if (_resumeAfterDrag) widget.playback?.play();
                 },
               ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: () => _editor.commit(SvgAnimationEdit.removeAll(_editor.svg)),
-                  icon: const Icon(Icons.motion_photos_off_outlined),
-                  label: Text(l10n.removeAnimations),
-                ),
+              // At the bottom: the duration (it follows the speed bar while it
+              // moves) and, across from it, taking every animation out.
+              Row(
+                children: [
+                  Expanded(
+                    child: seconds == null
+                        ? const SizedBox.shrink()
+                        : Text(l10n.durationSeconds(l10n.decimal(seconds))),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => _editor.commit(SvgAnimationEdit.removeAll(_editor.svg)),
+                    icon: const Icon(Icons.motion_photos_off_outlined),
+                    label: Text(l10n.removeAnimations),
+                  ),
+                ],
               ),
             ],
           ],

@@ -220,7 +220,7 @@
   "animationsTitle": "File animations",
   "durationSeconds": "Duration: {seconds} s",
   "speed": "Speed",
-  "removeAnimations": "Remove all animations",
+  "removeAnimations": "Remove animations",
   "presetsTitle": "Add motion",
   "presetSpin": "Spin",
   "presetPulse": "Pulse",

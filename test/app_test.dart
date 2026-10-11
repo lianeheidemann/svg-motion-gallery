@@ -1033,6 +1033,7 @@ void main() {
     Future<void> tap(String label) async {
       final chip = find.widgetWithText(ChoiceChip, label, skipOffstage: false);
       await tester.ensureVisible(chip);
+      await tester.pumpAndSettle(); // the scroll lands on the next frame
       await tester.tap(chip);
       await tester.pumpAndSettle();
     }
