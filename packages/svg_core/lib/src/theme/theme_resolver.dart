@@ -59,26 +59,33 @@ class SvgThemeResolver {
 
   /// Resolves `prefers-color-scheme` media blocks and `light-dark()` calls
   /// inside a stylesheet.
-  static String resolveCss(String css, SvgColorScheme scheme) {
+  static String resolveCss(String css, SvgColorScheme scheme) => _resolveCss(css, scheme);
+
+  /// With a null [scheme], every `prefers-color-scheme` block is dropped and
+  /// `light-dark()` is left as it is (see [withoutThemeVariants]).
+  static String _resolveCss(String css, SvgColorScheme? scheme) {
+    String plain(String text) => scheme == null ? text : _replaceLightDark(text, scheme);
     final rules = findAtRules(css, 'media');
-    if (rules.isEmpty) return _replaceLightDark(css, scheme);
+    if (rules.isEmpty) return plain(css);
     final buffer = StringBuffer();
     var last = 0;
     for (final rule in rules) {
-      buffer.write(_replaceLightDark(css.substring(last, rule.start), scheme));
+      buffer.write(plain(css.substring(last, rule.start)));
       final inner = css.substring(rule.blockStart + 1, rule.blockEnd);
       final prelude = rule.prelude.toLowerCase();
       if (prelude.contains('prefers-color-scheme')) {
-        if (_mediaMatches(prelude, scheme)) buffer.write(resolveCss(inner, scheme));
+        if (scheme != null && _mediaMatches(prelude, scheme)) {
+          buffer.write(_resolveCss(inner, scheme));
+        }
       } else {
         buffer
           ..write(css.substring(rule.start, rule.blockStart + 1))
-          ..write(resolveCss(inner, scheme))
+          ..write(_resolveCss(inner, scheme))
           ..write('}');
       }
       last = rule.blockEnd + 1;
     }
-    buffer.write(_replaceLightDark(css.substring(last), scheme));
+    buffer.write(plain(css.substring(last)));
     return buffer.toString();
   }
 
@@ -102,4 +109,20 @@ class SvgThemeResolver {
   static bool _definesColor(XmlElement root) =>
       root.getAttribute('color') != null ||
       RegExp(r'(^|;)\s*color\s*:').hasMatch(root.getAttribute('style') ?? '');
+}
+
+/// [content] as it draws with neither theme: every `prefers-color-scheme`
+/// block is dropped (the editor's own included) and `light-dark()` is left
+/// as written, so it never equals either version. What a layer shows here is
+/// the value both themes share unless one of them sets its own.
+String withoutThemeVariants(String content) {
+  final document = tryParseXml(content);
+  if (document == null) return content;
+  final root = document.rootElement;
+  for (final element in [root, ...root.descendantElements]) {
+    if (element.localName == 'style') {
+      setStyleText(element, SvgThemeResolver._resolveCss(styleText(element), null));
+    }
+  }
+  return document.toXmlString();
 }

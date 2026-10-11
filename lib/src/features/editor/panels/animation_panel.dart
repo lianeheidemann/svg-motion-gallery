@@ -103,20 +103,9 @@ class _AnimationPanelState extends State<AnimationPanel> {
   /// The layers the speed bar applied to; a new selection starts it over.
   List<ElementPath> _baseTargets = const [];
 
-  /// The layers a motion goes on: the edit targets, but a layer that already
-  /// sits inside its motion wrapper stands for the wrapper (so the motion is
-  /// replaced there instead of being wrapped again).
-  List<ElementPath> _motionTargets() {
-    final out = <ElementPath>[];
-    for (final path in _editor.editTargets) {
-      final parent = path.parent;
-      final owner = parent != null && SvgAnimationEdit.presetAt(_editor.svg, parent) != null
-          ? parent
-          : path;
-      if (!out.contains(owner)) out.add(owner);
-    }
-    return out;
-  }
+  /// The layers a motion goes on: the edit targets (a layer's motion is
+  /// replaced where it is, never wrapped again).
+  List<ElementPath> _motionTargets() => _editor.editTargets;
 
   void _syncBase() {
     final targets = _editor.targets;
@@ -163,12 +152,9 @@ class _AnimationPanelState extends State<AnimationPanel> {
           title: l10n.animationsTitle,
           spacing: 8,
           children: [
-            // Only the duration, which follows the speed bar while it moves.
             if (!metadata.isAnimated)
               Text(l10n.animationsNone)
-            else if (seconds != null)
-              Text(l10n.durationSeconds(l10n.decimal(seconds))),
-            if (metadata.isAnimated) ...[
+            else ...[
               SliderField(
                 label: l10n.speed,
                 value: _speed,
@@ -194,13 +180,21 @@ class _AnimationPanelState extends State<AnimationPanel> {
                   if (_resumeAfterDrag) widget.playback?.play();
                 },
               ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: () => _editor.commit(SvgAnimationEdit.removeAll(_editor.svg)),
-                  icon: const Icon(Icons.motion_photos_off_outlined),
-                  label: Text(l10n.removeAnimations),
-                ),
+              // At the bottom: the duration (it follows the speed bar while it
+              // moves) and, across from it, taking every animation out.
+              Row(
+                children: [
+                  Expanded(
+                    child: seconds == null
+                        ? const SizedBox.shrink()
+                        : Text(l10n.durationSeconds(l10n.decimal(seconds))),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => _editor.commit(SvgAnimationEdit.removeAll(_editor.svg)),
+                    icon: const Icon(Icons.motion_photos_off_outlined),
+                    label: Text(l10n.removeAnimations),
+                  ),
+                ],
               ),
             ],
           ],

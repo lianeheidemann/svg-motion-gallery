@@ -57,14 +57,14 @@ void main() {
     ]);
   });
 
-  test('editor wrappers are transparent for numbering', () {
+  test('editor wrappers are not layers and do not change the numbering', () {
     var svg = _svg('<circle r="1"/><circle r="1"/><circle r="1"/>');
     svg = SvgTransformEdit.apply(
       svg,
       const ElementPath([1]),
       const SvgTransformValues(translateX: 2),
     ).svg;
-    expect(_labels(svg), ['Círculo 1', 'Ajuste do editor', 'Círculo 2', 'Círculo 3']);
+    expect(_labels(svg), ['Círculo 1', 'Círculo 2', 'Círculo 3']);
   });
 
   test('chosen names are used and numbered when they repeat', () {

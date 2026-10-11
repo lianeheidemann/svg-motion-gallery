@@ -39,6 +39,60 @@ bool isEditorGroup(XmlElement element) =>
     element.getAttribute(editorAttribute) != null ||
     element.getAttribute(animationAttribute) != null;
 
+/// Whether [element] is the group the editor puts around the whole drawing
+/// (a transform with nothing selected).
+bool isRootWrapper(XmlElement element) => element.getAttribute(editorAttribute) == 'root';
+
+/// Whether [element] is an editor group around a single layer: its
+/// transform or its animation. A layer has a chain of them (at most one of
+/// each: the transform outside, the animation inside); together with the
+/// layer they are one layer for the user.
+bool isChainWrapper(XmlElement element) =>
+    isEditorGroup(element) &&
+    !isRootWrapper(element) &&
+    element.childElements.where(isVisual).length == 1;
+
+/// The outermost editor group of the layer [element] belongs to, or
+/// [element] when it has none. Moving, ordering or deleting the layer acts
+/// on this one, so its groups always go along.
+XmlElement chainTop(XmlElement element) {
+  var current = element;
+  while (true) {
+    final parent = current.parentElement;
+    if (parent == null || !isChainWrapper(parent)) return current;
+    current = parent;
+  }
+}
+
+/// What the user drew inside the editor groups at [element] ([element]
+/// itself when it is not one).
+XmlElement chainBottom(XmlElement element) {
+  var current = element;
+  while (isChainWrapper(current)) {
+    current = current.childElements.where(isVisual).single;
+  }
+  return current;
+}
+
+/// The editor groups of the layer [element] belongs to, outermost first.
+List<XmlElement> chainWrappers(XmlElement element) {
+  final wrappers = <XmlElement>[];
+  for (var current = chainTop(element); isChainWrapper(current);) {
+    wrappers.add(current);
+    current = current.childElements.where(isVisual).single;
+  }
+  return wrappers;
+}
+
+/// Replaces the group [group] by what is inside it.
+void unwrapGroup(XmlElement group) {
+  final nodes = group.parent!.children;
+  final index = nodes.indexOf(group);
+  final children = group.children.toList();
+  group.remove();
+  nodes.insertAll(index, children);
+}
+
 /// Follows editor-created wrappers down to the element the user drew.
 XmlElement unwrapEditorGroups(XmlElement element) {
   var current = element;

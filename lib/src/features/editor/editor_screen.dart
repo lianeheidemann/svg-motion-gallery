@@ -40,34 +40,6 @@ class _EditorScreenState extends State<EditorScreen> {
   SvgDocument? _document;
   final _playback = SvgPlaybackController();
 
-  /// The variant (light/dark) being edited; chosen with the Layers tab icon.
-  /// Null until the first read, which takes the app's theme once.
-  SvgColorScheme? _variant;
-
-  /// The variant being viewed and edited, or null when the file has no
-  /// light/dark versions in its code.
-  SvgColorScheme? _editScheme(BuildContext context, EditorController editor) {
-    if (!SvgThemeEdit.canEdit(editor.svg)) return null;
-    // The version is fixed when editing starts (the app's theme then); the
-    // theme button in the bar changes the app, not the version being edited.
-    return _variant ??= schemeOf(context);
-  }
-
-  /// Switches between the light and the dark version. What is selected moves
-  /// to its twin in the other version (the "night" group to the "day" one),
-  /// since the selected one may not be drawn there.
-  void _toggleVariant(BuildContext context, EditorController editor) {
-    final from = _editScheme(context, editor);
-    if (from == null) return;
-    final to = from.opposite;
-    final chosen = editor.multiMode ? editor.multiSelection : [?editor.selection];
-    final mapped = [
-      for (final path in chosen) SvgThemeEdit.counterpart(editor.svg, path, from, to),
-    ];
-    setState(() => _variant = to);
-    if (chosen.isNotEmpty) editor.replaceSelection(mapped);
-  }
-
   /// Whether the stage was playing before the Colors tab froze it.
   var _resumeAfterColors = false;
   var _tab = EditorTab.layers;
@@ -90,7 +62,10 @@ class _EditorScreenState extends State<EditorScreen> {
     if (_editor != null) return;
     final library = AppScope.of(context).library;
     _document = library.byId(widget.documentId);
-    if (_document != null) _editor = EditorController(library.contentOf(_document!));
+    if (_document != null) {
+      // The version of a light/dark file shown first is the app's theme now.
+      _editor = EditorController(library.contentOf(_document!))..startTheme(schemeOf(context));
+    }
   }
 
   @override
@@ -201,7 +176,7 @@ class _EditorScreenState extends State<EditorScreen> {
     // so the renderer only measures the other ones.
     final others = [
       if (editor.multiMode)
-        for (final path in editor.multiSelection)
+        for (final path in editor.targets)
           if (path != selection) path,
     ];
     final drawn = movablesAmong(editor.svg, others).map((shape) => shape.path).toList();
@@ -236,7 +211,7 @@ class _EditorScreenState extends State<EditorScreen> {
                 editor: editor,
                 tab: _tab,
                 playback: _playback,
-                scheme: _editScheme(context, editor),
+                scheme: editor.themeScheme,
                 background: _background,
                 onBackgroundChanged: (value) => setState(() => _background = value),
                 documentName: _document!.name,
@@ -351,12 +326,13 @@ class _EditorScreenState extends State<EditorScreen> {
     EditorTab.transform => TransformPanel(editor: editor),
     EditorTab.window => WindowPanel(editor: editor, playback: _playback),
     EditorTab.align => AlignPanel(editor: editor, playback: _playback),
-    EditorTab.colors => ColorsPanel(editor: editor, scheme: _editScheme(context, editor)),
+    EditorTab.colors => ColorsPanel(editor: editor, scheme: editor.themeScheme),
     EditorTab.animation => AnimationPanel(editor: editor, playback: _playback),
     EditorTab.layers => LayersPanel(
       editor: editor,
-      themeScheme: _editScheme(context, editor),
-      onToggleTheme: () => _toggleVariant(context, editor),
+      themeScheme: editor.themeScheme,
+      onToggleTheme: editor.toggleTheme,
+      onOpenColors: () => setState(() => _switchTab(EditorTab.colors)),
     ),
     EditorTab.insert => InsertPanel(editor: editor),
     EditorTab.text => InsertPanel(key: const Key('text-panel'), editor: editor, text: true),

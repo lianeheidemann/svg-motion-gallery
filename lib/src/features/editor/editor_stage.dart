@@ -136,13 +136,14 @@ class EditorStage extends StatelessWidget {
         ? math.min(height * .22, 200.0)
         : math.min(height * .32, 320.0);
     final layer = editor.selectedLayer;
-    final ticked = editor.multiMode ? editor.multiSelection.length : 0;
+    // A ticked folder counts once, with what is inside it.
+    final ticked = editor.multiMode ? editor.targets.length : 0;
     final selected = editor.selection;
     final multi = ticked > 1;
     final selectedOutlinedByDrag = showsDragLayer && _selectedIsShape();
     // Shapes on the canvas among the ticked ones: outlined from the document.
     final outlined = multi
-        ? movablesAmong(editor.displaySvg, editor.multiSelection)
+        ? movablesAmong(editor.displaySvg, editor.targets)
         : const <SvgMovable>[];
     final selectedIsOutlined = outlined.any((shape) => shape.path == selected);
     final outlines = [

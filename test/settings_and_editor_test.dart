@@ -108,6 +108,113 @@ void main() {
       expect(again.layers.map((l) => l.tag), ['g', 'rect', 'ellipse']);
     });
 
+    const nestedSvg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+        '<g><g><circle r="1"/><rect width="1" height="1"/></g><path d="M0 0L1 1"/></g>'
+        '<ellipse rx="1" ry="2"/></svg>';
+
+    test('ticking a folder ticks everything in it, and the folder takes the edits', () {
+      final editor = EditorController(nestedSvg)
+        ..setMultiMode(true)
+        ..select(const ElementPath([0]));
+      expect(editor.multiSelection.toSet(), {
+        const ElementPath([0]),
+        const ElementPath([0, 0]),
+        const ElementPath([0, 0, 0]),
+        const ElementPath([0, 0, 1]),
+        const ElementPath([0, 1]),
+      });
+      expect(editor.targets, const [
+        ElementPath([0]),
+      ], reason: 'what is inside is covered');
+      expect(editor.selection, const ElementPath([0]));
+    });
+
+    test('unticking a layer inside unticks the folders around it, not the rest', () {
+      final editor = EditorController(nestedSvg)
+        ..setMultiMode(true)
+        ..select(const ElementPath([0]))
+        ..select(const ElementPath([0, 0, 0]));
+      expect(editor.multiSelection.toSet(), {
+        const ElementPath([0, 0, 1]),
+        const ElementPath([0, 1]),
+      });
+      expect(editor.targets, const [
+        ElementPath([0, 0, 1]),
+        ElementPath([0, 1]),
+      ]);
+    });
+
+    test('ticking every layer of a folder ticks the folder, up the tree', () {
+      final editor = EditorController(nestedSvg)
+        ..setMultiMode(true)
+        ..select(const ElementPath([0, 0, 0]))
+        ..select(const ElementPath([0, 0, 1]));
+      expect(editor.multiSelection, contains(const ElementPath([0, 0])));
+      expect(editor.targets, const [
+        ElementPath([0, 0]),
+      ]);
+      editor.select(const ElementPath([0, 1]));
+      expect(editor.multiSelection, contains(const ElementPath([0])));
+      expect(editor.targets, const [
+        ElementPath([0]),
+      ]);
+      expect(editor.selection, const ElementPath([0]));
+    });
+
+    test('a ticked folder gets an edit once, not again for what is inside it', () {
+      final editor = EditorController(multiSvg)
+        ..setMultiMode(true)
+        ..select(const ElementPath([1]));
+      editor.duplicateTargets();
+      expect(editor.layers, hasLength(8), reason: 'one copy of the folder and its 2 layers');
+    });
+
+    test('turning it on with a folder selected ticks what is in it', () {
+      final editor = EditorController(multiSvg)..select(const ElementPath([1]));
+      editor.setMultiMode(true);
+      expect(editor.multiSelection, hasLength(3));
+      expect(editor.targets, const [
+        ElementPath([1]),
+      ]);
+    });
+
+    test('select all ticks the folders too, and edits go to the top of the tree', () {
+      final editor = EditorController(multiSvg)..selectAllLayers();
+      expect(editor.multiSelection, hasLength(5));
+      expect(editor.targets, const [
+        ElementPath([0]),
+        ElementPath([1]),
+        ElementPath([2]),
+      ]);
+    });
+
+    test('a moved folder ticks what is in it, through its editor group', () {
+      const moved =
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+          '<g data-sm-edit="element"><g><rect width="1" height="1"/><circle r="1"/></g></g>'
+          '<ellipse rx="1" ry="1"/></svg>';
+      final editor = EditorController(moved)
+        ..setMultiMode(true)
+        ..select(const ElementPath([0]));
+      expect(editor.layers.map((l) => l.tag), ['g', 'rect', 'circle', 'ellipse']);
+      expect(editor.multiSelection.toSet(), {
+        const ElementPath([0]),
+        const ElementPath([0, 0, 0]),
+        const ElementPath([0, 0, 1]),
+      });
+      expect(editor.targets, const [
+        ElementPath([0]),
+      ]);
+      editor
+        ..select(const ElementPath([0]))
+        ..select(const ElementPath([0, 0, 0]))
+        ..select(const ElementPath([0, 0, 1]));
+      expect(editor.targets, const [
+        ElementPath([0]),
+      ], reason: 'all inside: the folder');
+    });
+
     test('redo brings the ticked layers back', () {
       final editor = EditorController(multiSvg)
         ..setMultiMode(true)

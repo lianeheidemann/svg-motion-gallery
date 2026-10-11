@@ -164,6 +164,8 @@ ThemeData buildAppTheme({required Brightness brightness, Color accent = const Co
         success: const Color(0xFF22C55E),
         danger: const Color(0xFFEF4444),
         favorite: accent,
+        sun: isDark ? const Color(0xFFFFC23D) : const Color(0xFFD48A00),
+        moon: isDark ? const Color(0xFF5B9BFF) : const Color(0xFF2F6FE0),
         codeBackground: isDark ? const Color(0xFF0A1122) : const Color(0xFFF7F9FD),
         codeGutter: palette.muted.withValues(alpha: 0.7),
         codeText: palette.text,

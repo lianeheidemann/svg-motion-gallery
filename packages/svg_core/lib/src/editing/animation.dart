@@ -148,9 +148,11 @@ class SvgAnimationEdit {
     return document.toXmlString();
   }
 
-  /// Adds [preset] to the element at [path] through an animation wrapper
-  /// group (so it composes with the element's own transform). Applying a
-  /// preset to an existing animation wrapper replaces its motion.
+  /// Adds [preset] to the layer at [path] through an animation wrapper
+  /// group (so it composes with the element's own transform). A layer has one
+  /// such wrapper, right around what the user drew (inside the transform
+  /// wrapper): applying a preset to a layer that has one replaces its motion,
+  /// and extra ones an older version left are taken out.
   ///
   /// [intensity] is how strong the motion is (1 = the original: a pulse grows
   /// 15 %, a sway turns 8 degrees, and so on). A spin ignores it.
@@ -167,7 +169,14 @@ class SvgAnimationEdit {
     final element = path.resolve(root);
     if (element == null) return SvgEditResult(svg, selection: path);
 
-    final wrapper = element.getAttribute(animationAttribute) != null ? element : _wrap(element);
+    final existing = _animationWrappers(element);
+    final XmlElement wrapper;
+    if (existing.isEmpty) {
+      wrapper = _wrap(chainBottom(element));
+    } else {
+      wrapper = existing.last;
+      existing.sublist(0, existing.length - 1).forEach(unwrapGroup);
+    }
     wrapper
       ..setAttribute(animationAttribute, preset.name)
       ..setAttribute(
@@ -177,43 +186,53 @@ class SvgAnimationEdit {
             'animation:${preset.keyframesName} ${formatClockValue(seconds)} ${preset.easing} infinite',
       );
     _ensureKeyframes(root);
-    return SvgEditResult(document.toXmlString(), selection: ElementPath.of(wrapper));
+    return SvgEditResult(document.toXmlString(), selection: ElementPath.of(chainTop(wrapper)));
   }
 
-  /// Removes a preset added by [addPreset] (unwraps the animation group).
+  /// Removes a preset added by [addPreset] from the layer at [path] (unwraps
+  /// its animation group, leaving its transform).
   static SvgEditResult removePreset(String svg, ElementPath path) {
     final document = tryParseSvg(svg);
     final element = document == null || path.isRoot ? null : path.resolve(document.rootElement);
-    if (element == null || element.getAttribute(animationAttribute) == null) {
-      return SvgEditResult(svg, selection: path);
-    }
-    final nodes = element.parent!.children;
-    final index = nodes.indexOf(element);
-    final children = element.children.toList();
-    final firstElement = element.childElements.firstOrNull;
-    element.remove();
-    nodes.insertAll(index, children);
+    final wrappers = element == null ? const <XmlElement>[] : _animationWrappers(element);
+    if (wrappers.isEmpty) return SvgEditResult(svg, selection: path);
+    final drawn = wrappers.last.childElements.where(isVisual).firstOrNull;
+    wrappers.forEach(unwrapGroup);
     return SvgEditResult(
       document!.toXmlString(),
-      selection: firstElement == null ? null : ElementPath.of(firstElement),
+      selection: drawn == null ? null : ElementPath.of(chainTop(drawn)),
     );
   }
 
-  /// The preset on the element at [path], when it is an animation wrapper.
+  /// The preset on the layer at [path], if it has one.
   static SvgAnimationPreset? presetAt(String svg, ElementPath path) {
-    final document = tryParseSvg(svg);
-    final element = document == null || path.isRoot ? null : path.resolve(document.rootElement);
-    final name = element?.getAttribute(animationAttribute);
+    final name = _wrapperAt(svg, path)?.getAttribute(animationAttribute);
     return SvgAnimationPreset.values.where((preset) => preset.name == name).firstOrNull;
   }
 
-  /// How strong the motion on the wrapper at [path] is (1 = the original).
+  /// How strong the motion on the layer at [path] is (1 = the original).
   static double intensityAt(String svg, ElementPath path) {
-    final document = tryParseSvg(svg);
-    final element = document == null || path.isRoot ? null : path.resolve(document.rootElement);
-    final style = element?.getAttribute('style') ?? '';
+    final style = _wrapperAt(svg, path)?.getAttribute('style') ?? '';
     final match = RegExp('$_intensityProperty\\s*:\\s*([0-9.]+)').firstMatch(style);
     return double.tryParse(match?.group(1) ?? '') ?? 1;
+  }
+
+  /// The animation wrappers of the layer [element] belongs to, outermost
+  /// first (one, unless an older version stacked them).
+  static List<XmlElement> _animationWrappers(XmlElement element) {
+    final wrappers = [
+      for (final wrapper in chainWrappers(element))
+        if (wrapper.getAttribute(animationAttribute) != null) wrapper,
+    ];
+    // A wrapper holding several elements (edited by hand) still counts.
+    if (wrappers.isEmpty && element.getAttribute(animationAttribute) != null) return [element];
+    return wrappers;
+  }
+
+  static XmlElement? _wrapperAt(String svg, ElementPath path) {
+    final document = tryParseSvg(svg);
+    final element = document == null || path.isRoot ? null : path.resolve(document.rootElement);
+    return element == null ? null : _animationWrappers(element).lastOrNull;
   }
 
   static XmlElement _wrap(XmlElement element) {

@@ -108,19 +108,10 @@ class _InsertPanelState extends State<InsertPanel> {
     return SvgPaintEdit.setStrokeWidth(svg, path, width);
   }
 
-  /// The tag of what the user drew at [path]: an editor wrapper (made when a
-  /// shape is moved, scaled or rotated) is followed down to its shape.
-  String? _shapeTag(ElementPath path) {
-    final layers = editor.layers;
-    var i = layers.indexWhere((layer) => layer.path == path);
-    if (i < 0) return null;
-    while (layers[i].isEditorGroup &&
-        i + 1 < layers.length &&
-        layers[i + 1].depth > layers[i].depth) {
-      i++;
-    }
-    return layers[i].tag;
-  }
+  /// The tag of what the user drew at [path] (a layer's editor groups, made
+  /// when it is moved, scaled or rotated, are part of the layer).
+  String? _shapeTag(ElementPath path) =>
+      editor.layers.where((layer) => layer.path == path).firstOrNull?.tag;
 
   /// Closed shapes can be filled or hollow; lines and text cannot.
   bool _fillable(ElementPath path) =>

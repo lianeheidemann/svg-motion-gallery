@@ -10,6 +10,8 @@ class GalleryColors extends ThemeExtension<GalleryColors> {
     required this.success,
     required this.danger,
     required this.favorite,
+    required this.sun,
+    required this.moon,
     required this.codeBackground,
     required this.codeGutter,
     required this.codeText,
@@ -26,6 +28,11 @@ class GalleryColors extends ThemeExtension<GalleryColors> {
   final Color success;
   final Color danger;
   final Color favorite;
+
+  /// Marks for what belongs to the light (sun) and the dark (moon) version of
+  /// a drawing. Fixed, so they never clash with the accent color.
+  final Color sun;
+  final Color moon;
   final Color codeBackground;
   final Color codeGutter;
   final Color codeText;
@@ -45,6 +52,8 @@ class GalleryColors extends ThemeExtension<GalleryColors> {
     success: success,
     danger: danger,
     favorite: favorite,
+    sun: sun,
+    moon: moon,
     codeBackground: codeBackground,
     codeGutter: codeGutter,
     codeText: codeText,
@@ -66,6 +75,8 @@ class GalleryColors extends ThemeExtension<GalleryColors> {
       success: mix(success, other.success),
       danger: mix(danger, other.danger),
       favorite: mix(favorite, other.favorite),
+      sun: mix(sun, other.sun),
+      moon: mix(moon, other.moon),
       codeBackground: mix(codeBackground, other.codeBackground),
       codeGutter: mix(codeGutter, other.codeGutter),
       codeText: mix(codeText, other.codeText),

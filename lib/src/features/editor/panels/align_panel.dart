@@ -48,7 +48,7 @@ class _AlignPanelState extends State<AlignPanel> {
       playback.selectElement(
         _editor.selection?.indices,
         also: [
-          for (final path in _editor.multiSelection)
+          for (final path in _editor.targets)
             if (path != _editor.selection) path.indices,
         ],
       );

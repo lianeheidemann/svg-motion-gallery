@@ -93,6 +93,14 @@ extension AppLocalizationsFormat on AppLocalizations {
     return themeAdaptive(support.mechanisms.map(mechanism).join(', '));
   }
 
+  /// The name of a theme inside a sentence ("claro", "escuro").
+  String themeName(SvgColorScheme scheme) =>
+      scheme == SvgColorScheme.light ? themeLightName : themeDarkName;
+
+  /// The name of a theme on its own ("Claro", "Escuro").
+  String themeTitle(SvgColorScheme scheme) =>
+      scheme == SvgColorScheme.light ? themeLight : themeDark;
+
   String mechanism(SvgThemeMechanism mechanism) => switch (mechanism) {
     SvgThemeMechanism.mediaQuery => mechanismMediaQuery,
     SvgThemeMechanism.lightDarkFunction => mechanismLightDark,
