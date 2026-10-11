@@ -102,6 +102,46 @@ void main() {
     );
   });
 
+  testWidgets('the theme button names the version, and the stage says it quietly', (tester) async {
+    await _openInEditor(tester);
+    final button = find.byKey(const Key('theme-variant'));
+    expect(find.descendant(of: button, matching: find.text('Escuro')), findsOneWidget);
+    expect(find.descendant(of: button, matching: find.byIcon(Icons.swap_horiz_rounded)), findsOne);
+    final tag = find.byKey(const Key('stage-theme'));
+    expect(find.descendant(of: tag, matching: find.text('Escuro')), findsOneWidget);
+
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: button, matching: find.text('Claro')), findsOneWidget);
+    expect(find.descendant(of: tag, matching: find.text('Claro')), findsOneWidget);
+  });
+
+  testWidgets('the layer actions stay on one line and slide sideways', (tester) async {
+    await _openInEditor(tester);
+    final keys = [
+      'select-all-layers',
+      'clear-selection',
+      'layer-forward',
+      'layer-backward',
+      'layer-duplicate',
+      'layer-visibility',
+      'layer-delete',
+    ];
+    final tops = {for (final key in keys) tester.getTopLeft(find.byKey(Key(key))).dy};
+    expect(tops, hasLength(1), reason: 'no second line');
+    final row = find.byKey(const Key('layer-actions-row'));
+    final delete = find.byKey(const Key('layer-delete'));
+    final before = tester.getTopLeft(delete).dx;
+    await tester.drag(row, const Offset(-200, 0));
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(delete).dx, lessThan(before), reason: 'slid in from the side');
+    expect(
+      tester.getTopLeft(find.byKey(const Key('theme-variant'))).dx,
+      lessThan(tester.getTopLeft(row).dx),
+      reason: 'the theme button stays in front',
+    );
+  });
+
   testWidgets('theme settings: visibility changes the edited version only', (tester) async {
     final services = await _openInEditor(tester);
     await tester.tap(_mark(_rect));

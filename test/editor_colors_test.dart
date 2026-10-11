@@ -238,6 +238,7 @@ void main() {
   testWidgets('light/dark: a file without both versions has no icon', (tester) async {
     await _openRedInEditor(tester);
     expect(find.byKey(const Key('theme-variant')), findsNothing);
+    expect(find.byKey(const Key('stage-theme')), findsNothing);
   });
 
   testWidgets('the selection label has an icon that clears the selection', (tester) async {

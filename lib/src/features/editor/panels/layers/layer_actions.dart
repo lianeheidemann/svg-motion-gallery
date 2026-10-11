@@ -5,6 +5,7 @@ import 'package:svg_core/svg_core.dart';
 import '../../../../l10n/l10n.dart';
 import '../../../../widgets/svg_actions_menu.dart';
 import '../../editor_controller.dart';
+import 'theme_badge.dart';
 
 /// The box at the top of the Layers tab, always there: select all, clear the
 /// selection, and the actions on what is selected (order, duplicate, show or
@@ -68,73 +69,89 @@ class LayerActionsCard extends StatelessWidget {
           icon: Icon(icon, size: 20),
         );
 
-    // No title: the line above the box already says what is selected.
+    final theme = themeScheme;
+    final actions = [
+      action(
+        const Key('select-all-layers'),
+        Icons.select_all_rounded,
+        l10n.selectAllLayers,
+        editor.selectAllLayers,
+      ),
+      action(
+        const Key('clear-selection'),
+        Icons.deselect_rounded,
+        l10n.clearSelection,
+        has ? () => editor.select(null) : null,
+      ),
+      action(
+        const Key('layer-forward'),
+        Icons.flip_to_front_rounded,
+        l10n.bringForward,
+        single == null ? null : () => editor.apply(SvgLayers.bringForward(svg, single.path)),
+      ),
+      action(
+        const Key('layer-backward'),
+        Icons.flip_to_back_rounded,
+        l10n.sendBackward,
+        single == null ? null : () => editor.apply(SvgLayers.sendBackward(svg, single.path)),
+      ),
+      action(
+        const Key('layer-duplicate'),
+        Icons.copy_all_rounded,
+        l10n.actionDuplicate,
+        !has
+            ? null
+            : single != null
+            ? () => editor.apply(SvgLayers.duplicate(svg, single.path))
+            : editor.duplicateTargets,
+      ),
+      action(
+        const Key('layer-visibility'),
+        Icons.visibility_outlined,
+        // In a light/dark file it hides in both versions; one version
+        // alone is hidden in a layer's theme settings.
+        themeScheme == null ? l10n.hideLayer : l10n.hideLayerBoth,
+        has ? _toggleVisibility : null,
+      ),
+      action(
+        const Key('layer-delete'),
+        Icons.delete_outline_rounded,
+        l10n.actionDelete,
+        has ? () => _delete(context, count) : null,
+      ),
+    ];
+
+    // No title: the line above the box already says what is selected. The
+    // version being edited stays in front; the actions slide sideways.
     return SectionCard(
       children: [
-        Wrap(
-          spacing: 4,
-          runSpacing: 4,
+        Row(
           children: [
-            if (themeScheme != null)
-              IconButton.filled(
-                key: const Key('theme-variant'),
-                tooltip: themeScheme == SvgColorScheme.light ? l10n.editingLight : l10n.editingDark,
-                onPressed: onToggleTheme,
-                icon: Icon(
-                  themeScheme == SvgColorScheme.light
-                      ? Icons.light_mode_rounded
-                      : Icons.dark_mode_rounded,
-                  size: 20,
+            if (theme != null) ...[
+              Tooltip(
+                message: theme == SvgColorScheme.light ? l10n.editingLight : l10n.editingDark,
+                child: FilledButton(
+                  key: const Key('theme-variant'),
+                  onPressed: onToggleTheme,
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsetsDirectional.fromSTEB(14, 0, 12, 0),
+                    minimumSize: const Size(0, 44),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(themeIcon(theme), size: 20),
+                      const SizedBox(width: 6),
+                      Text(l10n.themeTitle(theme)),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.swap_horiz_rounded, size: 18),
+                    ],
+                  ),
                 ),
               ),
-            action(
-              const Key('select-all-layers'),
-              Icons.select_all_rounded,
-              l10n.selectAllLayers,
-              editor.selectAllLayers,
-            ),
-            action(
-              const Key('clear-selection'),
-              Icons.deselect_rounded,
-              l10n.clearSelection,
-              has ? () => editor.select(null) : null,
-            ),
-            action(
-              const Key('layer-forward'),
-              Icons.flip_to_front_rounded,
-              l10n.bringForward,
-              single == null ? null : () => editor.apply(SvgLayers.bringForward(svg, single.path)),
-            ),
-            action(
-              const Key('layer-backward'),
-              Icons.flip_to_back_rounded,
-              l10n.sendBackward,
-              single == null ? null : () => editor.apply(SvgLayers.sendBackward(svg, single.path)),
-            ),
-            action(
-              const Key('layer-duplicate'),
-              Icons.copy_all_rounded,
-              l10n.actionDuplicate,
-              !has
-                  ? null
-                  : single != null
-                  ? () => editor.apply(SvgLayers.duplicate(svg, single.path))
-                  : editor.duplicateTargets,
-            ),
-            action(
-              const Key('layer-visibility'),
-              Icons.visibility_outlined,
-              // In a light/dark file it hides in both versions; one version
-              // alone is hidden in a layer's theme settings.
-              themeScheme == null ? l10n.hideLayer : l10n.hideLayerBoth,
-              has ? _toggleVisibility : null,
-            ),
-            action(
-              const Key('layer-delete'),
-              Icons.delete_outline_rounded,
-              l10n.actionDelete,
-              has ? () => _delete(context, count) : null,
-            ),
+              const SizedBox(width: 8),
+            ],
+            Expanded(child: _SlidingRow(children: actions)),
           ],
         ),
         if (single != null && single.tag == 'text')
@@ -145,6 +162,45 @@ class LayerActionsCard extends StatelessWidget {
             onFieldSubmitted: (text) => editor.commit(SvgLayers.setText(svg, single.path, text)),
           ),
       ],
+    );
+  }
+}
+
+/// A row of buttons that never wraps: what does not fit slides in with a
+/// finger, and the end fades out to show there is more.
+class _SlidingRow extends StatelessWidget {
+  const _SlidingRow({required this.children});
+
+  final List<Widget> children;
+
+  static const _fade = 24.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return ShaderMask(
+      blendMode: BlendMode.dstIn,
+      shaderCallback: (bounds) => LinearGradient(
+        colors: const [Colors.black, Colors.black, Colors.transparent],
+        stops: [0, 1 - _fade / bounds.width, 1],
+      ).createShader(bounds),
+      // No scrollbar over the buttons: the fade says there is more.
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: SingleChildScrollView(
+          key: const Key('layer-actions-row'),
+          scrollDirection: Axis.horizontal,
+          // Room at the end, so the last button can leave the fade.
+          padding: const EdgeInsetsDirectional.only(end: _fade),
+          child: Row(
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0) const SizedBox(width: 4),
+                children[i],
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
