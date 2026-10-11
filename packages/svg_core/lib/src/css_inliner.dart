@@ -89,8 +89,13 @@ class SvgCssInliner {
       for (final rule in rules) {
         if (rule.selector.matches(element)) computed.addAll(rule.declarations);
       }
-      computed.addAll(_declarations(element.getAttribute('style') ?? ''));
+      final style = element.getAttribute('style');
+      computed.addAll(_declarations(style ?? ''));
       computed.forEach(element.setAttribute);
+      // flutter_svg reads `style` too, and `none !important` is not `none`.
+      if (style != null && style.contains('!important')) {
+        element.setAttribute('style', style.replaceAll(RegExp(r'\s*!\s*important'), ''));
+      }
     }
     return document.toXmlString();
   }

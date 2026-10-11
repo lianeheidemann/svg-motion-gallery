@@ -332,6 +332,7 @@
     }
   },
   "themeWholeDrawing": "o desenho",
+  "themeHiddenByEye": "Oculta nas duas versões pelo olho da camada",
   "themeHiddenByGroup": "Oculta pelo grupo {name} neste tema",
   "@themeHiddenByGroup": {
     "placeholders": {

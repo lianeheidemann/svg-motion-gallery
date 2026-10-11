@@ -63,6 +63,8 @@ class LayerThemeSheet extends StatelessWidget {
     final svg = editor.svg;
     final mark = editor.themeMarks[path] ?? SvgThemeMark(path: path);
     final source = mark.sourceIn(active);
+    // The eye hides the layer in both versions, whatever a theme sets.
+    final hiddenByEye = !layer.visible;
     final hiddenByGroup =
         !SvgThemeEdit.isShown(svg, path, active) && SvgThemeEdit.isOwnShown(svg, path, active);
     final others = mark.ownIn(active).difference({'fill', 'stroke', 'display'});
@@ -110,7 +112,7 @@ class LayerThemeSheet extends StatelessWidget {
               },
             ),
             const SizedBox(height: AppSpacing.md),
-            _table(context, active, mark),
+            _table(context, active, mark, hiddenByEye: hiddenByEye),
             if (source != null)
               Align(
                 alignment: AlignmentDirectional.centerStart,
@@ -127,7 +129,9 @@ class LayerThemeSheet extends StatelessWidget {
                         },
                 ),
               ),
-            if (hiddenByGroup && source != null)
+            if (hiddenByEye)
+              _note(context, Icons.visibility_off_outlined, l10n.themeHiddenByEye)
+            else if (hiddenByGroup && source != null)
               _note(
                 context,
                 Icons.visibility_off_outlined,
@@ -175,7 +179,12 @@ class LayerThemeSheet extends StatelessWidget {
 
   /// Fill, outline and whether it is drawn, each with the light value next to
   /// the dark one, under the head of each version.
-  Widget _table(BuildContext context, SvgColorScheme active, SvgThemeMark mark) {
+  Widget _table(
+    BuildContext context,
+    SvgColorScheme active,
+    SvgThemeMark mark, {
+    required bool hiddenByEye,
+  }) {
     final l10n = context.l10n;
     final svg = editor.svg;
 
@@ -234,9 +243,13 @@ class LayerThemeSheet extends StatelessWidget {
                     child: Switch(
                       key: const Key('theme-visible-switch'),
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      value: SvgThemeEdit.isOwnShown(svg, path, scheme),
-                      onChanged: (shown) =>
-                          editor.commit(SvgThemeEdit.setShown(editor.svg, path, shown, scheme)),
+                      value: !hiddenByEye && SvgThemeEdit.isOwnShown(svg, path, scheme),
+                      // Off while the eye hides it: only the eye brings it back.
+                      onChanged: hiddenByEye
+                          ? null
+                          : (shown) => editor.commit(
+                              SvgThemeEdit.setShown(editor.svg, path, shown, scheme),
+                            ),
                     ),
                   )
                 : Icon(

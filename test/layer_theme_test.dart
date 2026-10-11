@@ -250,6 +250,44 @@ void main() {
     expect(find.text('herda'), findsNothing);
   });
 
+  testWidgets('the eye hides a layer in both versions, even one a rule shows', (tester) async {
+    final services = await _openInEditor(tester);
+    await tester.tap(find.byKey(const Key('theme-variant')));
+    await tester.pumpAndSettle();
+    // In light the stylesheet shows the sun group (.sun{display:inline}).
+    await tester.ensureVisible(find.byKey(ValueKey('eye-$_sun')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(ValueKey('eye-$_sun')));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(ValueKey('eye-$_sunCircle')),
+        matching: find.byIcon(Icons.visibility_off_outlined),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('theme-variant')));
+    await tester.pumpAndSettle();
+
+    final saved = await _save(tester, services);
+    for (final scheme in SvgColorScheme.values) {
+      expect(SvgThemeEdit.isShown(saved, _sun, scheme), isFalse, reason: '$scheme');
+      expect(SvgThemeEdit.isShown(saved, _sunCircle, scheme), isFalse, reason: '$scheme');
+    }
+  });
+
+  testWidgets('theme settings: a layer the eye hides cannot be shown in one theme', (tester) async {
+    await _openInEditor(tester);
+    await tester.tap(find.byKey(ValueKey('eye-$_rect')));
+    await tester.pumpAndSettle();
+    await tester.tap(_mark(_rect));
+    await tester.pumpAndSettle();
+    final visible = tester.widget<Switch>(find.byKey(const Key('theme-visible-switch')));
+    expect(visible.value, isFalse);
+    expect(visible.onChanged, isNull, reason: 'only the eye brings it back');
+    expect(find.text('Oculta nas duas versões pelo olho da camada'), findsOneWidget);
+  });
+
   testWidgets('a folded folder shows the themes set inside it', (tester) async {
     await _openInEditor(
       tester,

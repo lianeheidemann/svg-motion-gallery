@@ -70,7 +70,7 @@ bool matchesSimpleSelector(String selector, XmlElement element) {
 String? cssValueOf(XmlElement element, List<CssRule> rules, String property) {
   String? inline;
   mapDeclarations(element.getAttribute('style') ?? '', (name, value) {
-    if (name == property) inline = value.trim();
+    if (name == property) inline = value.replaceAll('!important', '').trim();
     return value;
   });
   if (inline != null) return inline;
