@@ -2,6 +2,30 @@ Copyright (c) 2026 Liane Heidemann
 
 All rights reserved.
 
-This source code is provided for viewing, study, and portfolio evaluation. Redistribution,
-commercial use, sublicensing, or publication of modified copies is not permitted without
-prior written permission from the copyright holder.
+1. Source code
+
+The source code in this repository is provided for viewing, study, and portfolio
+evaluation only. Any other use of the source code, including copying, modifying,
+merging, redistributing, publishing, creating derivative works, commercial use, or
+sublicensing, requires the prior written approval of the copyright holder.
+
+To request approval, contact the copyright holder through the GitHub profile
+associated with this repository. Approval is granted at the copyright holder's sole
+discretion and may be limited or revoked.
+
+2. Application (APK and other official builds)
+
+The copyright holder grants everyone a free, non-exclusive, revocable license to
+download, install, and use the official compiled application (including the Android
+APK) for personal use, without needing individual approval.
+
+This license does not allow you to sell or redistribute modified builds, or to
+decompile, reverse engineer, or extract the source code from the application, except
+where applicable law does not allow this restriction.
+
+3. No warranty
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM THE USE OF THE SOFTWARE.

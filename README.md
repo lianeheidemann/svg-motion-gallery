@@ -161,4 +161,9 @@ Dependabot updates packages and actions weekly.
 
 ## License
 
-Academic and portfolio project. See [LICENSE](LICENSE) before redistributing.
+Academic and portfolio project.
+
+- **Source code:** all rights reserved. You may view and study it, but any other use requires prior written approval from the author.
+- **App (APK):** anyone may install and use it freely for personal use.
+
+See [LICENSE](LICENSE) for the full terms.
