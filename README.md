@@ -95,9 +95,9 @@ Monorepo with [pub workspaces](https://dart.dev/tools/pub/workspaces). Dependenc
 ```text
                 app (lib/)
      ┌─────────────┼──────────────┐
-     ▼             ▼              ▼
-design_system   svg_view ─────▶ svg_core
-  (Flutter UI)  (rendering)      (pure Dart)
+     ▼               ▼                ▼
+design_system     svg_view ─────▶ svg_core
+(Flutter UI)     (rendering)      (pure Dart)
 ```
 
 | Module | Responsibility |
