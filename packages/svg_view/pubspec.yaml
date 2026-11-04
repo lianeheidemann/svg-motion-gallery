@@ -12,10 +12,10 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
-  flutter_svg: ^2.3.0
+  flutter_svg: ^2.3.2
   svg_core:
     path: ../svg_core
-  web: ^1.1.1
+  web: ^1.1.2
   webview_flutter: ^4.14.1
 
 dev_dependencies:
