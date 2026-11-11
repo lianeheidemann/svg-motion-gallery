@@ -23,7 +23,7 @@ dependencies:
   intl: any
   path_provider: ^2.1.6
   share_plus: ^13.3.1
-  shared_preferences: ^2.5.5
+  shared_preferences: ^2.5.6
   svg_core:
     path: packages/svg_core
   svg_view:
