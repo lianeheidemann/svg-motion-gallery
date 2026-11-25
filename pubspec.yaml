@@ -19,11 +19,11 @@ dependencies:
     sdk: flutter
   design_system:
     path: packages/design_system
-  file_picker: ^13.1.0
+  file_picker: ^13.4.1
   intl: any
   path_provider: ^2.1.6
   share_plus: ^13.3.1
-  shared_preferences: ^2.5.5
+  shared_preferences: ^2.5.6
   svg_core:
     path: packages/svg_core
   svg_view:
